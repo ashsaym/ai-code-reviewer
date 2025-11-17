@@ -6,7 +6,7 @@ const { parseReviewJSON, formatReviewComments, validateReviewComments, computePo
 const { runChatGPT } = require("./providers/chatgpt");
 const { runClaude } = require("./providers/claude");
 const { runSelfHosted } = require("./providers/selfHosted");
-const { generatePRDescription, runCombinedTasks, formatCombinedReport, formatCombinedReportWithInlineReview } = require("./commandHandler");
+const { generatePRDescription, runCombinedTasks, combineTasks } = require("./commandHandler");
 const packageJson = require("../package.json");
 
 function getInput(name, defaultValue = "") {
@@ -375,9 +375,10 @@ async function run() {
   }
 
   if (task === "combined") {
-    const results = await runCombinedTasks({
+    const completions = await runCombinedTasks({
       tryProviders,
-      buildPrompt: buildInlineReviewPrompt, // Use inline review prompt for review task
+      buildPrompt,
+      buildInlineReviewPrompt,
       prMetadata,
       files: filtered,
       maxDiffChars,
@@ -390,15 +391,9 @@ async function run() {
       maxCompletionTokensMode
     });
 
-    const summaryResult = results.find(r => r.task === "summary");
-    const reviewResult = results.find(r => r.task === "review");
-    const suggestionsResult = results.find(r => r.task === "suggestions");
-
-    const combinedBody = await formatCombinedReportWithInlineReview({
-      summaryResult,
-      reviewResult,
-      suggestionsResult,
-      files: filtered,
+    // Combine the task results into a single comment body
+    const combinedBody = combineTasks({
+      completions,
       repo: repository,
       prNumber,
       packageVersion: packageJson.version
