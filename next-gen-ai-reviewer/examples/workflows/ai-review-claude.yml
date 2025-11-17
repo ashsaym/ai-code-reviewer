@@ -1,0 +1,334 @@
+# Example: AI Code Review with Anthropic Claude
+#
+# This workflow demonstrates how to set up automated AI code reviews using Anthropic's Claude models.
+# Claude excels at nuanced analysis, thorough reasoning, and thoughtful code review.
+#
+# Setup Instructions:
+# 1. Get an Anthropic API key from https://console.anthropic.com/
+# 2. Add it to your repository secrets as CLAUDE_API_KEY or ANTHROPIC_API_KEY
+# 3. Copy this file to .github/workflows/ in your repository
+# 4. Customize the configuration options below as needed
+#
+# Features:
+# - Detailed, thoughtful code analysis
+# - Strong reasoning about code design and architecture
+# - Excellent at catching subtle bugs and edge cases
+# - Great for complex codebases and tricky logic
+# - Inline comments on specific lines
+
+name: AI Code Review (Claude)
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  # Uncomment to enable manual triggers
+  # workflow_dispatch:
+  #   inputs:
+  #     pr_number:
+  #       description: 'PR number to review'
+  #       required: true
+
+# Minimal required permissions for security
+permissions:
+  contents: read         # Read repository files and PR diffs
+  pull-requests: write   # Post review comments
+
+jobs:
+  ai-code-review:
+    name: Claude Code Review
+    runs-on: ubuntu-latest
+    
+    # Optional: Skip for specific conditions
+    # if: |
+    #   github.event.pull_request.draft == false &&
+    #   github.actor != 'dependabot[bot]'
+    
+    steps:
+      - name: AI Code Review with Anthropic Claude
+        uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.1.0
+        with:
+          # ============================================================
+          # BASIC CONFIGURATION
+          # ============================================================
+          
+          # Pull request to review (auto-detected by default)
+          pr-number: ${{ github.event.pull_request.number || inputs.pr_number }}
+          
+          # Repository in owner/repo format (auto-detected by default)
+          # repository: ${{ github.repository }}
+          
+          # Analysis mode: review, summary, suggestions, or description
+          task: review
+          
+          # ============================================================
+          # PROVIDER CONFIGURATION
+          # ============================================================
+          
+          # AI provider to use (only Claude in this example)
+          ai-provider: claude
+          
+          # Claude model selection
+          # Options:
+          #   - claude-3-5-sonnet-20241022: Most intelligent, best for complex analysis (recommended)
+          #   - claude-3-5-haiku-20241022: Fastest model, great for quick reviews
+          #   - claude-3-opus-20240229: Previous flagship, excellent reasoning
+          #   - claude-3-sonnet-20240229: Balanced performance and cost
+          claude-model: claude-3-5-sonnet-20241022
+          
+          # ============================================================
+          # REVIEW CONFIGURATION
+          # ============================================================
+          
+          # Enable GitHub-style inline comments on specific lines
+          inline-review: "true"
+          
+          # Custom display name for the AI reviewer
+          reviewer-name: "Claude AI Reviewer"
+          
+          # ============================================================
+          # LIMITS AND FILTERING
+          # ============================================================
+          
+          # Maximum number of changed files to analyze
+          # Claude handles large contexts well, but stay within limits
+          max-files: 50
+          
+          # Maximum diff characters per file
+          # Claude's large context window allows for bigger diffs
+          max-diff-chars: 15000
+          
+          # Maximum tokens in AI response
+          # Claude can provide detailed responses
+          max-output-tokens: 16000
+          
+          # ============================================================
+          # CUSTOM INSTRUCTIONS (OPTIONAL)
+          # ============================================================
+          
+          # Additional instructions for the AI reviewer
+          # Claude responds well to clear, specific guidance
+          additional-context: |
+            Provide thoughtful, detailed code review focusing on:
+            
+            **Security & Safety:**
+            - Authentication and authorization issues
+            - Input validation and sanitization
+            - Secure data handling and storage
+            - Potential security vulnerabilities
+            
+            **Code Quality:**
+            - Design patterns and architectural decisions
+            - Code maintainability and readability
+            - Proper abstractions and modularity
+            - Error handling and resilience
+            
+            **Logic & Correctness:**
+            - Edge cases and boundary conditions
+            - Potential race conditions or concurrency issues
+            - Algorithm correctness and efficiency
+            - Data flow and state management
+            
+            **Testing:**
+            - Test coverage gaps
+            - Missing test scenarios
+            - Quality of test assertions
+            
+            Be thorough but constructive. Explain the reasoning behind
+            your suggestions and provide examples where helpful.
+        
+        env:
+          # ============================================================
+          # REQUIRED SECRETS
+          # ============================================================
+          
+          # GitHub token (automatically provided)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+          # Anthropic API key (add to repository secrets)
+          # Use CLAUDE_API_KEY or ANTHROPIC_API_KEY
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          
+          # Alternative: Use ANTHROPIC_API_KEY if you prefer
+          # ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      
+      # Optional: Add reaction to show completion
+      - name: Add Success Reaction
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pr_number = context.issue.number;
+            
+            // Add a comment
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: pr_number,
+              body: '✨ Claude has completed the code review! Review the detailed feedback above.'
+            });
+            
+            // Add a thumbs up reaction to the PR
+            const { data: pr } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: pr_number
+            });
+            
+            try {
+              await github.rest.reactions.createForIssue({
+                owner,
+                repo,
+                issue_number: pr_number,
+                content: '+1'
+              });
+            } catch (error) {
+              console.log('Could not add reaction:', error.message);
+            }
+      
+      # Optional: Handle failures gracefully
+      - name: Handle Review Failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const errorComment = `
+            ❌ **Claude AI review failed**
+            
+            The automated code review could not complete. Possible causes:
+            - API rate limits reached
+            - Invalid API key configuration
+            - Network connectivity issues
+            - PR too large to process
+            
+            Please check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+            
+            You can also trigger a manual review by:
+            1. Closing and reopening the PR
+            2. Pushing a new commit
+            3. Using the workflow dispatch trigger
+            `;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: errorComment
+            });
+
+# ============================================================
+# ADVANCED CONFIGURATION OPTIONS
+# ============================================================
+#
+# Repository-level customization:
+# Add these files to .github/ directory for custom behavior:
+#
+# - .github/review-instructions.md
+#   Team-specific review guidelines and Claude's persona
+#
+# - .github/review-rulesets.md
+#   Strict policies and compliance rules for Claude to enforce
+#
+# - .github/review-ignorelist.txt
+#   File patterns to exclude from analysis
+#
+# - .github/prompts/review.md
+#   Custom prompt template optimized for Claude
+#
+# Claude responds particularly well to:
+# - Clear structure and organization in prompts
+# - Specific examples of what you're looking for
+# - Explicit reasoning requirements
+# - Step-by-step instructions
+#
+# ============================================================
+# CLAUDE-SPECIFIC TIPS
+# ============================================================
+#
+# Claude's Strengths:
+# - Long-form reasoning and analysis
+# - Catching subtle bugs and edge cases
+# - Architectural and design feedback
+# - Security vulnerability analysis
+# - Understanding complex business logic
+#
+# Best Practices:
+# 1. Use claude-3-5-sonnet for most reviews (best balance)
+# 2. Use claude-3-5-haiku for quick, less complex reviews
+# 3. Provide clear context in additional-context
+# 4. Let Claude explain its reasoning
+# 5. Use for complex PRs where deep analysis is valuable
+#
+# Cost Optimization:
+# - claude-3-5-haiku is significantly cheaper for simple reviews
+# - Reduce max-output-tokens if you need shorter responses
+# - Use review-ignorelist.txt to skip non-code files
+# - Consider running only on important branches
+#
+# ============================================================
+# COMBINING WITH OTHER TASKS
+# ============================================================
+#
+# Example: Run review + summary in parallel
+#
+# jobs:
+#   detailed-review:
+#     name: Detailed Code Review
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.1.0
+#         with:
+#           task: review
+#           ai-provider: claude
+#           claude-model: claude-3-5-sonnet-20241022
+#           pr-number: ${{ github.event.pull_request.number }}
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+#
+#   executive-summary:
+#     name: Executive Summary
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.1.0
+#         with:
+#           task: summary
+#           ai-provider: claude
+#           claude-model: claude-3-5-haiku-20241022  # Faster model for summaries
+#           pr-number: ${{ github.event.pull_request.number }}
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+#
+#   improvement-suggestions:
+#     name: Improvement Suggestions
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.1.0
+#         with:
+#           task: suggestions
+#           ai-provider: claude
+#           claude-model: claude-3-5-sonnet-20241022
+#           pr-number: ${{ github.event.pull_request.number }}
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+#
+# ============================================================
+# CONDITIONAL EXECUTION EXAMPLES
+# ============================================================
+#
+# Run only on specific branches:
+#   if: github.base_ref == 'main' || github.base_ref == 'develop'
+#
+# Skip for bot PRs:
+#   if: github.actor != 'dependabot[bot]'
+#
+# Run only when labeled:
+#   if: contains(github.event.pull_request.labels.*.name, 'needs-ai-review')
+#
+# Skip for draft PRs:
+#   if: github.event.pull_request.draft == false
+#
+# Run only for large PRs (example):
+#   if: github.event.pull_request.changed_files > 5

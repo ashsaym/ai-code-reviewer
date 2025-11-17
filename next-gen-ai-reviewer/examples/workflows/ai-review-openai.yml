@@ -1,0 +1,242 @@
+# Example: AI Code Review with OpenAI ChatGPT
+#
+# This workflow demonstrates how to set up automated AI code reviews using OpenAI's ChatGPT models.
+# It runs on every pull request and provides detailed inline code reviews.
+#
+# Setup Instructions:
+# 1. Get an OpenAI API key from https://platform.openai.com/api-keys
+# 2. Add it to your repository secrets as CHATGPT_API_KEY or OPENAI_API_KEY
+# 3. Copy this file to .github/workflows/ in your repository
+# 4. Customize the configuration options below as needed
+#
+# Features:
+# - Automatic code review on every PR
+# - Inline comments on specific lines
+# - Security, performance, and best practice analysis
+# - Configurable models and parameters
+# - Fallback error handling
+
+name: AI Code Review (OpenAI)
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  # Uncomment to enable manual triggers
+  # workflow_dispatch:
+  #   inputs:
+  #     pr_number:
+  #       description: 'PR number to review'
+  #       required: true
+
+# Minimal required permissions for security
+permissions:
+  contents: read         # Read repository files and PR diffs
+  pull-requests: write   # Post review comments
+
+jobs:
+  ai-code-review:
+    name: ChatGPT Code Review
+    runs-on: ubuntu-latest
+    
+    # Optional: Skip for specific conditions
+    # if: github.event.pull_request.draft == false
+    
+    steps:
+      - name: AI Code Review with OpenAI ChatGPT
+        uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.1.0
+        with:
+          # ============================================================
+          # BASIC CONFIGURATION
+          # ============================================================
+          
+          # Pull request to review (auto-detected by default)
+          pr-number: ${{ github.event.pull_request.number || inputs.pr_number }}
+          
+          # Repository in owner/repo format (auto-detected by default)
+          # repository: ${{ github.repository }}
+          
+          # Analysis mode: review, summary, suggestions, or description
+          task: review
+          
+          # ============================================================
+          # PROVIDER CONFIGURATION
+          # ============================================================
+          
+          # AI provider to use (only ChatGPT in this example)
+          ai-provider: chatgpt
+          
+          # ChatGPT model selection
+          # Options:
+          #   - gpt-4o: Most capable flagship model (recommended for complex code)
+          #   - gpt-4o-mini: Fast and affordable (recommended for most use cases)
+          #   - gpt-4-turbo: Previous generation, still very capable
+          #   - gpt-3.5-turbo: Fastest and most economical
+          chatgpt-model: gpt-4o-mini
+          
+          # Token parameter mode
+          # Options:
+          #   - auto: Automatically detect based on model (recommended)
+          #   - true: Force max_completion_tokens (for gpt-4o, gpt-4o-mini, o1, o3)
+          #   - false: Force max_tokens (for gpt-4-turbo, gpt-3.5-turbo)
+          max-completion-tokens-mode: auto
+          
+          # ============================================================
+          # REVIEW CONFIGURATION
+          # ============================================================
+          
+          # Enable GitHub-style inline comments on specific lines
+          inline-review: "true"
+          
+          # Custom display name for the AI reviewer
+          reviewer-name: "ChatGPT Code Reviewer"
+          
+          # ============================================================
+          # LIMITS AND FILTERING
+          # ============================================================
+          
+          # Maximum number of changed files to analyze
+          # Large PRs may need adjustment
+          max-files: 40
+          
+          # Maximum diff characters per file
+          # Increase for files with large changes
+          max-diff-chars: 12000
+          
+          # Maximum tokens in AI response
+          # Increase for detailed reviews, decrease to save costs
+          max-output-tokens: 16000
+          
+          # ============================================================
+          # CUSTOM INSTRUCTIONS (OPTIONAL)
+          # ============================================================
+          
+          # Additional instructions for the AI reviewer
+          # Use this to emphasize specific areas or provide context
+          additional-context: |
+            Focus your review on:
+            - Security vulnerabilities and potential exploits
+            - Performance issues and optimization opportunities
+            - Best practices and design patterns
+            - Proper error handling and edge cases
+            - Testing coverage and quality
+            
+            Be constructive and specific in your feedback.
+            Provide code examples for suggested improvements.
+        
+        env:
+          # ============================================================
+          # REQUIRED SECRETS
+          # ============================================================
+          
+          # GitHub token (automatically provided)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+          # OpenAI API key (add to repository secrets)
+          # Use CHATGPT_API_KEY or OPENAI_API_KEY
+          CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
+          
+          # Alternative: Use OPENAI_API_KEY if you prefer
+          # OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      
+      # Optional: Add a comment when review completes
+      - name: Review Complete Notification
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ AI code review completed! Check the comments above for detailed feedback.'
+            })
+      
+      # Optional: Handle failures gracefully
+      - name: Review Failed Notification
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ AI code review failed. Please check the workflow logs for details.'
+            })
+
+# ============================================================
+# ADVANCED CONFIGURATION OPTIONS
+# ============================================================
+#
+# Repository-level customization:
+# Add these files to .github/ directory for custom behavior:
+#
+# - .github/review-instructions.md
+#   Team-specific review guidelines and preferences
+#
+# - .github/review-rulesets.md
+#   Strict policies, compliance rules, and blockers
+#
+# - .github/review-ignorelist.txt
+#   File patterns to exclude from analysis (one per line)
+#
+# - .github/prompts/review.md
+#   Custom prompt template for review task
+#
+# Example review-ignorelist.txt:
+#   docs/**
+#   **/*.lock
+#   dist/**
+#   node_modules/**
+#
+# ============================================================
+# COST OPTIMIZATION TIPS
+# ============================================================
+#
+# 1. Use gpt-4o-mini for most reviews (10-15x cheaper than gpt-4o)
+# 2. Reduce max-output-tokens for shorter reviews
+# 3. Decrease max-files and max-diff-chars for large PRs
+# 4. Use review-ignorelist.txt to skip generated files
+# 5. Consider running only on specific branches or labels
+#
+# Example: Run only on non-draft PRs
+#   if: github.event.pull_request.draft == false
+#
+# Example: Run only on PRs with "needs-review" label
+#   if: contains(github.event.pull_request.labels.*.name, 'needs-review')
+#
+# ============================================================
+# MULTIPLE TASKS EXAMPLE
+# ============================================================
+#
+# Run different analysis modes in parallel:
+#
+# jobs:
+#   code-review:
+#     # ... review configuration ...
+#
+#   pr-summary:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.1.0
+#         with:
+#           task: summary
+#           pr-number: ${{ github.event.pull_request.number }}
+#           ai-provider: chatgpt
+#           chatgpt-model: gpt-3.5-turbo  # Use faster model for summaries
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
+#
+#   suggestions:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.1.0
+#         with:
+#           task: suggestions
+#           pr-number: ${{ github.event.pull_request.number }}
+#           ai-provider: chatgpt
+#           chatgpt-model: gpt-4o-mini
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}

@@ -1,0 +1,387 @@
+# Example: AI Code Review with Self-Hosted Models
+#
+# This workflow demonstrates how to set up automated AI code reviews using self-hosted
+# AI models via OpenAI-compatible APIs (Open WebUI, Ollama, LocalAI, LM Studio, etc.)
+#
+# Perfect for:
+# - Organizations with data privacy requirements
+# - Teams running their own AI infrastructure
+# - Cost optimization with local models
+# - Air-gapped or offline environments
+# - Custom fine-tuned models
+#
+# Setup Instructions:
+# 1. Set up your self-hosted AI endpoint (see options below)
+# 2. Add endpoint URL to repository secrets as OPENWEBUI_URL
+# 3. Add API key to repository secrets as OPENWEBUI_API_KEY (if authentication required)
+# 4. Copy this file to .github/workflows/ in your repository
+# 5. Customize the configuration options below as needed
+#
+# Supported Platforms:
+# - Open WebUI (https://openwebui.com/)
+# - Ollama with OpenAI compatibility (https://ollama.ai/)
+# - LocalAI (https://localai.io/)
+# - LM Studio (https://lmstudio.ai/)
+# - text-generation-webui (https://github.com/oobabooga/text-generation-webui)
+# - vLLM (https://github.com/vllm-project/vllm)
+# - Any OpenAI-compatible API
+
+name: AI Code Review (Self-Hosted)
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  # Uncomment to enable manual triggers
+  # workflow_dispatch:
+  #   inputs:
+  #     pr_number:
+  #       description: 'PR number to review'
+  #       required: true
+
+# Minimal required permissions for security
+permissions:
+  contents: read         # Read repository files and PR diffs
+  pull-requests: write   # Post review comments
+
+jobs:
+  ai-code-review:
+    name: Self-Hosted AI Review
+    runs-on: ubuntu-latest
+    
+    # Optional: Skip for specific conditions
+    # if: github.event.pull_request.draft == false
+    
+    steps:
+      - name: AI Code Review with Self-Hosted Model
+        uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.1.0
+        with:
+          # ============================================================
+          # BASIC CONFIGURATION
+          # ============================================================
+          
+          # Pull request to review (auto-detected by default)
+          pr-number: ${{ github.event.pull_request.number || inputs.pr_number }}
+          
+          # Repository in owner/repo format (auto-detected by default)
+          # repository: ${{ github.repository }}
+          
+          # Analysis mode: review, summary, suggestions, or description
+          task: review
+          
+          # ============================================================
+          # PROVIDER CONFIGURATION
+          # ============================================================
+          
+          # AI provider to use (self-hosted in this example)
+          ai-provider: self-hosted
+          
+          # Self-hosted endpoint URL
+          # Must be OpenAI-compatible chat completions endpoint
+          # Examples:
+          #   Open WebUI: https://your-server.com/api/v1/chat/completions
+          #   Ollama: http://localhost:11434/v1/chat/completions
+          #   LocalAI: http://localhost:8080/v1/chat/completions
+          #   LM Studio: http://localhost:1234/v1/chat/completions
+          self-hosted-endpoint: ${{ secrets.OPENWEBUI_URL }}/api/v1/chat/completions
+          
+          # Model identifier
+          # Must match a model available on your endpoint
+          # Examples for different platforms:
+          #   Ollama: llama3:70b, llama3:8b, mistral:7b, codellama:13b
+          #   Open WebUI: Check your available models in the UI
+          #   LocalAI: Model name from your models directory
+          #   Custom: Whatever your endpoint recognizes
+          self-hosted-model: llama3:70b
+          
+          # Authentication token (optional, if your endpoint requires it)
+          # Leave empty or omit if no authentication needed
+          self-hosted-token: ${{ secrets.OPENWEBUI_API_KEY }}
+          
+          # HTTP header name for authentication token
+          # Default is "Authorization" which automatically adds "Bearer" prefix
+          # Use custom header name if your endpoint expects different format
+          # Examples:
+          #   Authorization (default): Authorization: Bearer <token>
+          #   X-API-Key: X-API-Key: <token>
+          #   Api-Key: Api-Key: <token>
+          self-hosted-token-header: Authorization
+          
+          # ============================================================
+          # REVIEW CONFIGURATION
+          # ============================================================
+          
+          # Enable GitHub-style inline comments on specific lines
+          inline-review: "true"
+          
+          # Custom display name for the AI reviewer
+          reviewer-name: "Self-Hosted AI Reviewer"
+          
+          # ============================================================
+          # LIMITS AND FILTERING
+          # ============================================================
+          
+          # Maximum number of changed files to analyze
+          # Adjust based on your model's capabilities
+          max-files: 30
+          
+          # Maximum diff characters per file
+          # Smaller models may need lower values
+          max-diff-chars: 10000
+          
+          # Maximum tokens in AI response
+          # IMPORTANT: Adjust based on your model's context window
+          # Examples:
+          #   Llama 3 8B: 8000-12000 tokens recommended
+          #   Llama 3 70B: 12000-16000 tokens recommended
+          #   Smaller models: 4000-8000 tokens
+          #   Check your model's specifications
+          max-output-tokens: 8000
+          
+          # ============================================================
+          # CUSTOM INSTRUCTIONS (OPTIONAL)
+          # ============================================================
+          
+          # Additional instructions for the AI reviewer
+          # Self-hosted models benefit from clear, structured prompts
+          additional-context: |
+            Provide a focused code review with:
+            
+            1. **Critical Issues** (if any):
+               - Security vulnerabilities
+               - Bugs that could cause failures
+               - Data loss or corruption risks
+            
+            2. **Important Improvements**:
+               - Performance issues
+               - Code quality concerns
+               - Maintainability problems
+            
+            3. **Suggestions** (optional):
+               - Best practice recommendations
+               - Refactoring opportunities
+            
+            Keep responses concise and actionable.
+            Focus on the most important issues first.
+            Provide specific line references when possible.
+        
+        env:
+          # ============================================================
+          # REQUIRED SECRETS
+          # ============================================================
+          
+          # GitHub token (automatically provided)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+          # Self-hosted endpoint secrets (add to repository secrets)
+          # Use one of these naming conventions:
+          # - OPENWEBUI_API_KEY (recommended for Open WebUI)
+          # - SELF_HOSTED_API_KEY (generic self-hosted)
+          # - SELF_HOSTED_TOKEN (alternative)
+          # Can also be set via self-hosted-token input above
+          
+          # Optional: Alternative ways to pass credentials
+          # SELF_HOSTED_API_KEY: ${{ secrets.SELF_HOSTED_API_KEY }}
+          # OPENWEBUI_API_KEY: ${{ secrets.OPENWEBUI_API_KEY }}
+      
+      # Optional: Add completion notification
+      - name: Review Complete
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ Self-hosted AI code review completed successfully!'
+            })
+      
+      # Optional: Handle failures with helpful message
+      - name: Review Failed
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const failureMessage = `
+            ❌ **Self-hosted AI review failed**
+            
+            Common issues and solutions:
+            
+            **Endpoint not reachable:**
+            - Verify the endpoint URL in OPENWEBUI_URL secret
+            - Check if the endpoint is accessible from GitHub Actions
+            - Ensure firewall rules allow incoming connections
+            
+            **Authentication failed:**
+            - Verify OPENWEBUI_API_KEY secret is correct
+            - Check if the API key has necessary permissions
+            - Try without authentication if endpoint doesn't require it
+            
+            **Model not found:**
+            - Verify the model name matches what's available on your endpoint
+            - Check model is downloaded/loaded on your server
+            - Try listing available models via API
+            
+            **Timeout or performance:**
+            - Model may be too slow for GitHub Actions timeout
+            - Consider using a faster/smaller model
+            - Increase model's max_tokens if it's cutting off responses
+            
+            Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for detailed error messages.
+            `;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: failureMessage
+            });
+
+# ============================================================
+# PLATFORM-SPECIFIC SETUP GUIDES
+# ============================================================
+#
+# Open WebUI Setup:
+# 1. Install Open WebUI: https://docs.openwebui.com/
+# 2. Access web interface and create an API key
+# 3. Add secrets:
+#    OPENWEBUI_URL: https://your-server.com
+#    OPENWEBUI_API_KEY: sk-xxxxxxxxxxxxxxxx
+# 4. Set self-hosted-model to a model you have installed
+#
+# Ollama Setup:
+# 1. Install Ollama: https://ollama.ai/download
+# 2. Enable OpenAI compatibility: ollama serve
+# 3. Pull a model: ollama pull llama3:70b
+# 4. Add secrets:
+#    OPENWEBUI_URL: http://your-server.com:11434
+#    # No API key needed for local Ollama
+# 5. Set self-hosted-model: llama3:70b
+# 6. If on same machine, use http://localhost:11434
+#
+# LocalAI Setup:
+# 1. Install LocalAI: https://localai.io/basics/getting_started/
+# 2. Download and configure models
+# 3. Start LocalAI server
+# 4. Add secrets:
+#    OPENWEBUI_URL: http://your-server.com:8080
+#    OPENWEBUI_API_KEY: (if configured)
+# 5. Set self-hosted-model to your model name
+#
+# LM Studio Setup:
+# 1. Install LM Studio: https://lmstudio.ai/
+# 2. Load a model in LM Studio
+# 3. Start the local server (Developer tab)
+# 4. Add secrets:
+#    OPENWEBUI_URL: http://your-machine:1234
+#    # Usually no API key needed
+# 5. Set self-hosted-model to loaded model name
+#
+# ============================================================
+# RECOMMENDED MODELS FOR CODE REVIEW
+# ============================================================
+#
+# Large Models (Best Quality):
+# - llama3:70b - Excellent reasoning, comprehensive reviews
+# - codellama:34b - Code-focused, great for technical analysis
+# - mixtral:8x7b - Fast and capable, good balance
+#
+# Medium Models (Good Balance):
+# - llama3:13b - Decent quality, faster than 70b
+# - codellama:13b - Code-focused, good for most reviews
+# - mistral:7b - Fast, handles most code review tasks
+#
+# Small Models (Fast, Lower Quality):
+# - llama3:8b - Quick reviews, basic analysis
+# - codellama:7b - Fast code analysis
+# - mistral-small - Budget-friendly option
+#
+# Quantized Models (Faster, Less Memory):
+# - llama3:70b-q4 - 4-bit quantized, runs on less hardware
+# - codellama:34b-q6 - 6-bit quantized, good quality/speed balance
+#
+# Model Selection Tips:
+# - Larger models = better quality but slower
+# - Code-specific models (CodeLlama) often better for code review
+# - Quantized models reduce memory usage with minimal quality loss
+# - Test different models to find best balance for your needs
+#
+# ============================================================
+# PERFORMANCE OPTIMIZATION
+# ============================================================
+#
+# Hardware Recommendations:
+# - 8B models: 8GB+ RAM, consumer GPU optional
+# - 13B models: 16GB+ RAM, GPU recommended
+# - 34B models: 32GB+ RAM, GPU strongly recommended
+# - 70B models: 64GB+ RAM, high-end GPU required
+#
+# Optimization Tips:
+# 1. Use quantized models (q4, q6) for faster inference
+# 2. Reduce max-output-tokens for quicker responses
+# 3. Lower max-files and max-diff-chars for large PRs
+# 4. Use review-ignorelist.txt to skip non-essential files
+# 5. Consider GPU acceleration if available
+# 6. Use smaller models for simple reviews
+# 7. Cache model in memory for faster subsequent reviews
+#
+# Cost Optimization:
+# - Self-hosted models have no per-request cost
+# - Initial hardware investment only
+# - Great for high-volume code review needs
+# - Can use commodity hardware with smaller models
+#
+# ============================================================
+# SECURITY CONSIDERATIONS
+# ============================================================
+#
+# Network Security:
+# - Use HTTPS for production endpoints
+# - Implement proper authentication
+# - Use VPN or private network for sensitive code
+# - Consider IP whitelisting
+#
+# Data Privacy:
+# - Code never leaves your infrastructure
+# - No data sent to third-party AI providers
+# - Full control over data retention
+# - Ideal for proprietary or sensitive code
+#
+# Access Control:
+# - Implement API key authentication
+# - Use separate keys for different repositories
+# - Rotate keys regularly
+# - Monitor API access logs
+#
+# ============================================================
+# TROUBLESHOOTING
+# ============================================================
+#
+# Model Not Found:
+# - Verify model name matches endpoint's available models
+# - Check model is downloaded and loaded
+# - Try listing models: curl $ENDPOINT/v1/models
+#
+# Slow Performance:
+# - Use smaller or quantized models
+# - Reduce max-output-tokens
+# - Check server resource usage (CPU/GPU/RAM)
+# - Consider caching strategy
+#
+# Inconsistent Quality:
+# - Add more context in additional-context
+# - Use larger models for complex code
+# - Tune temperature parameter (if endpoint supports)
+# - Provide clear, structured prompts
+#
+# Connection Issues:
+# - Verify endpoint URL is correct and accessible
+# - Check firewall rules
+# - Ensure server is running and responsive
+# - Test endpoint with curl before using in workflow
+#
+# Authentication Failures:
+# - Verify API key is correct
+# - Check self-hosted-token-header matches endpoint expectations
+# - Try without authentication first
+# - Review endpoint's authentication documentation
