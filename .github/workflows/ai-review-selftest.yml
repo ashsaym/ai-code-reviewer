@@ -23,8 +23,8 @@ jobs:
         task: [review, summary, suggestions]
     env:
       PR_NUMBER: ${{ inputs.pr_number }}
-      AI_REVIEW_CHATGPT_MODEL: gpt-4o-mini
-      AI_REVIEW_MAX_OUTPUT_TOKENS: "16000"
+      AI_REVIEW_CHATGPT_MODEL: gpt-5-mini
+      AI_REVIEW_MAX_OUTPUT_TOKENS: "128000"
       AI_REVIEW_MAX_COMPLETION_MODE: auto
     steps:
       - name: Checkout repository
