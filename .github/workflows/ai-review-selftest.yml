@@ -2,7 +2,7 @@ name: Next Gen AI Reviewer (self-test)
 
 on:
   pull_request:
-    types: [assigned]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -28,7 +28,8 @@ jobs:
     env:
       PR_NUMBER: ${{ inputs.pr_number }}
       AI_REVIEW_CHATGPT_MODEL: gpt-5-mini
-      AI_REVIEW_MAX_OUTPUT_TOKENS: "128000"
+      AI_REVIEW_CLAUDE_MODEL: claude-sonnet-4-5
+      AI_REVIEW_MAX_OUTPUT_TOKENS: "64000"
       AI_REVIEW_MAX_COMPLETION_MODE: auto
     steps:
       - name: Checkout repository
@@ -46,6 +47,12 @@ jobs:
           additional-context: |
             This run originates from ai-code-reviewer's self-test pipeline.
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # All possible API keys - the action will use whichever is available
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
           CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENWEBUI_API_KEY: ${{ secrets.OPENWEBUI_API_KEY }}
+          SELF_HOSTED_API_KEY: ${{ secrets.SELF_HOSTED_API_KEY }}
