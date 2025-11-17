@@ -730,5 +730,71 @@ describe("main.js workflow functions", () => {
       expect(result).toBe(true);
       expect(github.createReview).toHaveBeenCalled();
     });
+
+    it("should skip files without patches during position computation", async () => {
+      const { postInlineReview } = require("../../src/main");
+      const github = require("../../src/github");
+
+      github.createReview.mockResolvedValue({});
+
+      const result = await postInlineReview({
+        token: "test-token",
+        owner: "test-owner",
+        repo: "test-repo",
+        prNumber: 123,
+        prMetadata: {},
+        completion: {
+          content: JSON.stringify({
+            summary: "Test summary",
+            reviews: [
+              { path: "file1.js", line: 2, comment: "Comment on file without patch", severity: "info" },
+              { path: "file2.js", line: 5, comment: "Comment with bad line", severity: "warning" }
+            ]
+          }),
+          model: "gpt-5-mini",
+          provider: "ChatGPT"
+        },
+        files: [
+          {
+            filename: "file1.js"
+            // No patch - should skip lines 114-115
+          },
+          {
+            filename: "file2.js",
+            patch: "@@ -1,3 +1,3 @@\n line1\n+line2\n line3"
+            // Line 5 not in patch - should skip lines 119-121
+          }
+        ]
+      });
+
+      // Should return false because no valid positioned comments
+      expect(result).toBe(false);
+    });
+
+    it("should handle no formatted comments after position computation", async () => {
+      const { postInlineReview } = require("../../src/main");
+
+      const result = await postInlineReview({
+        token: "test-token",
+        owner: "test-owner",
+        repo: "test-repo",
+        prNumber: 123,
+        prMetadata: {},
+        completion: {
+          content: JSON.stringify({
+            summary: "Test summary",
+            reviews: [
+              { path: "missing.js", line: 1, comment: "Comment on missing file", severity: "info" }
+            ]
+          }),
+          model: "gpt-5-mini",
+          provider: "ChatGPT"
+        },
+        files: []
+      });
+
+      // Should return false - lines 131-133
+      expect(result).toBe(false);
+    });
   });
 });
