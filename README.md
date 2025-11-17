@@ -288,46 +288,401 @@ npm run lint            # Check code quality
 npm run lint:fix        # Auto-fix issues
 ```
 
-## 📝 Examples
+## 📝 Complete Workflow Examples
 
-### Complete Workflow Example
+### Example 1: Automatic Review with ChatGPT (OpenAI)
+
+Create `.github/workflows/ai-review-chatgpt.yml`:
 
 ```yaml
-name: AI Code Review
+name: AI Review (ChatGPT)
 
 on:
   pull_request:
     types: [opened, reopened, synchronize]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   ai-review:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
     
     steps:
-      - name: AI Code Review
+      - name: AI Code Review with ChatGPT
+        uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
+        with:
+          # Required
+          pr-number: ${{ github.event.pull_request.number }}
+          
+          # Provider configuration
+          ai-provider: chatgpt
+          chatgpt-model: gpt-4o-mini
+          
+          # Task configuration
+          task: review
+          
+          # Optional: Control what gets analyzed
+          max-files: 60
+          max-diff-chars: 18000
+          max-output-tokens: 16000
+          
+          # Optional: ChatGPT-specific settings
+          max-completion-tokens-mode: auto  # or 'true' for gpt-4o/o1, 'false' for older models
+          
+          # Optional: Enable inline comments
+          inline-review: "true"
+          
+          # Optional: Add custom instructions
+          additional-context: |
+            Focus on:
+            - Security vulnerabilities
+            - Performance issues
+            - Best practices violations
+            - Proper error handling
+        
+        env:
+          # Required secrets
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}  # or OPENAI_API_KEY
+```
+
+**Required GitHub Secrets:**
+- `CHATGPT_API_KEY` (or `OPENAI_API_KEY`) - Get from https://platform.openai.com/api-keys
+
+### Example 2: Automatic Review with Claude (Anthropic)
+
+Create `.github/workflows/ai-review-claude.yml`:
+
+```yaml
+name: AI Review (Claude)
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: AI Code Review with Claude
+        uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
+        with:
+          # Required
+          pr-number: ${{ github.event.pull_request.number }}
+          
+          # Provider configuration
+          ai-provider: claude
+          claude-model: claude-3-5-sonnet-20241022
+          
+          # Task configuration
+          task: review
+          
+          # Optional: Control what gets analyzed
+          max-files: 60
+          max-diff-chars: 18000
+          max-output-tokens: 16000
+          
+          # Optional: Enable inline comments
+          inline-review: "true"
+          
+          # Optional: Add custom instructions
+          additional-context: |
+            Prioritize:
+            - Code maintainability
+            - Testing coverage
+            - Documentation quality
+            - API design patterns
+        
+        env:
+          # Required secrets
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}  # or ANTHROPIC_API_KEY
+```
+
+**Required GitHub Secrets:**
+- `CLAUDE_API_KEY` (or `ANTHROPIC_API_KEY`) - Get from https://console.anthropic.com/
+
+### Example 3: Automatic Review with Self-Hosted / Open WebUI
+
+Create `.github/workflows/ai-review-selfhosted.yml`:
+
+```yaml
+name: AI Review (Self-Hosted)
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: AI Code Review with Self-Hosted Model
+        uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
+        with:
+          # Required
+          pr-number: ${{ github.event.pull_request.number }}
+          
+          # Provider configuration
+          ai-provider: self-hosted
+          self-hosted-endpoint: ${{ secrets.OPENWEBUI_URL }}/api/v1/chat/completions
+          self-hosted-model: mistral-small  # or llama3, codellama, etc.
+          
+          # Optional: Authentication
+          self-hosted-token: ${{ secrets.OPENWEBUI_API_KEY }}
+          self-hosted-token-header: Authorization  # Default, uses Bearer token
+          
+          # Task configuration
+          task: review
+          
+          # Optional: Control what gets analyzed
+          max-files: 60
+          max-diff-chars: 18000
+          max-output-tokens: 8000  # Adjust based on your model's capacity
+          
+          # Optional: Enable inline comments
+          inline-review: "true"
+          
+          # Optional: Add custom instructions
+          additional-context: |
+            Review focus areas:
+            - Code style consistency
+            - Potential bugs
+            - Logic errors
+            - Resource leaks
+        
+        env:
+          # Required secrets
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+          # Optional: Alternative ways to pass self-hosted credentials
+          # OPENWEBUI_API_KEY: ${{ secrets.OPENWEBUI_API_KEY }}
+          # SELF_HOSTED_API_KEY: ${{ secrets.SELF_HOSTED_API_KEY }}
+```
+
+**Required GitHub Secrets:**
+- `OPENWEBUI_URL` - Your Open WebUI or OpenAI-compatible endpoint (e.g., `https://your-server.com`)
+- `OPENWEBUI_API_KEY` - Your API key (optional, if authentication is required)
+
+**Supported Self-Hosted Platforms:**
+- Open WebUI
+- LocalAI
+- Ollama with OpenAI compatibility
+- LM Studio
+- text-generation-webui
+- Any OpenAI-compatible API
+
+### Example 4: Manual Review via PR Comments
+
+Create `.github/workflows/ai-review-on-command.yml`:
+
+```yaml
+name: AI Review on Command
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  handle-command:
+    # Only run on PR comments with commands
+    if: |
+      github.event.issue.pull_request &&
+      (
+        startsWith(github.event.comment.body, '/review') ||
+        startsWith(github.event.comment.body, '/suggestion') ||
+        startsWith(github.event.comment.body, '/summary')
+      )
+    
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ github.event.issue.number }}/head
+
+      - name: Parse command
+        id: parse
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          if [[ "$COMMENT_BODY" =~ ^/review ]]; then
+            echo "task=review" >> "$GITHUB_OUTPUT"
+          elif [[ "$COMMENT_BODY" =~ ^/suggestion ]]; then
+            echo "task=suggestions" >> "$GITHUB_OUTPUT"
+          elif [[ "$COMMENT_BODY" =~ ^/summary ]]; then
+            echo "task=summary" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: React to command (eyes emoji)
+        uses: actions/github-script@v8
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'eyes'
+            });
+
+      - name: Run AI Review
+        uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
+        with:
+          # Required
+          pr-number: ${{ github.event.issue.number }}
+          task: ${{ steps.parse.outputs.task }}
+          
+          # Provider configuration - tries in order
+          ai-provider: chatgpt,claude,self-hosted
+          
+          # ChatGPT configuration
+          chatgpt-model: gpt-4o-mini
+          max-completion-tokens-mode: auto
+          
+          # Claude configuration
+          claude-model: claude-3-5-sonnet-20241022
+          
+          # Self-hosted configuration (optional)
+          self-hosted-endpoint: ${{ secrets.OPENWEBUI_URL }}/api/v1/chat/completions
+          self-hosted-model: mistral-small
+          self-hosted-token: ${{ secrets.OPENWEBUI_API_KEY }}
+          
+          # Review settings
+          max-files: 60
+          max-diff-chars: 18000
+          max-output-tokens: 16000
+          inline-review: "true"
+          
+          # Track who requested it
+          additional-context: "Requested by @${{ github.event.comment.user.login }} via command"
+        
+        env:
+          # Required
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+          # Provide all available API keys - action uses first available
+          CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENWEBUI_API_KEY: ${{ secrets.OPENWEBUI_API_KEY }}
+          SELF_HOSTED_API_KEY: ${{ secrets.SELF_HOSTED_API_KEY }}
+
+      - name: Mark success (thumbs up)
+        if: success()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: '+1'
+            });
+
+      - name: Mark failure (thumbs down)
+        if: failure()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: '-1'
+            });
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '❌ AI review failed. Please check the workflow logs for details.'
+            });
+```
+
+**How to use:**
+1. Comment `/review` on any PR to trigger a full code review
+2. Comment `/suggestion` to get improvement suggestions
+3. Comment `/summary` to get an executive summary
+
+**Required GitHub Secrets:**
+- `GITHUB_TOKEN` (automatically provided)
+- At least one of: `CHATGPT_API_KEY`, `CLAUDE_API_KEY`, or `OPENWEBUI_API_KEY`
+
+### Multi-Provider Fallback Example
+
+```yaml
+name: AI Review (Multi-Provider)
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: AI Code Review with Fallback
         uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
         with:
           pr-number: ${{ github.event.pull_request.number }}
           task: review
-          ai-provider: chatgpt,claude
+          
+          # Try providers in order: ChatGPT → Claude → Self-hosted
+          ai-provider: chatgpt,claude,self-hosted
+          
           chatgpt-model: gpt-4o-mini
-          max-files: 60
-          max-diff-chars: 18000
-          additional-context: |
-            Focus on security issues and performance problems.
-            Check for proper error handling.
+          claude-model: claude-3-5-sonnet-20241022
+          self-hosted-endpoint: ${{ secrets.OPENWEBUI_URL }}/api/v1/chat/completions
+          self-hosted-model: mistral-small
+          
+          max-output-tokens: 16000
+          inline-review: "true"
+        
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Action will try each provider until one succeeds
           CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          OPENWEBUI_API_KEY: ${{ secrets.OPENWEBUI_API_KEY }}
 ```
 
 ### Matrix Strategy for All Tasks
 
 ```yaml
+name: AI Review Matrix
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   ai-review:
     runs-on: ubuntu-latest
@@ -336,13 +691,43 @@ jobs:
         task: [review, summary, suggestions]
     
     steps:
-      - uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
+      - name: Run AI ${{ matrix.task }}
+        uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
         with:
           pr-number: ${{ github.event.pull_request.number }}
           task: ${{ matrix.task }}
+          ai-provider: chatgpt
+          chatgpt-model: gpt-4o-mini
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
+```
+
+## 🔑 Setting Up GitHub Secrets
+
+1. Go to your repository → **Settings** → **Secrets and variables** → **Actions**
+2. Click **New repository secret**
+3. Add the following secrets based on your provider:
+
+**For ChatGPT:**
+```
+Name: CHATGPT_API_KEY
+Value: sk-proj-xxxxxxxxxxxxx
+```
+
+**For Claude:**
+```
+Name: CLAUDE_API_KEY
+Value: sk-ant-xxxxxxxxxxxxx
+```
+
+**For Self-Hosted:**
+```
+Name: OPENWEBUI_URL
+Value: https://your-server.com
+
+Name: OPENWEBUI_API_KEY
+Value: your-api-key
 ```
 
 ## 🤝 Contributing
