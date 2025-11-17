@@ -28,12 +28,10 @@ jobs:
       )
     runs-on: ubuntu-latest
     env:
-      AI_REVIEW_OPENAI_MODEL: gpt-4o-mini
-      AI_REVIEW_CLAUDE_MODEL: claude-3-5-sonnet-20241022
-      AI_REVIEW_MAX_OUTPUT_TOKENS: "16000"
+      PR_NUMBER: ${{ inputs.pr_number }}
+      AI_REVIEW_CHATGPT_MODEL: gpt-5-mini
+      AI_REVIEW_MAX_OUTPUT_TOKENS: "128000"
       AI_REVIEW_MAX_COMPLETION_MODE: auto
-      AI_REVIEW_SELF_HOSTED_ENDPOINT: ${{ secrets.OPENWEBUI_URL }}
-      AI_REVIEW_SELF_HOSTED_MODEL: mistral-small
 
     steps:
       - name: Checkout repository
