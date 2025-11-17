@@ -5,8 +5,12 @@
 [![Security Scan](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/security-scan.yml/badge.svg)](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/security-scan.yml)
 [![codecov](https://codecov.io/gh/ashsaym/ai-code-reviewer/branch/main/graph/badge.svg)](https://codecov.io/gh/ashsaym/ai-code-reviewer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub Discussions](https://img.shields.io/github/discussions/ashsaym/ai-code-reviewer)](https://github.com/ashsaym/ai-code-reviewer/discussions)
+[![GitHub contributors](https://img.shields.io/github/contributors/ashsaym/ai-code-reviewer)](https://github.com/ashsaym/ai-code-reviewer/graphs/contributors)
 
 A powerful multi-provider GitHub Action that brings AI-powered code reviews to your pull requests. Supports ChatGPT (OpenAI), Claude (Anthropic), and self-hosted models (Open WebUI compatible).
+
+> 💬 [Join our discussions](https://github.com/ashsaym/ai-code-reviewer/discussions) | 🗺️ [View roadmap](ROADMAP.md) | 🤝 [Contribute](CONTRIBUTING.md)
 
 ## 🚀 Quick Start
 
@@ -831,12 +835,23 @@ Built with:
 - [GitHub Actions](https://github.com/features/actions)
 - [Jest](https://jestjs.io/)
 
-## 📞 Support
+## 🤝 Community & Support
 
-- 🐛 [Report Issues](https://github.com/ashsaym/ai-code-reviewer/issues)
-- 💡 [Request Features](https://github.com/ashsaym/ai-code-reviewer/issues/new)
-- 📖 [View Documentation](https://github.com/ashsaym/ai-code-reviewer/tree/main/next-gen-ai-reviewer)
-- ⭐ [Star on GitHub](https://github.com/ashsaym/ai-code-reviewer)
+### Get Help
+- 💬 [GitHub Discussions](https://github.com/ashsaym/ai-code-reviewer/discussions) - Ask questions and share ideas
+- 🐛 [Report Issues](https://github.com/ashsaym/ai-code-reviewer/issues) - Found a bug? Let us know
+- 📖 [Documentation](https://github.com/ashsaym/ai-code-reviewer/tree/main/next-gen-ai-reviewer) - Read the docs
+
+### Contribute
+- 🗺️ [Roadmap](ROADMAP.md) - See what's planned
+- 🎯 [Good First Issues](https://github.com/ashsaym/ai-code-reviewer/labels/good-first-issue) - Perfect for new contributors
+- 🤝 [Contributing Guide](CONTRIBUTING.md) - Learn how to contribute
+- 🎨 [Community Projects](COMMUNITY_PROJECTS.md) - Join ongoing initiatives
+
+### Connect
+- ⭐ [Star the repo](https://github.com/ashsaym/ai-code-reviewer) - Show your support
+- 🐦 Share on social media - Help us grow
+- 💝 [Contributors](CONTRIBUTORS.md) - Meet our amazing contributors
 
 ---
 

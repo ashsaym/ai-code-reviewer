@@ -1,0 +1,55 @@
+name: 📚 Documentation
+description: Report missing or unclear documentation
+title: "[Docs]: "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us improve our documentation! 
+        
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: Documentation Type
+      description: What kind of documentation needs improvement?
+      options:
+        - README
+        - Setup Guide
+        - Configuration Reference
+        - Examples
+        - API/Code Comments
+        - Contributing Guide
+        - Other
+    validations:
+      required: true
+      
+  - type: textarea
+    id: issue
+    attributes:
+      label: What's unclear or missing?
+      description: Describe what documentation is missing or needs improvement
+      placeholder: The documentation doesn't explain how to...
+    validations:
+      required: true
+      
+  - type: textarea
+    id: location
+    attributes:
+      label: Where did you look?
+      description: Which file(s) or section did you check?
+      placeholder: I checked README.md section...
+      
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested Improvement
+      description: How would you improve this documentation?
+      
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I'm willing to submit a PR to improve this documentation
+          required: false

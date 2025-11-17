@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 💬 GitHub Discussions
+    url: https://github.com/ashsaym/ai-code-reviewer/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: 📖 Documentation
+    url: https://github.com/ashsaym/ai-code-reviewer#readme
+    about: Read the documentation for setup and usage guides
+  - name: 🔒 Security Issues
+    url: https://github.com/ashsaym/ai-code-reviewer/security/advisories/new
+    about: Report security vulnerabilities privately

@@ -1,0 +1,87 @@
+name: 🤖 New AI Provider Support
+description: Request support for a new AI provider
+title: "[Provider]: Add support for "
+labels: ["enhancement", "provider", "needs-discussion"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Want to add support for a new AI provider? Great! 
+        Please provide details about the provider below.
+        
+  - type: input
+    id: provider-name
+    attributes:
+      label: Provider Name
+      description: What is the name of the AI provider?
+      placeholder: e.g., Gemini, Mistral, Llama, etc.
+    validations:
+      required: true
+      
+  - type: input
+    id: api-endpoint
+    attributes:
+      label: API Endpoint
+      description: What is the base API endpoint?
+      placeholder: https://api.example.com/v1
+      
+  - type: dropdown
+    id: api-style
+    attributes:
+      label: API Style
+      description: Does it follow an existing API pattern?
+      options:
+        - OpenAI-compatible
+        - Anthropic-compatible
+        - Custom API
+        - Not sure
+    validations:
+      required: true
+      
+  - type: textarea
+    id: documentation
+    attributes:
+      label: API Documentation
+      description: Link to the provider's API documentation
+      placeholder: https://docs.provider.com/api
+      
+  - type: textarea
+    id: auth
+    attributes:
+      label: Authentication Method
+      description: How does authentication work? (API key, OAuth, etc.)
+      
+  - type: textarea
+    id: models
+    attributes:
+      label: Available Models
+      description: List the models this provider offers
+      placeholder: |
+        - model-1
+        - model-2
+        
+  - type: checkboxes
+    id: features
+    attributes:
+      label: Features
+      description: What features does this provider support?
+      options:
+        - label: Streaming responses
+        - label: Function calling
+        - label: Long context windows (>100k tokens)
+        - label: System prompts
+        - label: Temperature control
+        
+  - type: textarea
+    id: usecase
+    attributes:
+      label: Use Case
+      description: Why would this provider be valuable for code reviews?
+      
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I'm willing to help implement support for this provider
+          required: false
