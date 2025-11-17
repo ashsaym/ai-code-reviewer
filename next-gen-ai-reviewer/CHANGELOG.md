@@ -19,11 +19,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🛡️ Enhanced validation and error path coverage
 
 ### Added
+- ✨ Added `reviewer-name` input option for custom AI reviewer display name
+- ✨ Improved `/generate_reports` slash command with inline review formatting
+- ✨ Added test file for slash commands demonstration
 - ✨ Tests for file fetch edge cases (404 handling, download_url support, string content)
 - ✨ Tests for guidance loader pattern matching and glob regex handling
 - ✨ Tests for prompt builder template rendering and sanitization
 - ✨ Tests for review formatter JSON parsing and validation
 - ✨ Tests for inline review position computation and comment formatting
+- 📚 Added comprehensive root README with usage for all providers
+- 📚 Added 4 complete workflow examples with all variables and configurations
+- 📚 Added security reports documentation
+
+### Changed
+- ♻️ Simplified AI reviewer workflow to use ChatGPT only by default
+- ♻️ Updated default ChatGPT model to gpt-5-mini
+- ♻️ Refactored `/generate_reports` to reuse existing formatters
+- 🔧 Updated AI model defaults and added max-completion-tokens-mode to workflow
+
+### Fixed
+- 🐛 Downgraded Jest to 29.7.0 to resolve glob security vulnerability
+- 🐛 Fixed AI_REVIEW_CHATGPT_MODEL environment variable usage
+- 🐛 Fixed PR_NUMBER environment variable to use github.event.issue.number
+- 🐛 Corrected environment variable names in workflow configurations
+
+### Removed
+- 🗑️ Removed combined report task from workflows
+- 🗑️ Removed unnecessary test documentation files
+- 🗑️ Removed unused PULL_REQUEST_TEMPLATE.md
 
 ### Documentation
 - 📝 Updated README with current test coverage metrics (78%)

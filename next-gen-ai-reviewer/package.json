@@ -1,6 +1,6 @@
 {
   "name": "next-gen-ai-reviewer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Multi-provider AI-powered code reviewer GitHub Action.",
   "main": "src/main.js",
   "scripts": {
