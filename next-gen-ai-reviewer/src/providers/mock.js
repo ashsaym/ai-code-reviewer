@@ -72,50 +72,54 @@ function buildReview({ prMetadata, files }) {
     ? snippets.map((file, index) => {
         const severity = ["High", "Medium", "Low"][index] || "Info";
         const category = classifyFile(file.filename);
+        const lineNumber = (index + 1) * 10; // Mock line number for demo
         return [
-          `**[${severity}] ${file.filename}** — ${issueMessage(category)}`,
+          `**[${severity}] ${file.filename}:${lineNumber}** — ${issueMessage(category)}`,
           `Why: Keeps reviewer output aligned with repository guardrails.`,
-          `Fix: ${fixMessage(category)}`,
-          file.snippet || ""
-        ].filter(Boolean).join("\n");
+          `Fix: ${fixMessage(category)}`
+        ].join("\n");
       })
     : ["No file diffs available; confirm the PR still contains code changes."];
 
   return [
     "## Pull Request Overview",
-    `- Title: ${prMetadata?.title || "Unknown"}`,
-    `- Branches: ${formatBranches(prMetadata)}`,
-    `- Summary: ${summarizeBody(prMetadata)}`,
+    `This PR ${summarizeBody(prMetadata)} Changes include ${snippets.length} files across workflow, documentation, and core logic.`,
     "",
     "## Findings",
     findings.join("\n\n"),
     "",
-    "## Tests",
-    "- npm test",
-    "- Re-run the self-test workflow to ensure deterministic output"
+    "## Recommendations",
+    "- Run npm test to verify no regressions",
+    "- Re-run the self-test workflow to ensure deterministic output",
+    "- Review prompt changes against current guardrails"
   ].join("\n");
 }
 
 function buildSummary({ prMetadata, files }) {
   const fileCount = files?.length || 0;
+  const topFiles = files.slice(0, 3).map(f => `- \`${f.filename}\` — ${f.status}`).join("\n");
+  
   return [
-    "## Pull Request Overview",
-    `- Title & branches: ${prMetadata?.title || "Unknown"} (${formatBranches(prMetadata)})`,
-    `- Author: ${prMetadata?.user?.login || "unknown"}`,
-    `- Files inspected: ${fileCount}`,
+    "## Pull Request Summary",
+    "",
+    `**Title:** ${prMetadata?.title || "Unknown"} (${formatBranches(prMetadata)})`,
+    `**Author:** ${prMetadata?.user?.login || "unknown"}`,
+    `**Files Changed:** ${fileCount}`,
     "",
     "### Intent",
     summarizeBody(prMetadata),
     "",
-    "### Impact",
-    "- Reviewer action, workflow, and documentation files were touched.",
-    "- Expect updated prompts plus CI harness tweaks.",
+    "### Key Changes",
+    topFiles || "- No files changed",
     "",
-    "### Risk",
-    "- Missing regression tests could allow prompt drift or PR detection regressions.",
+    "### Impact & Risk",
+    "- **Impact:** Reviewer action, workflow, and documentation files were touched. Expect updated prompts plus CI harness tweaks.",
+    "- **Risk:** Missing regression tests could allow prompt drift or PR detection regressions.",
     "",
     "### Next Steps",
-    "Ask a human reviewer to skim the findings and run the self-test workflow with real provider credentials."
+    "- Skim the findings from the review task",
+    "- Run the self-test workflow with real provider credentials",
+    "- Verify prompt changes align with current guardrails"
   ].join("\n");
 }
 
@@ -126,22 +130,24 @@ function buildSuggestions({ files }) {
   const suggestions = items.map((file, index) => {
     const category = classifyFile(file.filename);
     const effort = ["M", "S", "S"][index] || "M";
+    const lineNumber = (index + 1) * 15; // Mock line number
     return [
-      `${index + 1}. **${file.filename}**`,
-      `   - Why: ${issueMessage(category)}`,
-      `   - How: ${fixMessage(category)}`,
-      `   - Effort: ${effort}`,
-      file.snippet ? `   - Context:\n${file.snippet}` : null
-    ].filter(Boolean).join("\n");
+      `${index + 1}. **Improve ${category} handling — ${file.filename}:${lineNumber}**`,
+      `   Why: ${issueMessage(category)}`,
+      `   How: ${fixMessage(category)}`,
+      `   Effort: ${effort}`
+    ].join("\n");
   });
 
   return [
-    "## Improvement Ideas",
+    "## Improvement Suggestions",
+    "",
     suggestions.join("\n\n"),
     "",
-    "## Tests",
-    "- npm test",
-    "- gh workflow run ai-review-selftest.yml --ref <branch>"
+    "## Next Steps",
+    "- Run npm test to verify changes",
+    "- Execute workflow: gh workflow run ai-review-selftest.yml --ref <branch>",
+    "- Review suggestions with the team"
   ].join("\n");
 }
 

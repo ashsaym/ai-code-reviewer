@@ -1,9 +1,17 @@
-## Improvement Ideas
+## Improvement Suggestions
 
-Return a numbered list (max 3). Each entry must include:
-- `**Title — file**` to anchor the suggestion.
-- `Why:` referencing {{instructions}} or {{rulesets}}.
-- `How:` concrete fix with a short ```diff``` block when the change is small.
-- `Effort:` S / M / L.
+Return a numbered list of 2-4 actionable suggestions. Each entry must include:
+- `**Title — path/to/file.ext:lineNumber**` to anchor the suggestion with specific file and line.
+- `Why:` Explain the benefit, referencing {{instructions}} or {{rulesets}} when applicable.
+- `How:` Concrete implementation steps. If the change is simple, include a code block showing the fix (use plain code blocks, not diff syntax).
+- `Effort:` S (Small) / M (Medium) / L (Large).
 
-Finish with a `## Tests` section reminding the developer which checks to run.
+Example format:
+```
+1. **Extract reusable validation — src/utils/validator.js:45**
+   Why: Reduces code duplication and improves maintainability.
+   How: Create a shared validation function and import it in both components.
+   Effort: M
+```
+
+Finish with a `## Next Steps` section suggesting 2-3 validation actions.

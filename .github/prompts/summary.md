@@ -1,16 +1,20 @@
-## Pull Request Overview
-- Title & branches: {{prHeader}}
-- Author: {{author}}
-- Files inspected: {{fileCount}}
+## Pull Request Summary
+
+**Title:** {{prHeader}}  
+**Author:** {{author}}  
+**Files Changed:** {{fileCount}}
 
 ### Intent
-Summarize the primary goal of the change in two concise sentences referencing {{instructions}} when relevant.
+Explain the primary goal of this PR in 2-3 sentences. Reference {{instructions}} when relevant to show alignment with project guidelines.
 
-### Impact
-List the main areas or files affected (max 3 bullets) plus any notable side effects.
+### Key Changes
+List 3-5 main changes or affected areas with file references where applicable:
+- `path/to/file.ext` — Brief description of what changed
+- `another/file.js` — Another key change
 
-### Risk
-Call out remaining gaps, missing tests, or assumptions.
+### Impact & Risk
+- **Impact:** What areas of the codebase are affected? Any notable side effects?
+- **Risk:** Call out potential gaps, missing tests, edge cases, or assumptions that need verification.
 
 ### Next Steps
-One line that tells the human reviewer what to do next.
+2-3 actionable items for the human reviewer (e.g., "Verify error handling in edge case X", "Run integration tests for module Y").

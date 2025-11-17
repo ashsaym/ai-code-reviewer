@@ -183,8 +183,8 @@ async function run() {
     .filter(Boolean);
 
   const models = {
-    chatgpt: getInput("chatgpt-model") || process.env.CHATGPT_MODEL || "gpt-4o-mini",
-    claude: getInput("claude-model") || process.env.CLAUDE_MODEL || "claude-3-5-sonnet-20241022"
+    chatgpt: process.env.CHATGPT_MODEL || getInput("chatgpt-model") || "gpt-4o-mini",
+    claude: process.env.CLAUDE_MODEL || getInput("claude-model") || "claude-3-5-sonnet-20241022"
   };
 
   const selfHostedConfig = {
@@ -215,6 +215,17 @@ async function run() {
     additionalContext,
     guidance
   });
+
+  // Validate that at least one real provider is configured
+  const firstRealProvider = providerPreference.find(p => p !== "mock" && p !== "demo");
+  if (firstRealProvider === "chatgpt" || firstRealProvider === "claude") {
+    const apiKeyEnv = firstRealProvider === "chatgpt" 
+      ? (process.env.CHATGPT_API_KEY || process.env.OPENAI_API_KEY)
+      : (process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY);
+    if (!apiKeyEnv) {
+      throw new Error(`${firstRealProvider.toUpperCase()}_API_KEY is required but not set in secrets/environment.`);
+    }
+  }
 
   console.log(`Requesting completion via providers: ${providerPreference.join(", ")}`);
   const completion = await tryProviders({
