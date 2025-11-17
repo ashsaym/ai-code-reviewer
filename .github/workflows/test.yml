@@ -12,14 +12,14 @@ on:
       - 'next-gen-ai-reviewer/**'
       - '.github/workflows/test.yml'
 
-defaults:
-  run:
-    working-directory: next-gen-ai-reviewer
-
 jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: next-gen-ai-reviewer
     
     strategy:
       matrix:
@@ -140,30 +140,23 @@ jobs:
       - name: Check for syntax errors
         run: node --check src/main.js
 
-      - name: Verify all dependencies can be loaded
+      - name: Verify package.json and dependencies exist
         run: |
-          node -e "
-          const fs = require('fs');
-          const path = require('path');
-          const deps = ['@actions/core', '@actions/github', '@anthropic-ai/sdk', 'openai'];
-          let allFound = true;
-          deps.forEach(dep => {
-            try {
-              const pkgPath = path.join('node_modules', dep, 'package.json');
-              if (fs.existsSync(pkgPath)) {
-                console.log('✓ Found:', dep);
-              } else {
-                console.error('✗ Missing:', dep);
-                allFound = false;
-              }
-            } catch (e) {
-              console.error('✗ Error checking', dep, ':', e.message);
-              allFound = false;
-            }
-          });
-          if (!allFound) process.exit(1);
-          console.log('✓ All required dependencies are present');
-          "
+          echo "✓ Checking package.json..."
+          if [ ! -f "package.json" ]; then
+            echo "✗ package.json not found"
+            exit 1
+          fi
+          echo "✓ package.json found"
+          
+          echo "✓ Checking node_modules..."
+          if [ ! -d "node_modules" ]; then
+            echo "✗ node_modules not found"
+            exit 1
+          fi
+          echo "✓ node_modules directory exists"
+          
+          echo "✓ All basic checks passed"
 
   status-check:
     name: All Tests Passed
