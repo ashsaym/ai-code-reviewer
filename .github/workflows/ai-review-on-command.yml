@@ -58,33 +58,13 @@ jobs:
         with:
           task: ${{ steps.parse.outputs.task }}
           pr-number: ${{ github.event.issue.number }}
-          ai-provider: chatgpt,claude,self-hosted,mock
+          ai-provider: chatgpt
           additional-context: "Requested by @${{ github.event.comment.user.login }} via command"
-          chatgpt-model: gpt-4o-mini
-          claude-model: claude-3-5-sonnet-20241022
-          self-hosted-model: local-model
-          self-hosted-token-header: Authorization
-          max-files: 40
-          max-diff-chars: 12000
-          max-output-tokens: 1200
         env:
           PR_NUMBER: ${{ github.event.issue.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           CHATGPT_MODEL: ${{ secrets.CHATGPT_MODEL }}
-          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          CLAUDE_MODEL: ${{ secrets.CLAUDE_MODEL }}
-          SELF_HOSTED_ENDPOINT: ${{ secrets.SELF_HOSTED_ENDPOINT }}
-          SELF_HOSTED_API_KEY: ${{ secrets.SELF_HOSTED_API_KEY }}
-          SELF_HOSTED_TOKEN: ${{ secrets.SELF_HOSTED_TOKEN }}
-          SELF_HOSTED_MODEL: ${{ secrets.SELF_HOSTED_MODEL }}
-          OPENWEBUI_API_URL: ${{ secrets.OPENWEBUI_API_URL }}
-          OPENWEBUI_API_KEY: ${{ secrets.OPENWEBUI_API_KEY }}
-          OPENWEBUI_MODEL: ${{ secrets.OPENWEBUI_MODEL }}
-          AI_PROVIDER: ${{ secrets.AI_PROVIDER }}
-          MAX_OUTPUT_TOKENS: ${{ secrets.MAX_OUTPUT_TOKENS }}
           MAX_COMPLETION_TOKENS_MODE: ${{ secrets.MAX_COMPLETION_TOKENS_MODE }}
 
       - name: Mark command as completed
