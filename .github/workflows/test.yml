@@ -31,18 +31,14 @@ jobs:
       run:
         working-directory: next-gen-ai-reviewer
     
-    strategy:
-      matrix:
-        node-version: [20.x, 22.x]
-    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js 22.x
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '22.x'
           cache: 'npm'
           cache-dependency-path: next-gen-ai-reviewer/package-lock.json
 
@@ -67,18 +63,14 @@ jobs:
       run:
         working-directory: next-gen-ai-reviewer
     
-    strategy:
-      matrix:
-        node-version: [20.x, 22.x]
-    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js 22.x
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '22.x'
           cache: 'npm'
           cache-dependency-path: next-gen-ai-reviewer/package-lock.json
 
@@ -99,7 +91,6 @@ jobs:
         run: npm test
 
       - name: Upload coverage reports
-        if: matrix.node-version == '20.x'
         uses: codecov/codecov-action@v5
         with:
           files: ./next-gen-ai-reviewer/coverage/lcov.info
@@ -111,7 +102,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: test-results-node-${{ matrix.node-version }}
+          name: test-results-node-22
           path: |
             next-gen-ai-reviewer/coverage/
             next-gen-ai-reviewer/test-results/
@@ -161,10 +152,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Setup Node.js
+      - name: Setup Node.js 22.x
         uses: actions/setup-node@v6
         with:
-          node-version: '20.x'
+          node-version: '22.x'
           cache: 'npm'
           cache-dependency-path: next-gen-ai-reviewer/package-lock.json
 
