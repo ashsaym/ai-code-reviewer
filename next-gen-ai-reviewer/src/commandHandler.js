@@ -6,7 +6,7 @@ const { updatePullRequest } = require("./github");
 async function generatePRDescription({ token, owner, repo, prNumber, completion }) {
   try {
     console.log("Updating PR description with AI-generated content...");
-    
+
     // Update the PR description
     await updatePullRequest({
       token,
@@ -36,7 +36,7 @@ async function runCombinedTasks({ tryProviders, buildPrompt, prMetadata, files, 
   for (const task of tasks) {
     try {
       console.log(`Generating ${task}...`);
-      
+
       const prompt = buildPrompt({
         task,
         prMetadata,
