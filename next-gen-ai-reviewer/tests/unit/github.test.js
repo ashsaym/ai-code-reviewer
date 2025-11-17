@@ -557,4 +557,85 @@ describe("github", () => {
       expect(callBody).toEqual({});
     });
   });
+
+  describe("fetchRepoFile edge cases", () => {
+    it("should handle file not found (404)", async () => {
+      fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        statusText: "Not Found"
+      });
+
+      const result = await fetchRepoFile({
+        token: mockToken,
+        owner: mockOwner,
+        repo: mockRepo,
+        path: "missing-file.txt"
+      });
+
+      expect(result).toBeNull();
+    });
+
+    it("should handle file with string content directly", async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Map(),
+        json: async () => ({
+          content: "file content as string",
+          encoding: "utf8"
+        })
+      });
+
+      const result = await fetchRepoFile({
+        token: mockToken,
+        owner: mockOwner,
+        repo: mockRepo,
+        path: "text-file.txt"
+      });
+
+      expect(result).toBe("file content as string");
+    });
+
+    it("should handle file with download_url", async () => {
+      fetch
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          headers: new Map(),
+          json: async () => ({
+            download_url: "https://raw.githubusercontent.com/testowner/testrepo/main/file.txt"
+          })
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () => "downloaded content"
+        });
+
+      const result = await fetchRepoFile({
+        token: mockToken,
+        owner: mockOwner,
+        repo: mockRepo,
+        path: "file.txt"
+      });
+
+      expect(result).toBe("downloaded content");
+    });
+
+    it("should handle non-ok response", async () => {
+      fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: "Internal Server Error",
+        text: async () => "Server error"
+      });
+
+      await expect(fetchRepoFile({
+        token: mockToken,
+        owner: mockOwner,
+        repo: mockRepo,
+        path: "file.txt"
+      })).rejects.toThrow("GitHub file request failed");
+    });
+  });
 });

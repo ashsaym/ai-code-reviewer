@@ -4,7 +4,10 @@ const fs = require("node:fs");
 jest.spyOn(process, "exit").mockImplementation(() => {});
 
 // Only mock fs for controlled file system tests
-jest.mock("node:fs");
+jest.mock("node:fs", () => ({
+  existsSync: jest.fn(),
+  readFileSync: jest.fn()
+}));
 
 // Mock github module for generatePRDescription tests
 jest.mock("../../src/github");
@@ -438,6 +441,294 @@ describe("main.js workflow functions", () => {
       });
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe("readJsonFile edge cases", () => {
+    beforeEach(() => {
+      delete require.cache[require.resolve("../../src/main")];
+      jest.clearAllMocks();
+    });
+
+    it("should handle invalid JSON in file", () => {
+      fs.readFileSync = jest.fn().mockReturnValue("{ invalid json }");
+      fs.existsSync = jest.fn().mockReturnValue(true);
+
+      const { readJsonFile } = require("../../src/main");
+      const result = readJsonFile("/tmp/invalid.json");
+
+      expect(result).toBeNull();
+    });
+
+    it("should handle file read errors", () => {
+      fs.readFileSync = jest.fn().mockImplementation(() => {
+        throw new Error("ENOENT");
+      });
+
+      const { readJsonFile } = require("../../src/main");
+      const result = readJsonFile("/tmp/missing.json");
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("autoDetectPrNumber edge cases", () => {
+    beforeEach(() => {
+      delete require.cache[require.resolve("../../src/main")];
+      jest.clearAllMocks();
+      delete process.env.GITHUB_EVENT_PATH;
+      delete process.env.GITHUB_REF;
+      delete process.env.GITHUB_REF_NAME;
+      delete process.env.PR_NUMBER;
+      delete process.env.PR;
+      delete process.env.INPUT_PR_NUMBER;
+    });
+
+    it("should cover event file logic paths", () => {
+      // Test that PR number detection covers various sources
+      // The actual fs mock behavior is tested indirectly through other tests
+      const { autoDetectPrNumber } = require("../../src/main");
+
+      // Test with no sources - should return null
+      const result = autoDetectPrNumber();
+      expect(result).toBeNull();
+
+      // Test with direct PR_NUMBER env
+      process.env.PR_NUMBER = "123";
+      const result2 = autoDetectPrNumber();
+      expect(result2).toBe("123");
+      delete process.env.PR_NUMBER;
+    });
+
+    it("should detect PR from GITHUB_REF_NAME", () => {
+      process.env.GITHUB_REF_NAME = "refs/pull/777/merge";
+
+      const { autoDetectPrNumber } = require("../../src/main");
+      const result = autoDetectPrNumber();
+
+      expect(result).toBe("777");
+    });
+
+    it("should return null when no PR number found", () => {
+      // No environment variables set
+      const { autoDetectPrNumber } = require("../../src/main");
+      const result = autoDetectPrNumber();
+
+      expect(result).toBeNull();
+    });
+
+    it("should prioritize direct input over other sources", () => {
+      process.env.PR_NUMBER = "111";
+      process.env.GITHUB_EVENT_PATH = "/tmp/event.json";
+      fs.existsSync = jest.fn().mockReturnValue(true);
+      fs.readFileSync = jest.fn().mockReturnValue(JSON.stringify({
+        pull_request: { number: 222 }
+      }));
+
+      const { autoDetectPrNumber } = require("../../src/main");
+      const result = autoDetectPrNumber();
+
+      expect(result).toBe("111");
+    });
+  });
+
+  describe("tryProviders with actual provider errors", () => {
+    beforeEach(() => {
+      delete require.cache[require.resolve("../../src/main")];
+      jest.clearAllMocks();
+    });
+
+    it("should handle ChatGPT provider failure and try next provider", async () => {
+      process.env.CHATGPT_API_KEY = "test-key";
+      process.env.CLAUDE_API_KEY = "claude-key";
+
+      global.fetch = jest.fn()
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          statusText: "Server Error",
+          json: async () => ({ error: { message: "Server error" } })
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            content: [{ text: "Claude response" }],
+            model: "claude-3-5-sonnet-20241022",
+            stop_reason: "end_turn"
+          })
+        });
+
+      const { tryProviders } = require("../../src/main");
+
+      const result = await tryProviders({
+        providers: ["chatgpt", "claude"],
+        prompt: "Test prompt",
+        task: "review",
+        models: { chatgpt: "gpt-5-mini", claude: "claude-3-5-sonnet-20241022" },
+        selfHostedConfig: {},
+        maxTokens: 1000,
+        maxCompletionTokensMode: "auto"
+      });
+
+      expect(result).toBeDefined();
+      expect(result.provider).toBe("Claude");
+
+      delete global.fetch;
+    });
+
+    it("should handle Claude provider failure", async () => {
+      process.env.CLAUDE_API_KEY = "test-key";
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        statusText: "Unauthorized",
+        json: async () => ({ error: { message: "Invalid API key" } })
+      });
+
+      const { tryProviders } = require("../../src/main");
+
+      await expect(tryProviders({
+        providers: ["claude"],
+        prompt: "Test prompt",
+        task: "review",
+        models: { claude: "claude-3" },
+        selfHostedConfig: {},
+        maxTokens: 1000
+      })).rejects.toThrow("All AI providers failed");
+
+      delete global.fetch;
+    });
+
+    it("should handle self-hosted provider failure", async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: "Server Error",
+        json: async () => ({ error: "Server error" })
+      });
+
+      const { tryProviders } = require("../../src/main");
+
+      await expect(tryProviders({
+        providers: ["self-hosted"],
+        prompt: "Test prompt",
+        task: "review",
+        models: {},
+        selfHostedConfig: {
+          endpoint: "http://localhost:8080/api",
+          model: "test-model"
+        },
+        maxTokens: 1000
+      })).rejects.toThrow("All AI providers failed");
+
+      delete global.fetch;
+    });
+  });
+
+  describe("postInlineReview with file matching", () => {
+    beforeEach(() => {
+      delete require.cache[require.resolve("../../src/main")];
+      jest.clearAllMocks();
+    });
+
+    it("should skip comments for files without patch", async () => {
+      const { postInlineReview } = require("../../src/main");
+      const github = require("../../src/github");
+
+      github.createReview.mockResolvedValue({});
+
+      const result = await postInlineReview({
+        token: "test-token",
+        owner: "test-owner",
+        repo: "test-repo",
+        prNumber: 123,
+        prMetadata: {},
+        completion: {
+          content: JSON.stringify({
+            summary: "Test summary",
+            reviews: [
+              { path: "file1.js", line: 10, body: "Comment 1" }
+            ]
+          }),
+          model: "gpt-5-mini",
+          provider: "ChatGPT"
+        },
+        files: [
+          { filename: "file1.js" } // No patch
+        ]
+      });
+
+      expect(result).toBe(false);
+    });
+
+    it("should skip comments when position cannot be computed", async () => {
+      const { postInlineReview } = require("../../src/main");
+      const github = require("../../src/github");
+
+      github.createReview.mockResolvedValue({});
+
+      const result = await postInlineReview({
+        token: "test-token",
+        owner: "test-owner",
+        repo: "test-repo",
+        prNumber: 123,
+        prMetadata: {},
+        completion: {
+          content: JSON.stringify({
+            summary: "Test summary",
+            reviews: [
+              { path: "file1.js", line: 999, body: "Comment 1" }
+            ]
+          }),
+          model: "gpt-5-mini",
+          provider: "ChatGPT"
+        },
+        files: [
+          {
+            filename: "file1.js",
+            patch: "@@ -1,3 +1,3 @@\n-old line\n+new line"
+          }
+        ]
+      });
+
+      expect(result).toBe(false);
+    });
+
+    it("should successfully post valid inline comments", async () => {
+      const { postInlineReview } = require("../../src/main");
+      const github = require("../../src/github");
+
+      github.createReview.mockResolvedValue({});
+
+      const result = await postInlineReview({
+        token: "test-token",
+        owner: "test-owner",
+        repo: "test-repo",
+        prNumber: 123,
+        prMetadata: {},
+        completion: {
+          content: JSON.stringify({
+            summary: "Test summary",
+            reviews: [
+              { path: "file1.js", line: 2, comment: "Good comment", severity: "info" }
+            ]
+          }),
+          model: "gpt-5-mini",
+          provider: "ChatGPT"
+        },
+        files: [
+          {
+            filename: "file1.js",
+            patch: "@@ -1,3 +1,4 @@\n line 1\n+added line 2\n line 3\n line 4",
+            status: "modified"
+          }
+        ],
+        reviewerName: "Test Bot"
+      });
+
+      expect(result).toBe(true);
+      expect(github.createReview).toHaveBeenCalled();
     });
   });
 });
