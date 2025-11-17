@@ -182,4 +182,162 @@ describe("main.js workflow functions", () => {
       expect(result).toContain("testowner/testrepo#123");
     });
   });
+
+  describe("tryProviders", () => {
+    beforeEach(() => {
+      delete require.cache[require.resolve("../../src/main")];
+      jest.clearAllMocks();
+    });
+
+    it("should try ChatGPT provider with valid API key", async () => {
+      process.env.CHATGPT_API_KEY = "test-key";
+      
+      // Mock the fetch function for this test
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          choices: [
+            { message: { content: "Review result" }, finish_reason: "stop" }
+          ]
+        })
+      });
+
+      const { tryProviders } = require("../../src/main");
+
+      const result = await tryProviders({
+        providers: ["chatgpt"],
+        prompt: "Test prompt",
+        task: "review",
+        models: { chatgpt: "gpt-4o-mini", claude: "claude-3" },
+        selfHostedConfig: {},
+        maxTokens: 1000,
+        maxCompletionTokensMode: "auto"
+      });
+
+      expect(result).toBeDefined();
+      expect(result.provider).toBe("ChatGPT");
+      expect(result.content).toBe("Review result");
+      
+      delete global.fetch;
+    });
+
+    it("should skip ChatGPT when API key is missing", async () => {
+      delete process.env.CHATGPT_API_KEY;
+      delete process.env.OPENAI_API_KEY;
+      const { tryProviders } = require("../../src/main");
+
+      await expect(tryProviders({
+        providers: ["chatgpt"],
+        prompt: "Test prompt",
+        task: "review",
+        models: { chatgpt: "gpt-4o-mini" },
+        selfHostedConfig: {},
+        maxTokens: 1000
+      })).rejects.toThrow("All AI providers failed");
+    });
+
+    it("should skip Claude when API key is missing", async () => {
+      delete process.env.CLAUDE_API_KEY;
+      delete process.env.ANTHROPIC_API_KEY;
+      const { tryProviders } = require("../../src/main");
+
+      await expect(tryProviders({
+        providers: ["claude"],
+        prompt: "Test prompt",
+        task: "review",
+        models: { claude: "claude-3" },
+        selfHostedConfig: {},
+        maxTokens: 1000
+      })).rejects.toThrow("All AI providers failed");
+    });
+
+    it("should skip self-hosted when endpoint is missing", async () => {
+      delete process.env.SELF_HOSTED_ENDPOINT;
+      const { tryProviders } = require("../../src/main");
+
+      await expect(tryProviders({
+        providers: ["self-hosted"],
+        prompt: "Test prompt",
+        task: "review",
+        models: {},
+        selfHostedConfig: {},
+        maxTokens: 1000
+      })).rejects.toThrow("All AI providers failed");
+    });
+
+    it("should handle provider with selfhosted alias", async () => {
+      delete process.env.SELF_HOSTED_ENDPOINT;
+      const { tryProviders } = require("../../src/main");
+
+      await expect(tryProviders({
+        providers: ["selfhosted"],
+        prompt: "Test prompt",
+        task: "review",
+        models: {},
+        selfHostedConfig: {},
+        maxTokens: 1000
+      })).rejects.toThrow("All AI providers failed");
+    });
+
+    it("should handle provider with local alias", async () => {
+      delete process.env.SELF_HOSTED_ENDPOINT;
+      const { tryProviders } = require("../../src/main");
+
+      await expect(tryProviders({
+        providers: ["local"],
+        prompt: "Test prompt",
+        task: "review",
+        models: {},
+        selfHostedConfig: {},
+        maxTokens: 1000
+      })).rejects.toThrow("All AI providers failed");
+    });
+  });
+
+  describe("postInlineReview", () => {
+    beforeEach(() => {
+      delete require.cache[require.resolve("../../src/main")];
+      jest.clearAllMocks();
+    });
+
+    it("should handle empty formatted comments", async () => {
+      const { postInlineReview } = require("../../src/main");
+
+      const result = await postInlineReview({
+        token: "test-token",
+        owner: "test-owner",
+        repo: "test-repo",
+        prNumber: 123,
+        prMetadata: {},
+        completion: {
+          content: '{"summary": "Test", "reviews": []}',
+          model: "gpt-4o-mini",
+          provider: "ChatGPT"
+        },
+        files: []
+      });
+
+      expect(result).toBe(false);
+    });
+
+    it("should handle parse errors gracefully", async () => {
+      const { postInlineReview } = require("../../src/main");
+
+      const result = await postInlineReview({
+        token: "test-token",
+        owner: "test-owner",
+        repo: "test-repo",
+        prNumber: 123,
+        prMetadata: {},
+        completion: {
+          content: "invalid json",
+          model: "gpt-4o-mini",
+          provider: "ChatGPT"
+        },
+        files: []
+      });
+
+      expect(result).toBe(false);
+    });
+  });
 });
