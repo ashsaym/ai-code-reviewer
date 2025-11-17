@@ -59,16 +59,19 @@ async function runChatGPT({ apiKey, model, prompt, task, maxTokens }) {
   }
 
   const payload = await response.json();
-  const content = payload.choices?.[0]?.message?.content?.trim();
+  const choice = payload.choices?.[0];
+  const content = choice?.message?.content?.trim();
+  const finishReason = choice?.finish_reason;
+  
+  // Handle different finish reasons
+  if (finishReason === "length") {
+    throw new Error(`ChatGPT response was truncated due to token limit (finish_reason: length). Current max_completion_tokens: ${maxTokens}. Please increase MAX_OUTPUT_TOKENS in repository secrets (recommended: 8000-16000) or reduce the PR size.`);
+  }
+  
   if (!content) {
     // Log the actual response for debugging
-    console.error("Empty response from ChatGPT. Payload:", JSON.stringify(payload, null, 2));
-    throw new Error(`ChatGPT response did not include any content. Response structure: ${JSON.stringify({
-      choices_length: payload.choices?.length,
-      has_message: !!payload.choices?.[0]?.message,
-      content_type: typeof payload.choices?.[0]?.message?.content,
-      finish_reason: payload.choices?.[0]?.finish_reason
-    })}`);
+    console.error("Empty response from ChatGPT. Full payload:", JSON.stringify(payload, null, 2));
+    throw new Error(`ChatGPT returned empty content. Finish reason: ${finishReason}. This usually indicates an API error or unsupported model configuration.`);
   }
 
   return {

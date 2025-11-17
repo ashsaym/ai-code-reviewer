@@ -65,6 +65,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
           CHATGPT_MODEL: ${{ secrets.CHATGPT_MODEL }}
+          MAX_OUTPUT_TOKENS: ${{ secrets.MAX_OUTPUT_TOKENS }}
           MAX_COMPLETION_TOKENS_MODE: ${{ secrets.MAX_COMPLETION_TOKENS_MODE }}
 
       - name: Mark command as completed
