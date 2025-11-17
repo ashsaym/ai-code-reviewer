@@ -2,17 +2,20 @@ const TASK_LIBRARY = {
   review: {
     label: "Code Review",
     focus: "Identify correctness issues, risky assumptions, missing tests, and architectural concerns. Provide concise, actionable findings with diffs when necessary.",
-    format: "Use markdown headings with bullet lists grouped by severity (High, Medium, Low)."
+    format: "Use markdown headings with bullet lists grouped by severity (High, Medium, Low).",
+    inline: true // Support inline comments
   },
   summary: {
     label: "PR Summary",
     focus: "Explain the intent, scope, impacted areas, and release risks for product and engineering stakeholders.",
-    format: "Respond with short paragraphs and bullet lists. Avoid code blocks unless quoting critical snippets."
+    format: "Respond with short paragraphs and bullet lists. Avoid code blocks unless quoting critical snippets.",
+    inline: false
   },
   suggestions: {
     label: "Improvement Suggestions",
     focus: "Offer practical refactors, testing ideas, and developer experience enhancements that can be quickly adopted.",
-    format: "Respond with numbered suggestions. For each one include rationale and proposed code adjustments in fenced diff blocks when appropriate."
+    format: "Respond with numbered suggestions. For each one include rationale and proposed code adjustments in fenced diff blocks when appropriate.",
+    inline: true // Support inline comments
   }
 };
 
@@ -63,6 +66,108 @@ function formatFile(file, index, maxDiffChars) {
   }
 
   return summaryParts.join("\n");
+}
+
+function buildInlineReviewPrompt({ task, prMetadata, files, maxDiffChars = 12000, additionalContext = "", guidance = {} }) {
+  const normalizedTask = normalizeTask(task);
+  const libraryEntry = TASK_LIBRARY[normalizedTask];
+
+  if (!libraryEntry.inline) {
+    return null; // Task doesn't support inline reviews
+  }
+
+  const author = prMetadata.user?.login || "unknown";
+  const prHeader = `Title: ${prMetadata.title}\nAuthor: ${author}\nBase: ${prMetadata.base?.ref} -> ${prMetadata.head?.ref}`;
+  const bodySection = sanitizeMultiline(prMetadata.body || "No description provided.");
+  
+  const instructions = guidance.instructions ? sanitizeMultiline(guidance.instructions, 8000) : "";
+  const rulesets = guidance.rulesets ? sanitizeMultiline(guidance.rulesets, 8000) : "";
+
+  const contextBlock = additionalContext.trim() ? `\n\nTeam Notes:\n${additionalContext.trim()}` : "";
+  
+  const guidanceSections = [];
+  if (instructions) {
+    guidanceSections.push(`Review Instructions:\n${instructions}`);
+  }
+  if (rulesets) {
+    guidanceSections.push(`Rulesets:\n${rulesets}`);
+  }
+
+  const repoGuidanceBlock = guidanceSections.length ? `\n\nRepository Guidance:\n${guidanceSections.join("\n\n")}` : "";
+
+  // Format files with line numbers for precise commenting
+  const fileSummaries = files.length
+    ? files.map((file, index) => {
+        const parts = [`${index + 1}. ${file.filename} (${file.status}${file.changes ? `, ±${file.changes}` : ""})`];
+        
+        if (file.patch) {
+          const diff = file.patch.length > maxDiffChars ? `${file.patch.slice(0, maxDiffChars)}\n... (diff truncated)` : file.patch;
+          parts.push("```diff", diff, "```");
+        }
+        
+        return parts.join("\n");
+      }).join("\n\n")
+    : "No file changes detected.";
+
+  const jsonSchema = `{
+  "reviews": [
+    {
+      "path": "string (exact file path from the diff)",
+      "line": number (line number in the new file where issue exists),
+      "comment": "string (clear explanation of the issue)",
+      "suggestion": "string (optional: exact code to replace the problematic line(s))",
+      "severity": "string (high, medium, or low)"
+    }
+  ],
+  "summary": "string (optional: brief overall assessment)"
+}`;
+
+  return `You are an elite software reviewer performing a GitHub-style inline code review.
+
+Task: ${libraryEntry.label}
+Focus: ${libraryEntry.focus}${contextBlock}${repoGuidanceBlock}
+
+Pull Request Overview:
+${prHeader}
+
+PR Description:
+${bodySection}
+
+Changed Files (${files.length}):
+${fileSummaries}
+
+CRITICAL INSTRUCTIONS:
+1. Analyze each changed file and identify specific issues on specific lines
+2. For each issue, note the EXACT file path and line number from the diff
+3. Provide clear, actionable comments explaining what's wrong
+4. When possible, provide a "suggestion" with the exact corrected code
+5. Assign severity: "high" (bugs, security), "medium" (code quality), "low" (style, minor improvements)
+6. Return ONLY valid JSON matching this schema:
+
+${jsonSchema}
+
+EXAMPLE OUTPUT:
+{
+  "reviews": [
+    {
+      "path": "src/utils/helper.js",
+      "line": 42,
+      "comment": "Syntax error: Extraneous comma after the closing parenthesis. This will cause a compilation error.",
+      "suggestion": "export const helper = () => {\\n  return true;\\n};",
+      "severity": "high"
+    },
+    {
+      "path": "src/components/Button.tsx",
+      "line": 15,
+      "comment": "Missing null check for props.onClick. This could cause runtime errors if onClick is not provided.",
+      "suggestion": "onClick={props.onClick ?? (() => {})}",
+      "severity": "medium"
+    }
+  ],
+  "summary": "Found 2 issues: 1 syntax error and 1 potential runtime error."
+}
+
+Return ONLY the JSON object. No markdown formatting, no code fences, no additional text.`;
 }
 
 function buildPrompt({ task, prMetadata, files, maxDiffChars = 12000, additionalContext = "", guidance = {} }) {
@@ -132,5 +237,7 @@ function buildPrompt({ task, prMetadata, files, maxDiffChars = 12000, additional
 
 module.exports = {
   buildPrompt,
-  normalizeTask
+  buildInlineReviewPrompt,
+  normalizeTask,
+  TASK_LIBRARY
 };

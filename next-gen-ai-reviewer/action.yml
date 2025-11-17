@@ -58,6 +58,10 @@ inputs:
     description: "Maximum tokens to request from the selected AI provider."
     required: false
     default: "4000"
+  inline-review:
+    description: "Enable GitHub-style inline review comments (true/false). Applies to review and suggestions tasks."
+    required: false
+    default: "true"
 runs:
   using: "node20"
   main: "src/main.js"

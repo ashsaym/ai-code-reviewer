@@ -59,6 +59,7 @@ jobs:
           task: ${{ steps.parse.outputs.task }}
           pr-number: ${{ github.event.issue.number }}
           ai-provider: chatgpt
+          inline-review: "true"
           additional-context: "Requested by @${{ github.event.comment.user.login }} via command"
         env:
           PR_NUMBER: ${{ github.event.issue.number }}

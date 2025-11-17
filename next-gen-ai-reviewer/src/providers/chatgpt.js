@@ -3,12 +3,19 @@ async function runChatGPT({ apiKey, model, prompt, task, maxTokens }) {
     throw new Error("CHATGPT_API_KEY (or OPENAI_API_KEY) is required when ChatGPT provider is selected.");
   }
 
+  // Detect if this is an inline review request (JSON output expected)
+  const isInlineReview = prompt.includes("Return ONLY the JSON object") || prompt.includes('"reviews":');
+  
+  const systemContent = isInlineReview
+    ? `You are an expert AI code reviewer. You analyze code and return structured JSON output for inline GitHub review comments. Always return valid JSON, never markdown.`
+    : `You are an expert AI pair reviewer tasked with ${task} duties. Respond with concise, professional Markdown that can be posted directly on GitHub.`;
+
   const requestPayload = {
     model,
     messages: [
       {
         role: "system",
-        content: `You are an expert AI pair reviewer tasked with ${task} duties. Respond with concise, professional Markdown that can be posted directly on GitHub.`
+        content: systemContent
       },
       {
         role: "user",
@@ -16,6 +23,11 @@ async function runChatGPT({ apiKey, model, prompt, task, maxTokens }) {
       }
     ]
   };
+  
+  // For inline reviews, request JSON response format if supported
+  if (isInlineReview && (model.includes("gpt-4") || model.includes("gpt-5"))) {
+    requestPayload.response_format = { type: "json_object" };
+  }
 
   // Only set temperature for models that support it (not o1, o3, gpt-5-mini, etc.)
   const supportsTemperature = !model.match(/o1-|o3-|gpt-5/i);

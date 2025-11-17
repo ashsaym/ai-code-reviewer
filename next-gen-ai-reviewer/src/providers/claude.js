@@ -3,11 +3,18 @@ async function runClaude({ apiKey, model, prompt, task, maxTokens }) {
     throw new Error("CLAUDE_API_KEY is required when Claude provider is selected.");
   }
 
+  // Detect if this is an inline review request (JSON output expected)
+  const isInlineReview = prompt.includes("Return ONLY the JSON object") || prompt.includes('"reviews":');
+  
+  const systemContent = isInlineReview
+    ? `You are an expert AI code reviewer. You analyze code and return structured JSON output for inline GitHub review comments. Always return valid JSON, never markdown.`
+    : `You are an expert reviewer focusing on ${task}. Keep output concise and GitHub-ready.`;
+
   const requestPayload = {
     model,
     max_tokens: maxTokens && Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : 1200,
     temperature: 0.2,
-    system: `You are an expert reviewer focusing on ${task}. Keep output concise and GitHub-ready.`,
+    system: systemContent,
     messages: [
       {
         role: "user",

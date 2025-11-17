@@ -108,9 +108,43 @@ async function postIssueComment({ token, owner, repo, issueNumber, body }) {
   );
 }
 
+async function createReview({ token, owner, repo, prNumber, body, event = "COMMENT", comments = [] }) {
+  return githubRequest(
+    `/repos/${owner}/${repo}/pulls/${prNumber}/reviews`,
+    token,
+    {
+      method: "POST",
+      body: {
+        body,
+        event, // Can be: APPROVE, REQUEST_CHANGES, COMMENT
+        comments
+      }
+    }
+  );
+}
+
+async function createReviewComment({ token, owner, repo, prNumber, body, commitId, path, line, side = "RIGHT" }) {
+  return githubRequest(
+    `/repos/${owner}/${repo}/pulls/${prNumber}/comments`,
+    token,
+    {
+      method: "POST",
+      body: {
+        body,
+        commit_id: commitId,
+        path,
+        line,
+        side // "LEFT" for old file, "RIGHT" for new file
+      }
+    }
+  );
+}
+
 module.exports = {
   fetchPullRequest,
   fetchPullFiles,
   postIssueComment,
-  fetchRepoFile
+  fetchRepoFile,
+  createReview,
+  createReviewComment
 };
