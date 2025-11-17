@@ -97,8 +97,7 @@ jobs:
           task: ${{ steps.parse.outputs.task }}
           pr-number: ${{ github.event.issue.number }}
           ai-provider: ${{ steps.detect-provider.outputs.provider }}
-          chatgpt-model: ${{ env.AI_REVIEW_OPENAI_MODEL }}
-          claude-model: ${{ env.AI_REVIEW_CLAUDE_MODEL }}
+          chatgpt-model: ${{ env.AI_REVIEW_CHATGPT_MODEL }}
           self-hosted-endpoint: ${{ env.AI_REVIEW_SELF_HOSTED_ENDPOINT }}
           self-hosted-model: ${{ env.AI_REVIEW_SELF_HOSTED_MODEL }}
           max-output-tokens: ${{ env.AI_REVIEW_MAX_OUTPUT_TOKENS }}
