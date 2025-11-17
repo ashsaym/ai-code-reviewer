@@ -1,4 +1,177 @@
-# Ignore generated docs and vendored assets
-docs/**
-**/*.lock
-public/assets/**
+# AI Code Review Ignore List
+#
+# Files and patterns listed here will be excluded from AI code review analysis.
+# Use glob patterns (one per line) to specify files or directories to skip.
+# Comments (lines starting with #) are ignored.
+#
+# Common use cases:
+# - Generated files (build outputs, compiled assets)
+# - Third-party code (vendor directories, node_modules)
+# - Large data files (datasets, images, videos)
+# - Lock files (package-lock.json, yarn.lock, Gemfile.lock)
+# - Documentation that doesn't need review (changelogs, archives)
+# - Test fixtures and mock data
+
+# ============================================================
+# Generated Files
+# ============================================================
+
+# Build outputs
+dist/**
+build/**
+out/**
+.next/**
+target/**
+
+# Compiled assets
+**/*.min.js
+**/*.min.css
+**/*.bundle.js
+**/*.chunk.js
+
+# Source maps
+**/*.map
+
+# ============================================================
+# Dependencies & Vendor Code
+# ============================================================
+
+# Node.js
+node_modules/**
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/**
+*.py[cod]
+venv/**
+env/**
+.venv/**
+
+# Ruby
+vendor/bundle/**
+Gemfile.lock
+
+# Go
+vendor/**
+
+# PHP
+vendor/**
+composer.lock
+
+# .NET
+packages/**
+bin/**
+obj/**
+
+# ============================================================
+# Lock Files
+# ============================================================
+
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+Pipfile.lock
+poetry.lock
+Cargo.lock
+composer.lock
+Gemfile.lock
+
+# ============================================================
+# Documentation (Optional - uncomment if you don't want docs reviewed)
+# ============================================================
+
+# docs/**
+# *.md
+# CHANGELOG.md
+# HISTORY.md
+
+# ============================================================
+# Test Fixtures & Mock Data
+# ============================================================
+
+# Test fixtures
+**/__fixtures__/**
+**/__mocks__/**
+**/fixtures/**
+**/test-data/**
+
+# Mock data
+**/*.mock.js
+**/*.fixture.json
+
+# ============================================================
+# Media & Assets
+# ============================================================
+
+# Images
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.svg
+*.webp
+
+# Videos
+*.mp4
+*.avi
+*.mov
+*.wmv
+
+# Fonts
+*.woff
+*.woff2
+*.ttf
+*.eot
+*.otf
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# ============================================================
+# Configuration & IDE Files (Usually not needed in review)
+# ============================================================
+
+# IDE files (uncomment if you don't want these reviewed)
+# .vscode/**
+# .idea/**
+# *.iml
+# .project
+# .classpath
+# .settings/**
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# ============================================================
+# Large or Generated Data Files
+# ============================================================
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Log files
+*.log
+logs/**
+
+# Coverage reports (uncomment if you don't want these reviewed)
+# coverage/**
+# .nyc_output/**
+# htmlcov/**
+
+# ============================================================
+# Specific Patterns for This Project
+# ============================================================
+
+# Add project-specific patterns below
+# Example: public/assets/**
+# Example: src/legacy/**

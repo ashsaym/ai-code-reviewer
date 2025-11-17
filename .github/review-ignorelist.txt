@@ -1,6 +1,84 @@
-# Ignore generated artifacts and vendored assets
+# AI Code Review Ignore List for This Repository
+#
+# Files matching these patterns will be excluded from AI code review.
+# This helps focus review on code that actually needs human attention.
+
+# ============================================================
+# Dependencies & Lock Files
+# ============================================================
+
 node_modules/**
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+
+# ============================================================
+# Test Coverage Reports
+# ============================================================
+
+coverage/**
+.nyc_output/**
+*.lcov
+
+# ============================================================
+# Build Artifacts & Generated Files
+# ============================================================
+
 dist/**
-**/*.lock
-**/*.log
+build/**
+*.bundle.js
+*.min.js
+*.min.css
+
+# ============================================================
+# Logs & Temporary Files
+# ============================================================
+
+*.log
+logs/**
+tmp/**
+temp/**
 screenshots/**
+
+# ============================================================
+# Test Fixtures & Mock Data
+# ============================================================
+
+**/__mocks__/**
+**/__fixtures__/**
+**/test-fixtures/**
+**/*.mock.js
+**/*.fixture.json
+
+# ============================================================
+# Lock Files (All Types)
+# ============================================================
+
+**/*.lock
+
+# ============================================================
+# IDE & Editor Files
+# ============================================================
+
+.vscode/**
+.idea/**
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ============================================================
+# Media Files
+# ============================================================
+
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.svg
+*.webp
+*.mp4
+*.avi
