@@ -1,0 +1,311 @@
+# Example: AI Code Review with Self-Hosted Models
+#
+# This workflow demonstrates how to set up automated AI code reviews using self-hosted
+# or Open WebUI-compatible models. Perfect for:
+# - On-premise deployments
+# - Cost optimization with local models
+# - Privacy-sensitive environments
+# - Custom fine-tuned models
+#
+# Prerequisites:
+# 1. Set up a self-hosted OpenAI-compatible endpoint (see Supported Platforms below)
+# 2. Add endpoint URL as repository secret named OPENWEBUI_URL or SELF_HOSTED_ENDPOINT
+# 3. (Optional) Add API key as OPENWEBUI_API_KEY or SELF_HOSTED_API_KEY if auth is required
+# 4. Ensure the workflow has proper permissions (see below)
+#
+# Supported Platforms:
+# - Open WebUI (https://docs.openwebui.com/)
+# - LocalAI (https://localai.io/)
+# - Ollama with OpenAI compatibility (https://ollama.ai/)
+# - LM Studio (https://lmstudio.ai/)
+# - text-generation-webui (https://github.com/oobabooga/text-generation-webui)
+# - vLLM (https://docs.vllm.ai/)
+# - Any OpenAI-compatible API server
+#
+# Recommended Models:
+# - mistral-small, mistral-medium (good balance)
+# - codellama (optimized for code)
+# - llama3, llama3.1 (general purpose)
+# - deepseek-coder (excellent for code review)
+# - qwen2.5-coder (strong code understanding)
+
+name: AI Review (Self-Hosted)
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+# Workflow-level concurrency: cancel in-progress runs when new commits are pushed
+concurrency:
+  group: ai-review-selfhosted-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read        # Read repository contents
+  pull-requests: write  # Post comments and reviews on PRs
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: AI Code Review with Self-Hosted Model
+        uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
+        with:
+          # Required: Pull request number
+          pr-number: ${{ github.event.pull_request.number }}
+          
+          # Provider configuration
+          ai-provider: self-hosted
+          
+          # Self-hosted endpoint URL
+          # Should be the full URL to the OpenAI-compatible chat completions endpoint
+          # Examples:
+          #   - Open WebUI: https://your-server.com/api/v1/chat/completions
+          #   - LocalAI: https://your-server.com/v1/chat/completions
+          #   - Ollama: https://your-server.com/v1/chat/completions
+          #   - LM Studio: http://localhost:1234/v1/chat/completions
+          self-hosted-endpoint: ${{ secrets.OPENWEBUI_URL }}/api/v1/chat/completions
+          
+          # Model identifier to use
+          # This should match the model name/ID in your self-hosted system
+          # Examples: mistral-small, codellama, llama3, deepseek-coder, qwen2.5-coder
+          self-hosted-model: mistral-small
+          
+          # Optional: Authentication token
+          # Leave empty if your endpoint doesn't require authentication
+          self-hosted-token: ${{ secrets.OPENWEBUI_API_KEY }}
+          
+          # Optional: Header name for authentication token
+          # Default is "Authorization" which automatically prepends "Bearer "
+          # Change if your endpoint uses a different header (e.g., "X-API-Key")
+          self-hosted-token-header: Authorization
+          
+          # Task type: review, summary, suggestions, or description
+          # - review: Detailed code review with inline comments (default)
+          # - summary: Executive summary of changes
+          # - suggestions: Actionable improvement suggestions
+          # - description: Auto-generate/update PR description
+          task: review
+          
+          # Control what gets analyzed
+          max-files: 60              # Maximum number of files to review
+          max-diff-chars: 18000      # Max diff characters per file
+          
+          # Adjust max-output-tokens based on your model's capabilities
+          # Local models typically have lower limits than cloud providers
+          # Examples:
+          #   - Small models (7B params): 2000-4000 tokens
+          #   - Medium models (13-34B params): 4000-8000 tokens
+          #   - Large models (70B+ params): 8000-16000 tokens
+          max-output-tokens: 8000
+          
+          # Enable inline review comments on specific lines
+          inline-review: "true"
+          
+          # Custom name for the AI reviewer in comments
+          reviewer-name: "AI Code Reviewer Bot"
+          
+          # Optional: Add custom instructions for the AI
+          # additional-context: |
+          #   Review focus areas:
+          #   - Code style consistency
+          #   - Potential bugs
+          #   - Logic errors
+          #   - Resource leaks
+          #   - Performance considerations
+        
+        env:
+          # Required: GitHub token (automatically provided)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+          # Optional: Alternative ways to pass self-hosted credentials
+          # The action checks these environment variables in order:
+          # 1. OPENWEBUI_API_KEY
+          # 2. SELF_HOSTED_API_KEY
+          # 3. SELF_HOSTED_TOKEN
+          # 4. self-hosted-token input parameter (shown above)
+          # OPENWEBUI_API_KEY: ${{ secrets.OPENWEBUI_API_KEY }}
+          # SELF_HOSTED_API_KEY: ${{ secrets.SELF_HOSTED_API_KEY }}
+
+# Configuration Tips:
+#
+# 1. Model Selection by Use Case:
+#    a) Code Review:
+#       - deepseek-coder (excellent code understanding)
+#       - codellama (optimized for code)
+#       - qwen2.5-coder (strong reasoning)
+#    
+#    b) General Purpose:
+#       - mistral-small, mistral-medium (good balance)
+#       - llama3, llama3.1 (versatile)
+#       - phi-3 (efficient, smaller size)
+#    
+#    c) Quick Reviews (lower resource requirements):
+#       - mistral-7b, llama2-7b
+#       - phi-2, phi-3-mini
+#       - tinyllama (very fast)
+#
+# 2. Endpoint Configuration:
+#    Different platforms use different URL patterns:
+#    
+#    Open WebUI:
+#      self-hosted-endpoint: https://your-server.com/api/v1/chat/completions
+#      self-hosted-token-header: Authorization
+#    
+#    LocalAI:
+#      self-hosted-endpoint: https://your-server.com/v1/chat/completions
+#      self-hosted-token-header: Authorization
+#    
+#    Ollama (with OpenAI compatibility):
+#      self-hosted-endpoint: https://your-server.com/v1/chat/completions
+#      # Usually no authentication needed for local Ollama
+#      self-hosted-token: ""
+#    
+#    LM Studio:
+#      self-hosted-endpoint: http://localhost:1234/v1/chat/completions
+#      # No authentication by default
+#      self-hosted-token: ""
+#    
+#    Custom API with X-API-Key header:
+#      self-hosted-endpoint: https://your-server.com/chat/completions
+#      self-hosted-token: ${{ secrets.API_KEY }}
+#      self-hosted-token-header: X-API-Key
+#
+# 3. Token Limits by Model Size:
+#    Adjust max-output-tokens based on model capacity:
+#    - 7B parameters: 2000-4000 tokens
+#    - 13B parameters: 4000-6000 tokens
+#    - 34B parameters: 6000-8000 tokens
+#    - 70B+ parameters: 8000-16000 tokens
+#
+# 4. Performance Optimization:
+#    - Use quantized models (Q4, Q5) for faster inference
+#    - Reduce max-files for large PRs
+#    - Use smaller models for routine reviews
+#    - Cache model weights to speed up cold starts
+#    - Consider GPU acceleration for larger models
+#
+# 5. Network Configuration:
+#    - For local deployments, ensure runner can reach the endpoint
+#    - For cloud endpoints, verify firewall rules allow GitHub IPs
+#    - Consider using a VPN or tailscale for secure connections
+#    - Use HTTPS in production environments
+#
+# 6. Fallback Strategy:
+#    Combine with cloud providers for reliability:
+#    ai-provider: self-hosted,chatgpt,claude
+#    This tries self-hosted first, then falls back to cloud if unavailable
+#
+# 7. Repository Guidance Files:
+#    The action automatically loads these files if present:
+#    - .github/review-instructions.md - Team review guidelines
+#    - .github/review-rulesets.md - Compliance rules
+#    - .github/review-ignorelist.txt - Patterns to exclude
+#    - .github/prompts/review.md - Custom prompt template
+#
+# 8. Cost and Privacy Benefits:
+#    - No per-token costs (only infrastructure)
+#    - Complete data privacy (code never leaves your network)
+#    - Customizable models for domain-specific needs
+#    - No rate limits (depends on your hardware)
+#
+# Troubleshooting:
+# - If connection fails, verify endpoint URL is correct and accessible
+# - If authentication fails, check token and header configuration
+# - If reviews are incomplete, increase max-output-tokens
+# - If model errors occur, verify model name matches your system
+# - For slow responses, consider using a smaller/quantized model
+# - Check endpoint logs for detailed error messages
+#
+# Advanced Configuration Examples:
+#
+# Example 1: Multi-provider with self-hosted as primary
+# jobs:
+#   ai-review:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
+#         with:
+#           pr-number: ${{ github.event.pull_request.number }}
+#           # Try self-hosted first, fallback to cloud providers
+#           ai-provider: self-hosted,chatgpt,claude
+#           self-hosted-endpoint: ${{ secrets.OPENWEBUI_URL }}/api/v1/chat/completions
+#           self-hosted-model: mistral-small
+#           chatgpt-model: gpt-5-mini
+#           claude-model: claude-3-5-sonnet-20241022
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           OPENWEBUI_API_KEY: ${{ secrets.OPENWEBUI_API_KEY }}
+#           CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
+#           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+#
+# Example 2: Different models for different tasks
+# jobs:
+#   ai-review:
+#     runs-on: ubuntu-latest
+#     strategy:
+#       matrix:
+#         include:
+#           - task: review
+#             model: deepseek-coder      # Best for code review
+#             tokens: 8000
+#           - task: summary
+#             model: mistral-small       # Fast for summaries
+#             tokens: 4000
+#           - task: suggestions
+#             model: qwen2.5-coder       # Good reasoning
+#             tokens: 6000
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
+#         with:
+#           pr-number: ${{ github.event.pull_request.number }}
+#           task: ${{ matrix.task }}
+#           ai-provider: self-hosted
+#           self-hosted-endpoint: ${{ secrets.OPENWEBUI_URL }}/api/v1/chat/completions
+#           self-hosted-model: ${{ matrix.model }}
+#           max-output-tokens: ${{ matrix.tokens }}
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           OPENWEBUI_API_KEY: ${{ secrets.OPENWEBUI_API_KEY }}
+#
+# Example 3: Conditional review based on PR size
+# jobs:
+#   check-pr-size:
+#     runs-on: ubuntu-latest
+#     outputs:
+#       is-large: ${{ steps.check.outputs.is-large }}
+#     steps:
+#       - uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 0
+#       - id: check
+#         run: |
+#           CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | wc -l)
+#           if [ $CHANGED_FILES -gt 20 ]; then
+#             echo "is-large=true" >> "$GITHUB_OUTPUT"
+#           else
+#             echo "is-large=false" >> "$GITHUB_OUTPUT"
+#           fi
+#   
+#   ai-review:
+#     needs: check-pr-size
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
+#         with:
+#           pr-number: ${{ github.event.pull_request.number }}
+#           ai-provider: self-hosted
+#           self-hosted-endpoint: ${{ secrets.OPENWEBUI_URL }}/api/v1/chat/completions
+#           # Use smaller model for large PRs to stay within limits
+#           self-hosted-model: ${{ needs.check-pr-size.outputs.is-large == 'true' && 'mistral-7b' || 'deepseek-coder' }}
+#           max-files: ${{ needs.check-pr-size.outputs.is-large == 'true' && '30' || '60' }}
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           OPENWEBUI_API_KEY: ${{ secrets.OPENWEBUI_API_KEY }}
