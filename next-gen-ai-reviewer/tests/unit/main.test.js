@@ -191,7 +191,7 @@ describe("main.js workflow functions", () => {
 
     it("should try ChatGPT provider with valid API key", async () => {
       process.env.CHATGPT_API_KEY = "test-key";
-      
+
       // Mock the fetch function for this test
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
@@ -217,7 +217,7 @@ describe("main.js workflow functions", () => {
       expect(result).toBeDefined();
       expect(result.provider).toBe("ChatGPT");
       expect(result.content).toBe("Review result");
-      
+
       delete global.fetch;
     });
 
