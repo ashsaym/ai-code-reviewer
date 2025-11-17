@@ -28,9 +28,10 @@ jobs:
       )
     runs-on: ubuntu-latest
     env:
-      AI_REVIEW_OPENAI_MODEL: gpt-5-mini
-      AI_REVIEW_CLAUDE_MODEL: claude-sonnet-4-5
-      AI_REVIEW_MAX_OUTPUT_TOKENS: "64000"
+      AI_REVIEW_OPENAI_MODEL: gpt-4o-mini
+      AI_REVIEW_CLAUDE_MODEL: claude-3-5-sonnet-20241022
+      AI_REVIEW_MAX_OUTPUT_TOKENS: "16000"
+      AI_REVIEW_MAX_COMPLETION_MODE: auto
       AI_REVIEW_SELF_HOSTED_ENDPOINT: ${{ secrets.OPENWEBUI_URL }}
       AI_REVIEW_SELF_HOSTED_MODEL: mistral-small
 
@@ -103,6 +104,7 @@ jobs:
           self-hosted-endpoint: ${{ env.AI_REVIEW_SELF_HOSTED_ENDPOINT }}
           self-hosted-model: ${{ env.AI_REVIEW_SELF_HOSTED_MODEL }}
           max-output-tokens: ${{ env.AI_REVIEW_MAX_OUTPUT_TOKENS }}
+          max-completion-tokens-mode: ${{ env.AI_REVIEW_MAX_COMPLETION_MODE }}
           inline-review: "true"
           additional-context: "Requested by @${{ github.event.comment.user.login }} via command"
         env:
