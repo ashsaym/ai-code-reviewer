@@ -11,6 +11,10 @@ on:
         default: ""
         type: string
 
+concurrency:
+  group: ai-review-selftest-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write

@@ -9,6 +9,10 @@ on:
     # Run CodeQL analysis weekly on Monday at 00:00 UTC
     - cron: '0 0 * * 1'
 
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   analyze:
     name: Analyze Code
