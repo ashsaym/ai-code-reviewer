@@ -68,7 +68,7 @@ async function runCombinedTasks({ tryProviders, buildPrompt, buildInlineReviewPr
 /**
  * Combine multiple task completions into a single comment body
  */
-function combineTasks({ completions, repo, prNumber, packageVersion }) {
+function combineTasks({ completions, repo, prNumber, packageVersion, reviewerName = "next-gen-ai-reviewer" }) {
   const sections = [];
 
   // Add summary
@@ -107,7 +107,7 @@ function combineTasks({ completions, repo, prNumber, packageVersion }) {
     providers.push(`suggestions: ${completions.suggestions.provider} (${completions.suggestions.model})`);
   }
 
-  const footer = `_Automated by next-gen-ai-reviewer v${packageVersion} for ${repo}#${prNumber}${providers.length > 0 ? ` | ${providers.join(", ")}` : ""}_`;
+  const footer = `_Automated by ${reviewerName} v${packageVersion} for ${repo}#${prNumber}${providers.length > 0 ? ` | ${providers.join(", ")}` : ""}_`;
   sections.push(footer);
 
   return sections.join("\n");

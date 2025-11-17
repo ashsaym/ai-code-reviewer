@@ -34,6 +34,7 @@ A multi-provider GitHub Action that turns any pull request into an AI-assisted e
 | `max-diff-chars` | `12000` | Per-file diff truncation limit (`MAX_DIFF_CHARS`). |
 | `additional-context` | _empty_ | Extra guidance appended to every prompt (`ADDITIONAL_CONTEXT`). |
 | `max-output-tokens` | `16000` | Response cap applied to every provider (`MAX_OUTPUT_TOKENS`). |
+| `reviewer-name` | `next-gen-ai-reviewer` | Custom name for the AI reviewer displayed in comments and reviews (`REVIEWER_NAME`). |
 | `max-completion-tokens-mode` | `auto` | Force ChatGPT to use `max_completion_tokens` (`true`), `max_tokens` (`false`), or auto-detect (`auto`). |
 
 ## Required secrets
@@ -125,6 +126,7 @@ jobs:
         with:
           task: ${{ steps.check-command.outputs.command }}
           pr-number: ${{ github.event.issue.number }}
+          reviewer-name: "AI Code Reviewer Bot"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
@@ -144,6 +146,7 @@ Use any on-prem OpenAI-compatible endpoint by adding it to the provider list:
           self-hosted-model: mistral-small
           self-hosted-token: ${{ secrets.OPENWEBUI_TOKEN }}
           max-output-tokens: 1600
+          reviewer-name: "AI Code Reviewer Bot"
           pr-number: ${{ github.event.pull_request.number }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -171,6 +174,7 @@ Example for gpt-5-mini:
           chatgpt-model: gpt-5-mini
           max-output-tokens: 16000
           max-completion-tokens-mode: true
+          reviewer-name: "AI Code Reviewer Bot"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
@@ -219,6 +223,7 @@ The `examples/.github` folder in this project ships drop-in guidance files you c
             self-hosted-model: mistral-small
             max-output-tokens: ${{ env.AI_REVIEW_MAX_OUTPUT_TOKENS }}
             max-completion-tokens-mode: ${{ env.AI_REVIEW_MAX_COMPLETION_MODE }}
+            reviewer-name: "AI Code Reviewer Bot"
             max-files: 60
             max-diff-chars: 18000
             additional-context: |
@@ -256,6 +261,7 @@ If you clone this workflow into another repository, make sure you export the sec
           chatgpt-model: ${{ env.AI_REVIEW_CHATGPT_MODEL }}
           max-output-tokens: ${{ env.AI_REVIEW_MAX_OUTPUT_TOKENS }}
           max-completion-tokens-mode: ${{ env.AI_REVIEW_MAX_COMPLETION_MODE }}
+          reviewer-name: "AI Code Reviewer Bot"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
@@ -292,6 +298,7 @@ jobs:
           pr-number: ${{ github.event.pull_request.number }}
           task: review
           ai-provider: chatgpt,claude
+          reviewer-name: "AI Code Reviewer Bot"
           additional-context: |
             Highlight risks that would block release.
         env:

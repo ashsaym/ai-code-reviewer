@@ -64,6 +64,7 @@ jobs:
           claude-model: ${{ env.AI_REVIEW_CLAUDE_MODEL }}
           max-output-tokens: ${{ env.AI_REVIEW_MAX_OUTPUT_TOKENS }}
           max-completion-tokens-mode: ${{ env.AI_REVIEW_MAX_COMPLETION_MODE }}
+          reviewer-name: "AI Code Reviewer Bot"
           additional-context: |
             This run originates from ai-code-reviewer's self-test pipeline.
         env:

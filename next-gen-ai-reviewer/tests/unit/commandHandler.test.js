@@ -230,6 +230,38 @@ describe("commandHandler", () => {
       const dividerCount = (body.match(/---/g) || []).length;
       expect(dividerCount).toBeGreaterThanOrEqual(2);
     });
+
+    it("should use default reviewer name when not provided", () => {
+      const completions = {
+        summary: { content: "Summary", model: "gpt-5-mini", provider: "chatgpt" }
+      };
+
+      const body = combineTasks({
+        completions,
+        repo: "owner/repo",
+        prNumber: 123,
+        packageVersion: "1.0.0"
+      });
+
+      expect(body).toContain("next-gen-ai-reviewer");
+    });
+
+    it("should use custom reviewer name when provided", () => {
+      const completions = {
+        summary: { content: "Summary", model: "gpt-5-mini", provider: "chatgpt" }
+      };
+
+      const body = combineTasks({
+        completions,
+        repo: "owner/repo",
+        prNumber: 123,
+        packageVersion: "1.0.0",
+        reviewerName: "My Custom AI Bot"
+      });
+
+      expect(body).toContain("My Custom AI Bot");
+      expect(body).not.toContain("next-gen-ai-reviewer");
+    });
   });
 
   describe("integration", () => {

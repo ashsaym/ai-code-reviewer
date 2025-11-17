@@ -66,6 +66,10 @@ inputs:
     description: "Enable GitHub-style inline review comments (true/false). Applies to review and suggestions tasks."
     required: false
     default: "true"
+  reviewer-name:
+    description: "Custom name for the AI reviewer to display in comments and reviews."
+    required: false
+    default: "next-gen-ai-reviewer"
 runs:
   using: "node20"
   main: "src/main.js"

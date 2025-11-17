@@ -181,6 +181,42 @@ describe("main.js workflow functions", () => {
       expect(result).toContain("ChatGPT");
       expect(result).toContain("testowner/testrepo#123");
     });
+
+    it("should use default reviewer name when not provided", () => {
+      delete require.cache[require.resolve("../../src/main")];
+      const { formatComment } = require("../../src/main");
+
+      const result = formatComment({
+        completion: {
+          content: "Review content",
+          model: "gpt-5-mini",
+          provider: "ChatGPT"
+        },
+        repo: "testowner/testrepo",
+        prNumber: 123
+      });
+
+      expect(result).toContain("next-gen-ai-reviewer");
+    });
+
+    it("should use custom reviewer name when provided", () => {
+      delete require.cache[require.resolve("../../src/main")];
+      const { formatComment } = require("../../src/main");
+
+      const result = formatComment({
+        completion: {
+          content: "Review content",
+          model: "gpt-5-mini",
+          provider: "ChatGPT"
+        },
+        repo: "testowner/testrepo",
+        prNumber: 123,
+        reviewerName: "Custom AI Bot"
+      });
+
+      expect(result).toContain("Custom AI Bot");
+      expect(result).not.toContain("next-gen-ai-reviewer");
+    });
   });
 
   describe("tryProviders", () => {

@@ -26,6 +26,7 @@ jobs:
         with:
           pr-number: ${{ github.event.pull_request.number }}
           task: review
+          reviewer-name: "AI Code Reviewer Bot"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
@@ -52,6 +53,7 @@ jobs:
     task: review
     ai-provider: chatgpt
     chatgpt-model: gpt-5-mini
+    reviewer-name: "AI Code Reviewer Bot"
   env:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
@@ -73,6 +75,7 @@ jobs:
     task: review
     ai-provider: claude
     claude-model: claude-3-5-sonnet-20241022
+    reviewer-name: "AI Code Reviewer Bot"
   env:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
@@ -95,6 +98,7 @@ jobs:
     self-hosted-endpoint: ${{ secrets.OPENWEBUI_URL }}/api/v1/chat/completions
     self-hosted-model: mistral-small
     self-hosted-token: ${{ secrets.OPENWEBUI_API_KEY }}
+    reviewer-name: "AI Code Reviewer Bot"
   env:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -116,6 +120,7 @@ jobs:
     pr-number: ${{ github.event.pull_request.number }}
     task: review
     ai-provider: chatgpt,claude,self-hosted  # Try in order
+    reviewer-name: "AI Code Reviewer Bot"
     chatgpt-model: gpt-5-mini
     claude-model: claude-3-5-sonnet-20241022
     self-hosted-endpoint: ${{ secrets.OPENWEBUI_URL }}/api/v1/chat/completions
@@ -211,6 +216,7 @@ To enable slash commands, add the `.github/workflows/ai-slash-commands.yml` work
 | `max-output-tokens` | `16000` | Max response tokens |
 | `additional-context` | - | Extra instructions for AI |
 | `inline-review` | `true` | Enable inline review comments |
+| `reviewer-name` | `next-gen-ai-reviewer` | Custom name for the AI reviewer in comments |
 | `max-completion-tokens-mode` | `auto` | ChatGPT token parameter mode |
 
 ### Environment Variables (All Optional)
@@ -237,6 +243,7 @@ You can set these as repository secrets or environment variables:
 - `MAX_DIFF_CHARS` - Override max diff chars
 - `MAX_OUTPUT_TOKENS` - Override max tokens
 - `ADDITIONAL_CONTEXT` - Override additional context
+- `REVIEWER_NAME` - Override reviewer name
 - `PR_NUMBER` - Override PR number
 
 ## 📂 Repository Guidance Files
@@ -370,6 +377,9 @@ jobs:
           # Optional: Enable inline comments
           inline-review: "true"
           
+          # Optional: Custom reviewer name
+          reviewer-name: "AI Code Reviewer Bot"
+          
           # Optional: Add custom instructions
           additional-context: |
             Focus on:
@@ -427,6 +437,9 @@ jobs:
           
           # Optional: Enable inline comments
           inline-review: "true"
+          
+          # Optional: Custom reviewer name
+          reviewer-name: "AI Code Reviewer Bot"
           
           # Optional: Add custom instructions
           additional-context: |
@@ -490,6 +503,9 @@ jobs:
           
           # Optional: Enable inline comments
           inline-review: "true"
+          
+          # Optional: Custom reviewer name
+          reviewer-name: "AI Code Reviewer Bot"
           
           # Optional: Add custom instructions
           additional-context: |
@@ -585,6 +601,9 @@ jobs:
           # Required
           pr-number: ${{ github.event.issue.number }}
           task: ${{ steps.parse.outputs.task }}
+          
+          # Optional: Custom reviewer name
+          reviewer-name: "AI Code Reviewer Bot"
           
           # Provider configuration - tries in order
           ai-provider: chatgpt,claude,self-hosted
@@ -697,6 +716,7 @@ jobs:
           
           max-output-tokens: 16000
           inline-review: "true"
+          reviewer-name: "AI Code Reviewer Bot"
         
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -734,6 +754,7 @@ jobs:
           task: ${{ matrix.task }}
           ai-provider: chatgpt
           chatgpt-model: gpt-5-mini
+          reviewer-name: "AI Code Reviewer Bot"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
