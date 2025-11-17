@@ -1,4 +1,4 @@
-async function runChatGPT({ apiKey, model, prompt, task, maxTokens, expectJson = false }) {
+async function runChatGPT({ apiKey, model, prompt, task, maxTokens, maxCompletionTokensMode = "auto", expectJson = false }) {
   if (!apiKey) {
     throw new Error("CHATGPT_API_KEY (or OPENAI_API_KEY) is required when ChatGPT provider is selected.");
   }
@@ -34,8 +34,8 @@ async function runChatGPT({ apiKey, model, prompt, task, maxTokens, expectJson =
   }
 
   if (maxTokens && Number.isFinite(maxTokens) && maxTokens > 0) {
-    // Check if user explicitly set MAX_COMPLETION_TOKENS_MODE via env/secret
-    const useCompletionTokens = process.env.MAX_COMPLETION_TOKENS_MODE;
+    // Check if user explicitly set max-completion-tokens-mode via input
+    const useCompletionTokens = maxCompletionTokensMode;
 
     if (useCompletionTokens === "true" || useCompletionTokens === "1") {
       // Force max_completion_tokens (for gpt-4o, gpt-4o-mini, gpt-5-mini, o1, o3, etc.)
@@ -75,7 +75,7 @@ async function runChatGPT({ apiKey, model, prompt, task, maxTokens, expectJson =
 
   // Handle different finish reasons
   if (finishReason === "length") {
-    throw new Error(`ChatGPT response was truncated due to token limit (finish_reason: length). Current max_completion_tokens: ${maxTokens}. Please increase MAX_OUTPUT_TOKENS in repository secrets (recommended: 8000-16000) or reduce the PR size.`);
+    throw new Error(`ChatGPT response was truncated due to token limit (finish_reason: length). Current max completion tokens: ${maxTokens}. Increase the action input \`max-output-tokens\` (recommended: 8000-16000) or reduce the PR size.`);
   }
 
   if (!content) {

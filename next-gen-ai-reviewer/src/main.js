@@ -137,7 +137,7 @@ continue;
   }
 }
 
-async function tryProviders({ providers, prompt, task, models, selfHostedConfig, maxTokens, expectJson = false }) {
+async function tryProviders({ providers, prompt, task, models, selfHostedConfig, maxTokens, maxCompletionTokensMode = "auto", expectJson = false }) {
   const failures = [];
 
   for (const provider of providers) {
@@ -151,7 +151,7 @@ async function tryProviders({ providers, prompt, task, models, selfHostedConfig,
 
       try {
         console.log(`Attempting ChatGPT provider with model ${models.chatgpt}...`);
-        return await runChatGPT({ apiKey, model: models.chatgpt, prompt, task, maxTokens, expectJson });
+        return await runChatGPT({ apiKey, model: models.chatgpt, prompt, task, maxTokens, maxCompletionTokensMode, expectJson });
       } catch (error) {
         console.warn(`ChatGPT provider failed: ${error.message}`);
         failures.push(`ChatGPT: ${error.message}`);
@@ -234,16 +234,18 @@ async function run() {
   const maxFiles = Number(getInput("max-files") || process.env.MAX_FILES || "40");
   const maxDiffChars = Number(getInput("max-diff-chars") || process.env.MAX_DIFF_CHARS || "12000");
   const additionalContext = getInput("additional-context") || process.env.ADDITIONAL_CONTEXT || "";
-  const maxTokens = Number(process.env.MAX_OUTPUT_TOKENS || getInput("max-output-tokens") || "4000");
+  const maxTokens = Number(getInput("max-output-tokens") || process.env.MAX_OUTPUT_TOKENS || "16000");
   const providerPreference = (getInput("ai-provider") || process.env.AI_PROVIDER || "chatgpt,claude,self-hosted")
     .split(",")
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean);
 
   const models = {
-    chatgpt: process.env.CHATGPT_MODEL || getInput("chatgpt-model") || "gpt-4o-mini",
-    claude: process.env.CLAUDE_MODEL || getInput("claude-model") || "claude-3-5-sonnet-20241022"
+    chatgpt: getInput("chatgpt-model") || process.env.CHATGPT_MODEL || "gpt-4o-mini",
+    claude: getInput("claude-model") || process.env.CLAUDE_MODEL || "claude-3-5-sonnet-20241022"
   };
+
+  const maxCompletionTokensMode = getInput("max-completion-tokens-mode") || process.env.MAX_COMPLETION_TOKENS_MODE || "auto";
 
   const selfHostedConfig = {
     endpoint: getInput("self-hosted-endpoint") || process.env.SELF_HOSTED_ENDPOINT || process.env.OPENWEBUI_API_URL || "",
@@ -323,6 +325,7 @@ async function run() {
     models,
     selfHostedConfig,
     maxTokens,
+    maxCompletionTokensMode,
     mockContext: { prMetadata, files: filtered }
   });
 

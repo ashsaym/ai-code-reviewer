@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1763359876273" clover="3.2.0">
-  <project timestamp="1763359876273" name="All files">
-    <metrics statements="517" coveredstatements="332" conditionals="457" coveredconditionals="255" methods="55" coveredmethods="40" elements="1029" coveredelements="627" complexity="0" loc="517" ncloc="517" packages="2" files="8" classes="8"/>
+<coverage generated="1763361769661" clover="3.2.0">
+  <project timestamp="1763361769661" name="All files">
+    <metrics statements="518" coveredstatements="332" conditionals="461" coveredconditionals="256" methods="55" coveredmethods="40" elements="1034" coveredelements="628" complexity="0" loc="518" ncloc="518" packages="2" files="8" classes="8"/>
     <package name="src">
-      <metrics statements="445" coveredstatements="272" conditionals="385" coveredconditionals="198" methods="51" coveredmethods="36"/>
+      <metrics statements="446" coveredstatements="272" conditionals="388" coveredconditionals="198" methods="51" coveredmethods="36"/>
       <file name="github.js" path="/Users/saym/Documents/GitHub/ai-code-reviewer/next-gen-ai-reviewer/src/github.js">
         <metrics statements="43" coveredstatements="38" conditionals="35" coveredconditionals="26" methods="8" coveredmethods="8"/>
         <line num="1" count="7" type="cond" truecount="2" falsecount="0"/>
@@ -91,7 +91,7 @@
         <line num="101" count="6" type="stmt"/>
       </file>
       <file name="main.js" path="/Users/saym/Documents/GitHub/ai-code-reviewer/next-gen-ai-reviewer/src/main.js">
-        <metrics statements="181" coveredstatements="42" conditionals="162" coveredconditionals="26" methods="12" coveredmethods="5"/>
+        <metrics statements="182" coveredstatements="42" conditionals="165" coveredconditionals="26" methods="12" coveredmethods="5"/>
         <line num="1" count="5" type="stmt"/>
         <line num="2" count="5" type="stmt"/>
         <line num="3" count="5" type="stmt"/>
@@ -220,59 +220,60 @@
         <line num="238" count="0" type="cond" truecount="0" falsecount="3"/>
         <line num="240" count="0" type="stmt"/>
         <line num="243" count="0" type="stmt"/>
-        <line num="248" count="0" type="stmt"/>
-        <line num="255" count="0" type="stmt"/>
-        <line num="256" count="0" type="stmt"/>
+        <line num="248" count="0" type="cond" truecount="0" falsecount="3"/>
+        <line num="250" count="0" type="stmt"/>
+        <line num="257" count="0" type="stmt"/>
         <line num="258" count="0" type="stmt"/>
-        <line num="259" count="0" type="stmt"/>
+        <line num="260" count="0" type="stmt"/>
         <line num="261" count="0" type="stmt"/>
-        <line num="262" count="0" type="stmt"/>
+        <line num="263" count="0" type="stmt"/>
         <line num="264" count="0" type="stmt"/>
-        <line num="265" count="0" type="stmt"/>
-        <line num="268" count="0" type="stmt"/>
-        <line num="269" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="272" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="273" count="0" type="stmt"/>
-        <line num="274" count="0" type="stmt"/>
-        <line num="283" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="285" count="0" type="stmt"/>
-        <line num="286" count="0" type="stmt"/>
-        <line num="296" count="0" type="stmt"/>
-        <line num="297" count="0" type="stmt"/>
-        <line num="308" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="309" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="266" count="0" type="stmt"/>
+        <line num="267" count="0" type="stmt"/>
+        <line num="270" count="0" type="stmt"/>
+        <line num="271" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="274" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="275" count="0" type="stmt"/>
+        <line num="276" count="0" type="stmt"/>
+        <line num="285" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="287" count="0" type="stmt"/>
+        <line num="288" count="0" type="stmt"/>
+        <line num="298" count="0" type="stmt"/>
+        <line num="299" count="0" type="stmt"/>
         <line num="310" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="313" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="314" count="0" type="stmt"/>
-        <line num="318" count="0" type="stmt"/>
-        <line num="319" count="0" type="stmt"/>
-        <line num="330" count="0" type="cond" truecount="0" falsecount="4"/>
-        <line num="331" count="0" type="stmt"/>
-        <line num="341" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="342" count="0" type="stmt"/>
-        <line num="343" count="0" type="stmt"/>
+        <line num="311" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="312" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="315" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="316" count="0" type="stmt"/>
+        <line num="320" count="0" type="stmt"/>
+        <line num="321" count="0" type="stmt"/>
+        <line num="333" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="334" count="0" type="stmt"/>
+        <line num="344" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="345" count="0" type="stmt"/>
         <line num="346" count="0" type="stmt"/>
-        <line num="350" count="0" type="stmt"/>
-        <line num="351" count="0" type="stmt"/>
-        <line num="352" count="0" type="stmt"/>
+        <line num="349" count="0" type="stmt"/>
+        <line num="353" count="0" type="stmt"/>
         <line num="354" count="0" type="stmt"/>
-        <line num="357" count="5" type="stmt"/>
-        <line num="358" count="5" type="stmt"/>
+        <line num="355" count="0" type="stmt"/>
+        <line num="357" count="0" type="stmt"/>
+        <line num="360" count="5" type="stmt"/>
         <line num="361" count="5" type="stmt"/>
-        <line num="362" count="5" type="stmt"/>
-        <line num="363" count="5" type="cond" truecount="2" falsecount="0"/>
         <line num="364" count="5" type="stmt"/>
-        <line num="366" count="5" type="cond" truecount="2" falsecount="3"/>
-        <line num="367" count="0" type="stmt"/>
-        <line num="368" count="0" type="stmt"/>
-        <line num="369" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="365" count="5" type="stmt"/>
+        <line num="366" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="367" count="5" type="stmt"/>
+        <line num="369" count="5" type="cond" truecount="2" falsecount="3"/>
+        <line num="370" count="0" type="stmt"/>
         <line num="371" count="0" type="stmt"/>
-        <line num="385" count="0" type="stmt"/>
-        <line num="393" count="0" type="stmt"/>
+        <line num="372" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="374" count="0" type="stmt"/>
+        <line num="388" count="0" type="stmt"/>
         <line num="396" count="0" type="stmt"/>
-        <line num="399" count="5" type="stmt"/>
-        <line num="403" count="5" type="cond" truecount="3" falsecount="1"/>
-        <line num="404" count="5" type="stmt"/>
+        <line num="399" count="0" type="stmt"/>
+        <line num="402" count="5" type="stmt"/>
+        <line num="406" count="5" type="cond" truecount="3" falsecount="1"/>
+        <line num="407" count="5" type="stmt"/>
       </file>
       <file name="promptBuilder.js" path="/Users/saym/Documents/GitHub/ai-code-reviewer/next-gen-ai-reviewer/src/promptBuilder.js">
         <metrics statements="77" coveredstatements="63" conditionals="83" coveredconditionals="56" methods="9" coveredmethods="7"/>
@@ -466,9 +467,9 @@
       </file>
     </package>
     <package name="src.providers">
-      <metrics statements="72" coveredstatements="60" conditionals="72" coveredconditionals="57" methods="4" coveredmethods="4"/>
+      <metrics statements="72" coveredstatements="60" conditionals="73" coveredconditionals="58" methods="4" coveredmethods="4"/>
       <file name="chatgpt.js" path="/Users/saym/Documents/GitHub/ai-code-reviewer/next-gen-ai-reviewer/src/providers/chatgpt.js">
-        <metrics statements="34" coveredstatements="30" conditionals="33" coveredconditionals="28" methods="1" coveredmethods="1"/>
+        <metrics statements="34" coveredstatements="30" conditionals="34" coveredconditionals="29" methods="1" coveredmethods="1"/>
         <line num="2" count="5" type="cond" truecount="2" falsecount="0"/>
         <line num="3" count="1" type="stmt"/>
         <line num="7" count="4" type="cond" truecount="2" falsecount="0"/>
