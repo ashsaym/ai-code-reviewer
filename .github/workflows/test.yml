@@ -16,6 +16,12 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: test-token
+      PR_NUMBER: ${{ github.event.pull_request.number || 1 }}
+      GITHUB_REPOSITORY: ashsaym/ai-code-reviewer
+      PR: ${{ github.event.pull_request.number || 1 }}
+      CI: true
     
     defaults:
       run:
