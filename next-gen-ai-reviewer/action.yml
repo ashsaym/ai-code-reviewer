@@ -57,7 +57,7 @@ inputs:
   max-output-tokens:
     description: "Maximum tokens to request from the selected AI provider."
     required: false
-    default: "1200"
+    default: "4000"
 runs:
   using: "node20"
   main: "src/main.js"
