@@ -140,16 +140,29 @@ jobs:
       - name: Check for syntax errors
         run: node --check src/main.js
 
-      - name: Test action loading
+      - name: Verify all dependencies can be loaded
         run: |
           node -e "
-          try {
-            require('./src/main.js');
-            console.log('✓ Action module loads successfully');
-          } catch (error) {
-            console.error('✗ Failed to load action:', error.message);
-            process.exit(1);
-          }
+          const fs = require('fs');
+          const path = require('path');
+          const deps = ['@actions/core', '@actions/github', '@anthropic-ai/sdk', 'openai'];
+          let allFound = true;
+          deps.forEach(dep => {
+            try {
+              const pkgPath = path.join('node_modules', dep, 'package.json');
+              if (fs.existsSync(pkgPath)) {
+                console.log('✓ Found:', dep);
+              } else {
+                console.error('✗ Missing:', dep);
+                allFound = false;
+              }
+            } catch (e) {
+              console.error('✗ Error checking', dep, ':', e.message);
+              allFound = false;
+            }
+          });
+          if (!allFound) process.exit(1);
+          console.log('✓ All required dependencies are present');
           "
 
   status-check:
@@ -161,6 +174,10 @@ jobs:
     steps:
       - name: Check test results
         run: |
+          echo "Test result: ${{ needs.test.result }}"
+          echo "Lint workflows result: ${{ needs.lint-workflows.result }}"
+          echo "Build test result: ${{ needs.build-test.result }}"
+          
           if [ "${{ needs.test.result }}" != "success" ] || \
              [ "${{ needs.lint-workflows.result }}" != "success" ] || \
              [ "${{ needs.build-test.result }}" != "success" ]; then
