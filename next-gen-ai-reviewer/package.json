@@ -1,0 +1,22 @@
+{
+  "name": "next-gen-ai-reviewer",
+  "version": "0.1.0",
+  "description": "Multi-provider AI-powered code reviewer GitHub Action.",
+  "main": "src/main.js",
+  "scripts": {
+    "test": "node --test",
+    "lint": "echo \"No lint configured\""
+  },
+  "keywords": [
+    "github-action",
+    "ai",
+    "code-review",
+    "openai",
+    "anthropic"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  }
+}
