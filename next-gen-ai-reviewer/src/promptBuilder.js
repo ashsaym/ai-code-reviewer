@@ -69,7 +69,8 @@ function buildPrompt({ task, prMetadata, files, maxDiffChars = 12000, additional
   const normalizedTask = normalizeTask(task);
   const libraryEntry = TASK_LIBRARY[normalizedTask];
 
-  const prHeader = `Title: ${prMetadata.title}\nAuthor: ${prMetadata.user?.login || "unknown"}\nBase: ${prMetadata.base?.ref} -> ${prMetadata.head?.ref}`;
+  const author = prMetadata.user?.login || "unknown";
+  const prHeader = `Title: ${prMetadata.title}\nAuthor: ${author}\nBase: ${prMetadata.base?.ref} -> ${prMetadata.head?.ref}`;
   const bodySection = sanitizeMultiline(prMetadata.body || "No description provided.");
   const fileSummaries = files.length
     ? files.map((file, index) => formatFile(file, index, maxDiffChars)).join("\n\n")
@@ -118,7 +119,8 @@ function buildPrompt({ task, prMetadata, files, maxDiffChars = 12000, additional
     ignoredFiles: ignoredFiles.join(", "),
     teamNotes: additionalContext.trim(),
     repositoryGuidance: guidanceSections.join("\n\n"),
-    additionalContext: additionalContext.trim()
+    additionalContext: additionalContext.trim(),
+    author
   };
 
   if (template) {

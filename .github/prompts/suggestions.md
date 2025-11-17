@@ -1,9 +1,9 @@
-### Suggestions
+## Improvement Ideas
 
-For each idea include:
-1. **Title** and affected file(s)
-2. **Why** referencing {{instructions}} or {{rulesets}}
-3. **How** with a short diff when trivial (```diff blocks)
-4. **Effort** estimate (S/M/L)
+Return a numbered list (max 3). Each entry must include:
+- `**Title — file**` to anchor the suggestion.
+- `Why:` referencing {{instructions}} or {{rulesets}}.
+- `How:` concrete fix with a short ```diff``` block when the change is small.
+- `Effort:` S / M / L.
 
-Favor fixes that reduce risk or unblock docs/tests.
+Finish with a `## Tests` section reminding the developer which checks to run.

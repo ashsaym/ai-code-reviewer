@@ -1,9 +1,16 @@
-### Executive Summary
-
+## Pull Request Overview
 - Title & branches: {{prHeader}}
-- Description: {{prDescription}}
-- Files touched: {{fileSummaries}}
-- Guardrails: {{instructions}}
-- Ruleset notes: {{rulesets}}
+- Author: {{author}}
+- Files inspected: {{fileCount}}
 
-Return three bullets for Intent, Impact, and Risk plus a final "Next steps" line.
+### Intent
+Summarize the primary goal of the change in two concise sentences referencing {{instructions}} when relevant.
+
+### Impact
+List the main areas or files affected (max 3 bullets) plus any notable side effects.
+
+### Risk
+Call out remaining gaps, missing tests, or assumptions.
+
+### Next Steps
+One line that tells the human reviewer what to do next.
