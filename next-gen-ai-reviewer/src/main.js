@@ -245,7 +245,47 @@ async function run() {
   console.log("Done. AI review successfully posted.");
 }
 
-run().catch((error) => {
+run().catch(async (error) => {
   console.error(`::error::${error.message}`);
+  
+  // Try to post failure comment to PR
+  try {
+    const githubToken = process.env.GITHUB_TOKEN;
+    const repository = getInput("repository") || process.env.GITHUB_REPOSITORY;
+    const rawPrNumber = autoDetectPrNumber();
+    
+    if (githubToken && repository && rawPrNumber) {
+      const [owner, repo] = repository.split("/");
+      const prNumber = Number(rawPrNumber);
+      const task = normalizeTask(getInput("task") || "review");
+      
+      const failureBody = [
+        `## ❌ AI ${task.charAt(0).toUpperCase() + task.slice(1)} Failed`,
+        "",
+        `**Error:** ${error.message}`,
+        "",
+        "**Possible causes:**",
+        "- Invalid API key or model name in repository secrets",
+        "- API rate limit exceeded",
+        "- Network connectivity issues",
+        "- Invalid provider configuration",
+        "",
+        `_Failed in next-gen-ai-reviewer v${packageJson.version}_`
+      ].join("\n");
+      
+      await postIssueComment({ 
+        token: githubToken, 
+        owner, 
+        repo, 
+        issueNumber: prNumber, 
+        body: failureBody 
+      });
+      
+      console.log("Failure comment posted to PR.");
+    }
+  } catch (commentError) {
+    console.error(`Failed to post failure comment: ${commentError.message}`);
+  }
+  
   process.exit(1);
 });

@@ -191,6 +191,32 @@ jobs:
           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
 ```
 
+## PR Comment Commands
+
+You can trigger AI reviews on-demand by commenting on any pull request with these commands:
+
+| Command | Description | Response |
+| --- | --- | --- |
+| `/review` | Performs a code review with findings and recommendations | Posts detailed review with file:line references |
+| `/suggestion` | Generates actionable improvement suggestions | Posts numbered list of enhancement ideas |
+| `/summary` | Creates a PR summary with intent, impact, and risk analysis | Posts executive summary |
+
+**How it works:**
+1. Comment `/review` (or `/suggestion` or `/summary`) on any PR
+2. The workflow reacts with 👀 to acknowledge the command
+3. AI analysis runs and posts results as a new comment
+4. Success: 👍 reaction, Failure: 👎 reaction + error comment
+
+**Setup:** Create `.github/workflows/ai-review-on-command.yml` (see examples folder) to enable this feature.
+
+## Failure Handling
+
+When the AI review fails (invalid API key, model error, rate limits, etc.), the action will:
+- Post a comment to the PR explaining what went wrong
+- Include possible causes and troubleshooting steps
+- Mark the workflow as failed so it's visible in the checks
+- Add 👎 reaction to command comments (if triggered via `/review` etc.)
+
 ## Local testing
 ```bash
 cd next-gen-ai-reviewer
