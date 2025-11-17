@@ -22,14 +22,36 @@ jobs:
       )
     runs-on: ubuntu-latest
     env:
+      AI_REVIEW_OPENAI_MODEL: gpt-5-mini
       AI_REVIEW_CLAUDE_MODEL: claude-sonnet-4-20250514
       AI_REVIEW_MAX_OUTPUT_TOKENS: "128000"
+      AI_REVIEW_SELF_HOSTED_ENDPOINT: ${{ secrets.OPENWEBUI_URL }}
+      AI_REVIEW_SELF_HOSTED_MODEL: mistral-small
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
           ref: refs/pull/${{ github.event.issue.number }}/head
+
+      - name: Detect AI Provider
+        id: detect-provider
+        run: |
+          # Auto-detect provider based on available API keys
+          if [[ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]] || [[ -n "${{ secrets.CLAUDE_API_KEY }}" ]]; then
+            echo "provider=claude" >> "$GITHUB_OUTPUT"
+            echo "Detected Claude API key"
+          elif [[ -n "${{ secrets.CHATGPT_API_KEY }}" ]] || [[ -n "${{ secrets.OPENAI_API_KEY }}" ]]; then
+            echo "provider=chatgpt" >> "$GITHUB_OUTPUT"
+            echo "Detected ChatGPT/OpenAI API key"
+          elif [[ -n "${{ secrets.OPENWEBUI_API_KEY }}" ]] || [[ -n "${{ secrets.SELF_HOSTED_API_KEY }}" ]]; then
+            echo "provider=self-hosted" >> "$GITHUB_OUTPUT"
+            echo "Detected Self-Hosted API key"
+          else
+            # Fallback: try all providers in order
+            echo "provider=claude,chatgpt,self-hosted" >> "$GITHUB_OUTPUT"
+            echo "No specific API key detected, trying all providers"
+          fi
 
       - name: Parse command
         id: parse
@@ -63,15 +85,24 @@ jobs:
         with:
           task: ${{ steps.parse.outputs.task }}
           pr-number: ${{ github.event.issue.number }}
-          ai-provider: claude
+          ai-provider: ${{ steps.detect-provider.outputs.provider }}
+          chatgpt-model: ${{ env.AI_REVIEW_OPENAI_MODEL }}
           claude-model: ${{ env.AI_REVIEW_CLAUDE_MODEL }}
+          self-hosted-endpoint: ${{ env.AI_REVIEW_SELF_HOSTED_ENDPOINT }}
+          self-hosted-model: ${{ env.AI_REVIEW_SELF_HOSTED_MODEL }}
           max-output-tokens: ${{ env.AI_REVIEW_MAX_OUTPUT_TOKENS }}
           inline-review: "true"
           additional-context: "Requested by @${{ github.event.comment.user.login }} via command"
         env:
           PR_NUMBER: ${{ github.event.issue.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # All possible API keys - the action will use whichever is available
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENWEBUI_API_KEY: ${{ secrets.OPENWEBUI_API_KEY }}
+          SELF_HOSTED_API_KEY: ${{ secrets.SELF_HOSTED_API_KEY }}
 
       - name: Mark command as completed
         if: success()
