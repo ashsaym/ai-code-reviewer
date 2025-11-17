@@ -28,7 +28,7 @@ jobs:
     env:
       AI_REVIEW_OPENAI_MODEL: gpt-5-mini
       AI_REVIEW_CLAUDE_MODEL: claude-sonnet-4-5
-      AI_REVIEW_MAX_OUTPUT_TOKENS: "128000"
+      AI_REVIEW_MAX_OUTPUT_TOKENS: "64000"
       AI_REVIEW_SELF_HOSTED_ENDPOINT: ${{ secrets.OPENWEBUI_URL }}
       AI_REVIEW_SELF_HOSTED_MODEL: mistral-small
 
