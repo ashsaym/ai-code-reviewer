@@ -16,7 +16,7 @@ inputs:
     required: false
     default: "review"
   ai-provider:
-    description: "Comma-separated provider priority list. Supported: chatgpt, claude, self-hosted."
+    description: "Comma-separated provider priority list. Supported: chatgpt, claude, self-hosted, mock."
     required: false
     default: "chatgpt,claude,self-hosted"
   chatgpt-model:

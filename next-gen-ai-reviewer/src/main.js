@@ -1,18 +1,65 @@
+const fs = require("node:fs");
 const { fetchPullRequest, fetchPullFiles, postIssueComment } = require("./github");
 const { loadGuidance, filterFilesByPatterns } = require("./guidanceLoader");
 const { buildPrompt, normalizeTask } = require("./promptBuilder");
 const { runChatGPT } = require("./providers/chatgpt");
 const { runClaude } = require("./providers/claude");
 const { runSelfHosted } = require("./providers/selfHosted");
+const { runMock } = require("./providers/mock");
 const packageJson = require("../package.json");
 
 function getInput(name, defaultValue = "") {
-  const key = `INPUT_${name.replace(/[^a-z0-9]/gi, "_").toUpperCase()}`;
-  const rawValue = process.env[key];
-  if (rawValue === undefined || rawValue === null || rawValue === "") {
-    return defaultValue;
+  const sanitized = name.replace(/[^a-z0-9]/gi, "_").toUpperCase();
+  const dashed = name.replace(/\s+/g, "_").toUpperCase();
+  const candidates = [
+    `INPUT_${sanitized}`,
+    `INPUT_${dashed}`,
+    `INPUT_${name.toUpperCase()}`
+  ];
+
+  for (const key of candidates) {
+    const rawValue = process.env[key];
+    if (rawValue !== undefined && rawValue !== null && rawValue !== "") {
+      return rawValue.trim();
+    }
   }
-  return rawValue.trim();
+
+  return defaultValue;
+}
+
+function readJsonFile(filePath) {
+  try {
+    const buffer = fs.readFileSync(filePath, "utf8");
+    return JSON.parse(buffer);
+  } catch (error) {
+    return null;
+  }
+}
+
+function autoDetectPrNumber() {
+  const directInput = getInput("pr-number") || process.env.PR_NUMBER || process.env.PR;
+  if (directInput) {
+    return directInput;
+  }
+
+  const eventPath = process.env.GITHUB_EVENT_PATH;
+  if (eventPath && fs.existsSync(eventPath)) {
+    const payload = readJsonFile(eventPath);
+    const fromPayload = payload?.pull_request?.number
+      || payload?.issue?.number
+      || payload?.workflow_run?.pull_requests?.[0]?.number;
+    if (fromPayload) {
+      return fromPayload;
+    }
+  }
+
+  const ref = process.env.GITHUB_REF || process.env.GITHUB_REF_NAME || "";
+  const match = ref.match(/refs\/pull\/(\d+)\//);
+  if (match) {
+    return match[1];
+  }
+
+  return null;
 }
 
 function formatComment({ task, completion, repo, prNumber }) {
@@ -81,6 +128,12 @@ async function tryProviders({ providers, prompt, task, models, selfHostedConfig,
       } catch (error) {
         failures.push(`Self-hosted: ${error.message}`);
       }
+    } else if (provider === "mock" || provider === "demo") {
+      try {
+        return await runMock({ task, prompt });
+      } catch (error) {
+        failures.push(`Mock: ${error.message}`);
+      }
     }
   }
 
@@ -94,9 +147,9 @@ async function run() {
     throw new Error("GITHUB_TOKEN is required to fetch pull requests and post comments.");
   }
 
-  const rawPrNumber = getInput("pr-number") || process.env.PR_NUMBER || process.env.PR;
+  const rawPrNumber = autoDetectPrNumber();
   if (!rawPrNumber) {
-    throw new Error("pr-number input is required.");
+    throw new Error("Unable to determine pull request number. Provide pr-number input or set PR_NUMBER.");
   }
 
   const prNumber = Number(rawPrNumber);

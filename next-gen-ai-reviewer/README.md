@@ -14,16 +14,17 @@ A multi-provider GitHub Action that turns any pull request into an AI-assisted e
 - Builds role-specific prompts with optional team instructions and repo-level guidance files (sample `.github` assets included).
 - Calls ChatGPT (OpenAI) or Claude (Anthropic) with temperature tuned for deterministic output.
 - Falls back to self-hosted/Open WebUI endpoints when the hosted providers are unavailable.
+- Provides a `mock` provider so CI pipelines can exercise the workflow without external API keys.
 - Posts nicely formatted Markdown comments back onto the PR.
 - Ships with a small Node-based architecture and `node:test` coverage for the prompt builder logic.
 
 ## Inputs
 | Name | Default | Description |
 | --- | --- | --- |
-| `pr-number` | **required** | Pull request number to inspect. |
+| `pr-number` | _auto_ | Optional. Auto-detected from the workflow event or `PR_NUMBER` env. |
 | `repository` | `github.repository` | Useful for cross-repo workflows. Format: `owner/name`. |
 | `task` | `review` | One of `review`, `summary`, `suggestions` (aliases like `summarize` or `suggest` also work). |
-| `ai-provider` | `chatgpt,claude,self-hosted` | Priority-ordered list (or set `AI_PROVIDER`). |
+| `ai-provider` | `chatgpt,claude,self-hosted` | Priority-ordered list (or set `AI_PROVIDER`). Include `mock` for dry runs. |
 | `chatgpt-model` | `gpt-4o-mini` | Any ChatGPT-compatible model. |
 | `claude-model` | `claude-3-5-sonnet-20241022` | Any Claude-compatible model. |
 | `self-hosted-endpoint` | _empty_ | Full URL to an OpenAI-compatible chat completion endpoint (e.g. Open WebUI). |
@@ -41,6 +42,7 @@ A multi-provider GitHub Action that turns any pull request into an AI-assisted e
   - `CHATGPT_API_KEY` or `OPENAI_API_KEY`
   - `CLAUDE_API_KEY` or `ANTHROPIC_API_KEY`
   - `SELF_HOSTED_API_KEY` / `OPENWEBUI_API_KEY` (optional, when targeting self-hosted models)
+- No keys required when the `mock` provider is first in the list (ideal for CI smoke tests).
 - Optional env overrides:
   - `CHATGPT_MODEL`, `CLAUDE_MODEL`, `OPENWEBUI_MODEL`
   - `AI_PROVIDER`, `MAX_FILES`, `MAX_DIFF_CHARS`, `MAX_OUTPUT_TOKENS`, `ADDITIONAL_CONTEXT`
@@ -133,8 +135,9 @@ The `examples/.github` folder in this project ships drop-in guidance files you c
 ## Built-in self-test workflow
 This repository ships `.github/workflows/ai-review-selftest.yml`, which:
 - Runs on every pull request (or manually via `workflow_dispatch`).
-- Executes `./next-gen-ai-reviewer` against the active PR.
-- Demonstrates env-based overrides for models (`CHATGPT_MODEL`, `CLAUDE_MODEL`, `OPENWEBUI_MODEL`) and limits (`MAX_OUTPUT_TOKENS`, `MAX_FILES`, `MAX_DIFF_CHARS`).
+- Auto-detects the PR number; manual runs can pass `pr_number`.
+- Uses a task matrix (`review`, `summary`, `suggestions`) to exercise all modes with the `mock` provider first, so no secrets are needed.
+- Still honors env overrides for real providers (`CHATGPT_MODEL`, `CLAUDE_MODEL`, `OPENWEBUI_MODEL`) and limits (`MAX_OUTPUT_TOKENS`, `MAX_FILES`, `MAX_DIFF_CHARS`).
 
 Use it as a template for your own repo or copy it verbatim for a quick start.
 
