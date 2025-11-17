@@ -169,7 +169,7 @@ describe("main.js workflow functions", () => {
       const result = formatComment({
         completion: {
           content: "Review content",
-          model: "gpt-4o-mini",
+          model: "gpt-5-mini",
           provider: "ChatGPT"
         },
         repo: "testowner/testrepo",
@@ -177,7 +177,7 @@ describe("main.js workflow functions", () => {
       });
 
       expect(result).toContain("Review content");
-      expect(result).toContain("gpt-4o-mini");
+      expect(result).toContain("gpt-5-mini");
       expect(result).toContain("ChatGPT");
       expect(result).toContain("testowner/testrepo#123");
     });
@@ -208,7 +208,7 @@ describe("main.js workflow functions", () => {
         providers: ["chatgpt"],
         prompt: "Test prompt",
         task: "review",
-        models: { chatgpt: "gpt-4o-mini", claude: "claude-3" },
+        models: { chatgpt: "gpt-5-mini", claude: "claude-3" },
         selfHostedConfig: {},
         maxTokens: 1000,
         maxCompletionTokensMode: "auto"
@@ -230,7 +230,7 @@ describe("main.js workflow functions", () => {
         providers: ["chatgpt"],
         prompt: "Test prompt",
         task: "review",
-        models: { chatgpt: "gpt-4o-mini" },
+        models: { chatgpt: "gpt-5-mini" },
         selfHostedConfig: {},
         maxTokens: 1000
       })).rejects.toThrow("All AI providers failed");
@@ -311,7 +311,7 @@ describe("main.js workflow functions", () => {
         prMetadata: {},
         completion: {
           content: '{"summary": "Test", "reviews": []}',
-          model: "gpt-4o-mini",
+          model: "gpt-5-mini",
           provider: "ChatGPT"
         },
         files: []
@@ -331,7 +331,7 @@ describe("main.js workflow functions", () => {
         prMetadata: {},
         completion: {
           content: "invalid json",
-          model: "gpt-4o-mini",
+          model: "gpt-5-mini",
           provider: "ChatGPT"
         },
         files: []

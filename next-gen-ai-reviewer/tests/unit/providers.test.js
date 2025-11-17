@@ -33,7 +33,7 @@ describe("AI Providers", () => {
 
       const result = await runChatGPT({
         apiKey: "test-key",
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         prompt: "Review this code",
         task: "review",
         maxTokens: 1000

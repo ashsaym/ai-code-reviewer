@@ -51,7 +51,7 @@ jobs:
     pr-number: ${{ github.event.pull_request.number }}
     task: review
     ai-provider: chatgpt
-    chatgpt-model: gpt-4o-mini
+    chatgpt-model: gpt-5-mini
   env:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
@@ -61,7 +61,7 @@ jobs:
 - `CHATGPT_API_KEY` or `OPENAI_API_KEY` (required) - Your OpenAI API key
 
 **Configuration:**
-- `chatgpt-model` (default: `gpt-4o-mini`) - Model to use (gpt-4o, gpt-4o-mini, gpt-4-turbo, etc.)
+- `chatgpt-model` (default: `gpt-5-mini`) - Model to use (gpt-4o, gpt-5-mini, gpt-4-turbo, etc.)
 - `max-completion-tokens-mode` (default: `auto`) - Set to `true` for newer models (gpt-4o, o1), `false` for older ones, or `auto` to detect automatically
 
 ### Using Claude (Anthropic)
@@ -116,7 +116,7 @@ jobs:
     pr-number: ${{ github.event.pull_request.number }}
     task: review
     ai-provider: chatgpt,claude,self-hosted  # Try in order
-    chatgpt-model: gpt-4o-mini
+    chatgpt-model: gpt-5-mini
     claude-model: claude-3-5-sonnet-20241022
     self-hosted-endpoint: ${{ secrets.OPENWEBUI_URL }}/api/v1/chat/completions
     self-hosted-model: mistral-small
@@ -200,7 +200,7 @@ To enable slash commands, add the `.github/workflows/ai-slash-commands.yml` work
 | `repository` | `github.repository` | Repository in format `owner/repo` |
 | `task` | `review` | Analysis type: `review`, `summary`, `suggestions`, `description`, or `combined` |
 | `ai-provider` | `chatgpt,claude,self-hosted` | Provider priority list |
-| `chatgpt-model` | `gpt-4o-mini` | OpenAI model to use |
+| `chatgpt-model` | `gpt-5-mini` | OpenAI model to use |
 | `claude-model` | `claude-3-5-sonnet-20241022` | Anthropic model to use |
 | `self-hosted-endpoint` | - | Self-hosted API endpoint URL |
 | `self-hosted-model` | `local-model` | Self-hosted model identifier |
@@ -354,7 +354,7 @@ jobs:
           
           # Provider configuration
           ai-provider: chatgpt
-          chatgpt-model: gpt-4o-mini
+          chatgpt-model: gpt-5-mini
           
           # Task configuration
           task: review
@@ -590,7 +590,7 @@ jobs:
           ai-provider: chatgpt,claude,self-hosted
           
           # ChatGPT configuration
-          chatgpt-model: gpt-4o-mini
+          chatgpt-model: gpt-5-mini
           max-completion-tokens-mode: auto
           
           # Claude configuration
@@ -690,7 +690,7 @@ jobs:
           # Try providers in order: ChatGPT → Claude → Self-hosted
           ai-provider: chatgpt,claude,self-hosted
           
-          chatgpt-model: gpt-4o-mini
+          chatgpt-model: gpt-5-mini
           claude-model: claude-3-5-sonnet-20241022
           self-hosted-endpoint: ${{ secrets.OPENWEBUI_URL }}/api/v1/chat/completions
           self-hosted-model: mistral-small
@@ -733,7 +733,7 @@ jobs:
           pr-number: ${{ github.event.pull_request.number }}
           task: ${{ matrix.task }}
           ai-provider: chatgpt
-          chatgpt-model: gpt-4o-mini
+          chatgpt-model: gpt-5-mini
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}

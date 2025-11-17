@@ -38,7 +38,7 @@ async function runChatGPT({ apiKey, model, prompt, task, maxTokens, maxCompletio
     const useCompletionTokens = maxCompletionTokensMode;
 
     if (useCompletionTokens === "true" || useCompletionTokens === "1") {
-      // Force max_completion_tokens (for gpt-4o, gpt-4o-mini, gpt-5-mini, o1, o3, etc.)
+      // Force max_completion_tokens (for gpt-4o, gpt-5-mini, gpt-5-mini, o1, o3, etc.)
       requestPayload.max_completion_tokens = maxTokens;
     } else if (useCompletionTokens === "false" || useCompletionTokens === "0") {
       // Force max_tokens (for older models like gpt-4-turbo, gpt-3.5-turbo)

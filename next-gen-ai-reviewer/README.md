@@ -24,7 +24,7 @@ A multi-provider GitHub Action that turns any pull request into an AI-assisted e
 | `repository` | `github.repository` | Useful for cross-repo workflows. Format: `owner/name`. |
 | `task` | `review` | One of `review`, `summary`, `suggestions`, `description`, `combined` (aliases like `summarize`, `suggest`, `all`, `full` also work). |
 | `ai-provider` | `chatgpt,claude,self-hosted` | Priority-ordered list (or set `AI_PROVIDER`). |
-| `chatgpt-model` | `gpt-4o-mini` | Any ChatGPT-compatible model. |
+| `chatgpt-model` | `gpt-5-mini` | Any ChatGPT-compatible model. |
 | `claude-model` | `claude-3-5-sonnet-20241022` | Any Claude-compatible model. |
 | `self-hosted-endpoint` | _empty_ | Full URL to an OpenAI-compatible chat completion endpoint (e.g. Open WebUI). |
 | `self-hosted-model` | `local-model` | Model identifier passed to the self-hosted endpoint. |
@@ -154,12 +154,12 @@ If the endpoint accepts bearer auth, leave `self-hosted-token-header` at its def
 
 ## ChatGPT model compatibility (max_completion_tokens)
 
-OpenAI introduced a new parameter `max_completion_tokens` for newer models (gpt-4o, gpt-4o-mini, gpt-5-mini, o1, o3, etc.) to replace the older `max_tokens` parameter.
+OpenAI introduced a new parameter `max_completion_tokens` for newer models (gpt-4o, gpt-5-mini, gpt-5-mini, o1, o3, etc.) to replace the older `max_tokens` parameter.
 
 **Auto-detection (default):** The action automatically detects which parameter to use based on the model name.
 
 **Manual override:** Set the `max-completion-tokens-mode` input (or repository variable):
-- `true` - Force `max_completion_tokens` (for gpt-4o, gpt-4o-mini, gpt-5-mini, o1, o3, chatgpt-4o-latest)
+- `true` - Force `max_completion_tokens` (for gpt-4o, gpt-5-mini, gpt-5-mini, o1, o3, chatgpt-4o-latest)
 - `false` - Force `max_tokens` (for gpt-4-turbo, gpt-3.5-turbo, older models)
 
 Example for gpt-5-mini:
@@ -199,7 +199,7 @@ The `examples/.github` folder in this project ships drop-in guidance files you c
      review:
        runs-on: ubuntu-latest
         env:
-          AI_REVIEW_CHATGPT_MODEL: gpt-4o-mini
+          AI_REVIEW_CHATGPT_MODEL: gpt-5-mini
           AI_REVIEW_MAX_OUTPUT_TOKENS: "1400"
           AI_REVIEW_MAX_COMPLETION_MODE: auto
        steps:
@@ -243,7 +243,7 @@ If you clone this workflow into another repository, make sure you export the sec
 
 ```yaml
       env:
-        AI_REVIEW_CHATGPT_MODEL: gpt-4o-mini
+        AI_REVIEW_CHATGPT_MODEL: gpt-5-mini
         AI_REVIEW_MAX_OUTPUT_TOKENS: "16000"
         AI_REVIEW_MAX_COMPLETION_MODE: auto
 

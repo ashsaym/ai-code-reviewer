@@ -242,7 +242,7 @@ async function run() {
     .filter(Boolean);
 
   const models = {
-    chatgpt: getInput("chatgpt-model") || process.env.CHATGPT_MODEL || "gpt-4o-mini",
+    chatgpt: getInput("chatgpt-model") || process.env.CHATGPT_MODEL || "gpt-5-mini",
     claude: getInput("claude-model") || process.env.CLAUDE_MODEL || "claude-3-5-sonnet-20241022"
   };
 

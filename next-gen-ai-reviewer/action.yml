@@ -22,7 +22,7 @@ inputs:
   chatgpt-model:
     description: "Model to use when hitting the ChatGPT/OpenAI API."
     required: false
-    default: "gpt-4o-mini"
+    default: "gpt-5-mini"
   max-completion-tokens-mode:
     description: "Use max_completion_tokens instead of max_tokens for ChatGPT (true/false)."
     required: false
