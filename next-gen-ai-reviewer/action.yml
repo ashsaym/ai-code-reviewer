@@ -12,7 +12,7 @@ inputs:
     description: "Full repository name in the form owner/repo. Defaults to github.repository."
     required: false
   task:
-    description: "Type of analysis to run: review, summary, or suggestions."
+    description: "Type of analysis to run: review, summary, suggestions, description, or combined."
     required: false
     default: "review"
   ai-provider:

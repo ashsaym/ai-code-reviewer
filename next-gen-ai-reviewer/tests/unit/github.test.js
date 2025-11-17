@@ -4,7 +4,8 @@ const {
   postIssueComment,
   fetchRepoFile,
   createReview,
-  createReviewComment
+  createReviewComment,
+  updatePullRequest
 } = require("../../src/github");
 
 // Mock fetch globally
@@ -450,6 +451,110 @@ describe("github", () => {
 
       const callBody = JSON.parse(fetch.mock.calls[0][1].body);
       expect(callBody.side).toBe("LEFT");
+    });
+  });
+
+  describe("updatePullRequest", () => {
+    it("should update PR description", async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ number: 123, body: "Updated description" })
+      });
+
+      const result = await updatePullRequest({
+        token: mockToken,
+        owner: mockOwner,
+        repo: mockRepo,
+        prNumber: 123,
+        body: "Updated description"
+      });
+
+      expect(fetch).toHaveBeenCalledWith(
+        "https://api.github.com/repos/testowner/testrepo/pulls/123",
+        expect.objectContaining({
+          method: "PATCH",
+          body: expect.stringContaining('"body":"Updated description"')
+        })
+      );
+      expect(result.body).toBe("Updated description");
+    });
+
+    it("should update PR title", async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ number: 123, title: "New Title" })
+      });
+
+      const result = await updatePullRequest({
+        token: mockToken,
+        owner: mockOwner,
+        repo: mockRepo,
+        prNumber: 123,
+        title: "New Title"
+      });
+
+      const callBody = JSON.parse(fetch.mock.calls[0][1].body);
+      expect(callBody.title).toBe("New Title");
+      expect(callBody.body).toBeUndefined();
+      expect(result.title).toBe("New Title");
+    });
+
+    it("should update both title and body", async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ number: 123, title: "New Title", body: "New Body" })
+      });
+
+      await updatePullRequest({
+        token: mockToken,
+        owner: mockOwner,
+        repo: mockRepo,
+        prNumber: 123,
+        title: "New Title",
+        body: "New Body"
+      });
+
+      const callBody = JSON.parse(fetch.mock.calls[0][1].body);
+      expect(callBody.title).toBe("New Title");
+      expect(callBody.body).toBe("New Body");
+    });
+
+    it("should handle update errors", async () => {
+      fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 422,
+        statusText: "Unprocessable Entity",
+        text: async () => "Validation failed"
+      });
+
+      await expect(updatePullRequest({
+        token: mockToken,
+        owner: mockOwner,
+        repo: mockRepo,
+        prNumber: 123,
+        body: ""
+      })).rejects.toThrow("422");
+    });
+
+    it("should omit undefined parameters", async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ number: 123 })
+      });
+
+      await updatePullRequest({
+        token: mockToken,
+        owner: mockOwner,
+        repo: mockRepo,
+        prNumber: 123
+      });
+
+      const callBody = JSON.parse(fetch.mock.calls[0][1].body);
+      expect(callBody).toEqual({});
     });
   });
 });

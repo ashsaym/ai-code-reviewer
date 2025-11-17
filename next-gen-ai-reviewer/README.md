@@ -22,7 +22,7 @@ A multi-provider GitHub Action that turns any pull request into an AI-assisted e
 | --- | --- | --- |
 | `pr-number` | _auto_ | Optional. Auto-detected from the workflow event or `PR_NUMBER` env. |
 | `repository` | `github.repository` | Useful for cross-repo workflows. Format: `owner/name`. |
-| `task` | `review` | One of `review`, `summary`, `suggestions` (aliases like `summarize` or `suggest` also work). |
+| `task` | `review` | One of `review`, `summary`, `suggestions`, `description`, `combined` (aliases like `summarize`, `suggest`, `all`, `full` also work). |
 | `ai-provider` | `chatgpt,claude,self-hosted` | Priority-ordered list (or set `AI_PROVIDER`). |
 | `chatgpt-model` | `gpt-4o-mini` | Any ChatGPT-compatible model. |
 | `claude-model` | `claude-3-5-sonnet-20241022` | Any Claude-compatible model. |
@@ -60,6 +60,77 @@ Drop these files inside `.github/` of the repository under review and the action
 | `.github/prompts/suggestions.md` | Custom template for `suggestions` tasks. |
 
 Available template placeholders: `{{taskLabel}}`, `{{prHeader}}`, `{{prDescription}}`, `{{fileSummaries}}`, `{{instructions}}`, `{{rulesets}}`, `{{ignorePatterns}}`, `{{ignoredFiles}}`, `{{teamNotes}}`, and more (see `src/promptBuilder.js`). If no template is present, the built-in prompt is used.
+
+## Task types
+
+### `review` (default)
+Provides detailed code review with inline comments on specific lines. Identifies issues, best practices, and potential bugs.
+
+### `summary`
+Generates an executive summary of the PR including what changed, why, and potential impacts.
+
+### `suggestions`
+Offers actionable improvement suggestions with inline comments where applicable.
+
+### `description` (new)
+Analyzes all PR changes and **automatically updates the PR description** with a comprehensive summary. Includes:
+- Clear description of changes
+- Type of change (bug fix, feature, etc.)
+- List of specific changes made
+- Testing considerations
+
+**Slash command:** Comment `/generate_description` on any PR to trigger this task interactively.
+
+### `combined` (new)
+Runs all three analysis tasks (summary, review, suggestions) and combines them into **one single comment** instead of posting multiple separate comments. Saves time and reduces clutter.
+
+**Slash command:** Comment `/generate_reports` on any PR to trigger this task interactively.
+
+## Slash commands (interactive triggers)
+
+To enable interactive slash commands, add this workflow to your repository at `.github/workflows/ai-slash-commands.yml`:
+
+```yaml
+name: AI Slash Commands
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  handle-command:
+    if: github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for slash commands
+        id: check-command
+        run: |
+          if echo "${{ github.event.comment.body }}" | grep -q "^/generate_description"; then
+            echo "command=description" >> "$GITHUB_OUTPUT"
+          elif echo "${{ github.event.comment.body }}" | grep -q "^/generate_reports"; then
+            echo "command=combined" >> "$GITHUB_OUTPUT"
+          else
+            echo "command=none" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v5
+        if: steps.check-command.outputs.command != 'none'
+
+      - uses: ./next-gen-ai-reviewer
+        if: steps.check-command.outputs.command != 'none'
+        with:
+          task: ${{ steps.check-command.outputs.command }}
+          pr-number: ${{ github.event.issue.number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
+```
+
+Then team members can comment `/generate_description` or `/generate_reports` on any PR to trigger AI analysis.
 
 ## Self-hosted/Open WebUI provider
 Use any on-prem OpenAI-compatible endpoint by adding it to the provider list:

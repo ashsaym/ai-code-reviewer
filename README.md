@@ -154,6 +154,42 @@ with:
   # Alias: task: suggest
 ```
 
+### PR Description (`description`)
+Generates a comprehensive PR description based on the changes and updates it automatically. Perfect for auto-documenting your PRs.
+
+```yaml
+with:
+  task: description
+```
+
+**Slash Command:** Use `/generate_description` as a PR comment to trigger this task interactively.
+
+### Combined Report (`combined`)
+Runs all three analysis tasks (summary, review, suggestions) and combines them into a single comprehensive comment. Saves time and API calls.
+
+```yaml
+with:
+  task: combined
+```
+
+**Slash Command:** Use `/generate_reports` as a PR comment to trigger this task interactively.
+
+## 💬 Slash Commands
+
+Enable interactive AI analysis by commenting on your PRs:
+
+### `/generate_description`
+Analyzes all changes in the PR and automatically updates the PR description with a comprehensive summary including:
+- Clear description of what changed
+- Type of change (bug fix, feature, etc.)
+- List of changes made
+- Testing notes
+
+### `/generate_reports`
+Generates a complete analysis combining summary, code review, and suggestions in **one single comment** instead of multiple separate comments.
+
+To enable slash commands, add the `.github/workflows/ai-slash-commands.yml` workflow to your repository (included in this action).
+
 ## ⚙️ Configuration Options
 
 ### All Inputs
@@ -162,7 +198,7 @@ with:
 |-------|---------|-------------|
 | `pr-number` | Auto-detected | Pull request number to review |
 | `repository` | `github.repository` | Repository in format `owner/repo` |
-| `task` | `review` | Analysis type: `review`, `summary`, or `suggestions` |
+| `task` | `review` | Analysis type: `review`, `summary`, `suggestions`, `description`, or `combined` |
 | `ai-provider` | `chatgpt,claude,self-hosted` | Provider priority list |
 | `chatgpt-model` | `gpt-4o-mini` | OpenAI model to use |
 | `claude-model` | `claude-3-5-sonnet-20241022` | Anthropic model to use |
