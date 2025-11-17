@@ -14,7 +14,6 @@ A multi-provider GitHub Action that turns any pull request into an AI-assisted e
 - Builds role-specific prompts with optional team instructions and repo-level guidance files (sample `.github` assets included).
 - Calls ChatGPT (OpenAI) or Claude (Anthropic) with temperature tuned for deterministic output.
 - Falls back to self-hosted/Open WebUI endpoints when the hosted providers are unavailable.
-- Provides a `mock` provider so CI pipelines can exercise the workflow without external API keys, but production providers are attempted first when their secrets are present.
 - Posts nicely formatted Markdown comments back onto the PR.
 - Ships with a small Node-based architecture and `node:test` coverage for the prompt builder logic.
 
@@ -24,7 +23,7 @@ A multi-provider GitHub Action that turns any pull request into an AI-assisted e
 | `pr-number` | _auto_ | Optional. Auto-detected from the workflow event or `PR_NUMBER` env. |
 | `repository` | `github.repository` | Useful for cross-repo workflows. Format: `owner/name`. |
 | `task` | `review` | One of `review`, `summary`, `suggestions` (aliases like `summarize` or `suggest` also work). |
-| `ai-provider` | `chatgpt,claude,self-hosted` | Priority-ordered list (or set `AI_PROVIDER`). Include `mock` for dry runs. |
+| `ai-provider` | `chatgpt,claude,self-hosted` | Priority-ordered list (or set `AI_PROVIDER`). |
 | `chatgpt-model` | `gpt-4o-mini` | Any ChatGPT-compatible model. |
 | `claude-model` | `claude-3-5-sonnet-20241022` | Any Claude-compatible model. |
 | `self-hosted-endpoint` | _empty_ | Full URL to an OpenAI-compatible chat completion endpoint (e.g. Open WebUI). |
@@ -42,7 +41,6 @@ A multi-provider GitHub Action that turns any pull request into an AI-assisted e
   - `CHATGPT_API_KEY` or `OPENAI_API_KEY`
   - `CLAUDE_API_KEY` or `ANTHROPIC_API_KEY`
   - `SELF_HOSTED_API_KEY` / `OPENWEBUI_API_KEY` (optional, when targeting self-hosted models)
-- No keys required when the `mock` provider is first in the list (ideal for CI smoke tests).
 - Optional env overrides:
   - `CHATGPT_MODEL`, `CLAUDE_MODEL`, `OPENWEBUI_MODEL`
   - `AI_PROVIDER`, `MAX_FILES`, `MAX_DIFF_CHARS`, `MAX_OUTPUT_TOKENS`, `ADDITIONAL_CONTEXT`
@@ -156,7 +154,7 @@ The `examples/.github` folder in this project ships drop-in guidance files you c
 This repository ships `.github/workflows/ai-review-selftest.yml`, which:
 - Runs on every pull request (or manually via `workflow_dispatch`).
 - Auto-detects the PR number; manual runs can pass `pr_number`.
-- Executes a task matrix (`review`, `summary`, `suggestions`) and tries `chatgpt`, then `claude`, then `self-hosted` before finally falling back to `mock` so CI stays green with no secrets.
+- Executes a task matrix (`review`, `summary`, `suggestions`) and tries `chatgpt`, then `claude`, then `self-hosted`.
 - Exposes the usual provider secrets/overrides as environment variables on the reviewer step so dropping keys into the repo immediately enables “real” output.
 
 If you clone this workflow into another repository, make sure you export the secrets alongside `GITHUB_TOKEN`:
@@ -166,7 +164,7 @@ If you clone this workflow into another repository, make sure you export the sec
         uses: ./next-gen-ai-reviewer
         with:
           task: review
-          ai-provider: chatgpt,claude,self-hosted,mock
+          ai-provider: chatgpt,claude,self-hosted
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
@@ -182,7 +180,7 @@ If you clone this workflow into another repository, make sure you export the sec
           OPENWEBUI_MODEL: ${{ secrets.OPENWEBUI_MODEL }}
 ```
 
-With that in place the bundled workflow behaves exactly like production—real providers produce the comments, and the mock provider only triggers when everything else fails.
+With that in place the bundled workflow behaves exactly like production—real providers produce the comments.
 
 ## Example workflow
 ```yaml

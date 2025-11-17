@@ -1,13 +1,11 @@
-async function runChatGPT({ apiKey, model, prompt, task, maxTokens }) {
+async function runChatGPT({ apiKey, model, prompt, task, maxTokens, expectJson = false }) {
   if (!apiKey) {
     throw new Error("CHATGPT_API_KEY (or OPENAI_API_KEY) is required when ChatGPT provider is selected.");
   }
 
-  // Detect if this is an inline review request (JSON output expected)
-  const isInlineReview = prompt.includes("Return ONLY the JSON object") || prompt.includes('"reviews":');
-  
-  const systemContent = isInlineReview
-    ? `You are an expert AI code reviewer. You analyze code and return structured JSON output for inline GitHub review comments. Always return valid JSON, never markdown.`
+  // Use explicit expectJson flag instead of prompt inspection
+  const systemContent = expectJson
+    ? "You are an expert AI code reviewer. You analyze code and return structured JSON output for inline GitHub review comments. Always return valid JSON, never markdown."
     : `You are an expert AI pair reviewer tasked with ${task} duties. Respond with concise, professional Markdown that can be posted directly on GitHub.`;
 
   const requestPayload = {
@@ -23,9 +21,9 @@ async function runChatGPT({ apiKey, model, prompt, task, maxTokens }) {
       }
     ]
   };
-  
+
   // For inline reviews, request JSON response format if supported
-  if (isInlineReview && (model.includes("gpt-4") || model.includes("gpt-5"))) {
+  if (expectJson && (model.includes("gpt-4") || model.includes("gpt-5"))) {
     requestPayload.response_format = { type: "json_object" };
   }
 
@@ -38,11 +36,11 @@ async function runChatGPT({ apiKey, model, prompt, task, maxTokens }) {
   if (maxTokens && Number.isFinite(maxTokens) && maxTokens > 0) {
     // Check if user explicitly set MAX_COMPLETION_TOKENS_MODE via env/secret
     const useCompletionTokens = process.env.MAX_COMPLETION_TOKENS_MODE;
-    
-    if (useCompletionTokens === 'true' || useCompletionTokens === '1') {
+
+    if (useCompletionTokens === "true" || useCompletionTokens === "1") {
       // Force max_completion_tokens (for gpt-4o, gpt-4o-mini, gpt-5-mini, o1, o3, etc.)
       requestPayload.max_completion_tokens = maxTokens;
-    } else if (useCompletionTokens === 'false' || useCompletionTokens === '0') {
+    } else if (useCompletionTokens === "false" || useCompletionTokens === "0") {
       // Force max_tokens (for older models like gpt-4-turbo, gpt-3.5-turbo)
       requestPayload.max_tokens = maxTokens;
     } else {
@@ -74,12 +72,12 @@ async function runChatGPT({ apiKey, model, prompt, task, maxTokens }) {
   const choice = payload.choices?.[0];
   const content = choice?.message?.content?.trim();
   const finishReason = choice?.finish_reason;
-  
+
   // Handle different finish reasons
   if (finishReason === "length") {
     throw new Error(`ChatGPT response was truncated due to token limit (finish_reason: length). Current max_completion_tokens: ${maxTokens}. Please increase MAX_OUTPUT_TOKENS in repository secrets (recommended: 8000-16000) or reduce the PR size.`);
   }
-  
+
   if (!content) {
     // Log the actual response for debugging
     console.error("Empty response from ChatGPT. Full payload:", JSON.stringify(payload, null, 2));

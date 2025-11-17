@@ -4,8 +4,12 @@
   "description": "Multi-provider AI-powered code reviewer GitHub Action.",
   "main": "src/main.js",
   "scripts": {
-    "test": "node --test",
-    "lint": "echo \"No lint configured\""
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "test:unit": "jest --testPathPattern=tests/unit",
+    "test:integration": "jest --testPathPattern=tests/integration",
+    "lint": "eslint src tests",
+    "lint:fix": "eslint src tests --fix"
   },
   "keywords": [
     "github-action",
@@ -18,5 +22,29 @@
   "license": "MIT",
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/**/*.test.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 55,
+        "functions": 72,
+        "lines": 64,
+        "statements": 64
+      }
+    },
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ]
   }
 }

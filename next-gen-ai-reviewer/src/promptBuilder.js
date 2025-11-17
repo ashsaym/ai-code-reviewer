@@ -79,12 +79,12 @@ function buildInlineReviewPrompt({ task, prMetadata, files, maxDiffChars = 12000
   const author = prMetadata.user?.login || "unknown";
   const prHeader = `Title: ${prMetadata.title}\nAuthor: ${author}\nBase: ${prMetadata.base?.ref} -> ${prMetadata.head?.ref}`;
   const bodySection = sanitizeMultiline(prMetadata.body || "No description provided.");
-  
+
   const instructions = guidance.instructions ? sanitizeMultiline(guidance.instructions, 8000) : "";
   const rulesets = guidance.rulesets ? sanitizeMultiline(guidance.rulesets, 8000) : "";
 
   const contextBlock = additionalContext.trim() ? `\n\nTeam Notes:\n${additionalContext.trim()}` : "";
-  
+
   const guidanceSections = [];
   if (instructions) {
     guidanceSections.push(`Review Instructions:\n${instructions}`);
@@ -99,12 +99,12 @@ function buildInlineReviewPrompt({ task, prMetadata, files, maxDiffChars = 12000
   const fileSummaries = files.length
     ? files.map((file, index) => {
         const parts = [`${index + 1}. ${file.filename} (${file.status}${file.changes ? `, ±${file.changes}` : ""})`];
-        
+
         if (file.patch) {
           const diff = file.patch.length > maxDiffChars ? `${file.patch.slice(0, maxDiffChars)}\n... (diff truncated)` : file.patch;
           parts.push("```diff", diff, "```");
         }
-        
+
         return parts.join("\n");
       }).join("\n\n")
     : "No file changes detected.";

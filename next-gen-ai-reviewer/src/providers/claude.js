@@ -1,13 +1,11 @@
-async function runClaude({ apiKey, model, prompt, task, maxTokens }) {
+async function runClaude({ apiKey, model, prompt, task, maxTokens, expectJson = false }) {
   if (!apiKey) {
     throw new Error("CLAUDE_API_KEY is required when Claude provider is selected.");
   }
 
-  // Detect if this is an inline review request (JSON output expected)
-  const isInlineReview = prompt.includes("Return ONLY the JSON object") || prompt.includes('"reviews":');
-  
-  const systemContent = isInlineReview
-    ? `You are an expert AI code reviewer. You analyze code and return structured JSON output for inline GitHub review comments. Always return valid JSON, never markdown.`
+  // Use explicit expectJson flag instead of prompt inspection
+  const systemContent = expectJson
+    ? "You are an expert AI code reviewer. You analyze code and return structured JSON output for inline GitHub review comments. Always return valid JSON, never markdown."
     : `You are an expert reviewer focusing on ${task}. Keep output concise and GitHub-ready.`;
 
   const requestPayload = {
