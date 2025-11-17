@@ -28,7 +28,7 @@ jobs:
       )
     runs-on: ubuntu-latest
     env:
-      PR_NUMBER: ${{ inputs.pr_number }}
+      PR_NUMBER: ${{ github.event.issue.number }}
       AI_REVIEW_CHATGPT_MODEL: gpt-5-mini
       AI_REVIEW_MAX_OUTPUT_TOKENS: "128000"
       AI_REVIEW_MAX_COMPLETION_MODE: auto
