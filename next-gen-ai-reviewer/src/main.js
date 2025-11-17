@@ -380,7 +380,9 @@ async function run() {
 }
 
 run().catch(async (error) => {
-  console.error(`::error::${error.message}`);
+  // Only use GitHub Actions annotations when not in test mode
+  const prefix = process.env.NODE_ENV === "test" || process.env.JEST_WORKER_ID ? "" : "::error::";
+  console.error(`${prefix}${error.message}`);
 
   // Try to post failure comment to PR
   try {
