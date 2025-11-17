@@ -74,25 +74,31 @@ async function tryProviders({ providers, prompt, task, models, selfHostedConfig,
     if (provider === "chatgpt") {
       const apiKey = process.env.CHATGPT_API_KEY || process.env.OPENAI_API_KEY;
       if (!apiKey) {
+        console.warn("Skipping ChatGPT provider: CHATGPT_API_KEY and OPENAI_API_KEY are both undefined.");
         failures.push("ChatGPT: missing CHATGPT_API_KEY or OPENAI_API_KEY");
         continue;
       }
 
       try {
+        console.log(`Attempting ChatGPT provider with model ${models.chatgpt}...`);
         return await runChatGPT({ apiKey, model: models.chatgpt, prompt, task, maxTokens });
       } catch (error) {
+        console.warn(`ChatGPT provider failed: ${error.message}`);
         failures.push(`ChatGPT: ${error.message}`);
       }
     } else if (provider === "claude") {
       const apiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
       if (!apiKey) {
+        console.warn("Skipping Claude provider: CLAUDE_API_KEY and ANTHROPIC_API_KEY are both undefined.");
         failures.push("Claude: missing CLAUDE_API_KEY or ANTHROPIC_API_KEY");
         continue;
       }
 
       try {
+        console.log(`Attempting Claude provider with model ${models.claude}...`);
         return await runClaude({ apiKey, model: models.claude, prompt, task, maxTokens });
       } catch (error) {
+        console.warn(`Claude provider failed: ${error.message}`);
         failures.push(`Claude: ${error.message}`);
       }
     } else if (provider === "self-hosted" || provider === "selfhosted" || provider === "local") {
@@ -101,11 +107,13 @@ async function tryProviders({ providers, prompt, task, models, selfHostedConfig,
       const headerName = selfHostedConfig?.tokenHeader || process.env.SELF_HOSTED_TOKEN_HEADER;
 
       if (!endpoint) {
+        console.warn("Skipping self-hosted provider: endpoint not configured.");
         failures.push("Self-hosted: missing self-hosted-endpoint input or SELF_HOSTED_ENDPOINT env");
         continue;
       }
 
       try {
+        console.log(`Attempting self-hosted provider at ${endpoint}...`);
         return await runSelfHosted({
           endpoint,
           apiKey,
@@ -120,6 +128,7 @@ async function tryProviders({ providers, prompt, task, models, selfHostedConfig,
       }
     } else if (provider === "mock" || provider === "demo") {
       try {
+        console.log("Falling back to mock provider for deterministic output.");
         return await runMock({
           task,
           prompt,
@@ -127,6 +136,7 @@ async function tryProviders({ providers, prompt, task, models, selfHostedConfig,
           files: mockContext.files
         });
       } catch (error) {
+        console.warn(`Mock provider failed unexpectedly: ${error.message}`);
         failures.push(`Mock: ${error.message}`);
       }
     }

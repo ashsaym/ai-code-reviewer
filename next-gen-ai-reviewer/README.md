@@ -3,7 +3,7 @@
 A multi-provider GitHub Action that turns any pull request into an AI-assisted experience. It can compile full code reviews, publish stakeholder summaries, or share actionable suggestions using your own ChatGPT, Claude, or self-hosted (Open WebUI-compatible) models.
 
 ## Why build yet another reviewer?
-- **Bring your own keys**: Works with `CHATGPT_API_KEY`/`OPENAI_API_KEY`, `CLAUDE_API_KEY`/`ANTHROPIC_API_KEY`, and any Open WebUI-style self-hosted endpoint.
+- **Bring your own keys**: Works with `CHATGPT_API_KEY`/`OPENAI_API_KEY`, `CLAUDE_API_KEY`/`ANTHROPIC_API_KEY`, and any Open WebUI-style self-hosted endpoint. Just export those secrets as env vars on the workflow step.
 - **Action-native**: Ship it as a reusable workflow step without extra infrastructure.
 - **Task aware**: Switch between `review`, `summary`, and `suggestions` modes using a single input.
 - **Lean prompts**: Automatically trims PR descriptions and diffs to stay within model limits while preserving context.
@@ -14,7 +14,7 @@ A multi-provider GitHub Action that turns any pull request into an AI-assisted e
 - Builds role-specific prompts with optional team instructions and repo-level guidance files (sample `.github` assets included).
 - Calls ChatGPT (OpenAI) or Claude (Anthropic) with temperature tuned for deterministic output.
 - Falls back to self-hosted/Open WebUI endpoints when the hosted providers are unavailable.
-- Provides a `mock` provider so CI pipelines can exercise the workflow without external API keys.
+- Provides a `mock` provider so CI pipelines can exercise the workflow without external API keys, but production providers are attempted first when their secrets are present.
 - Posts nicely formatted Markdown comments back onto the PR.
 - Ships with a small Node-based architecture and `node:test` coverage for the prompt builder logic.
 
@@ -38,7 +38,7 @@ A multi-provider GitHub Action that turns any pull request into an AI-assisted e
 
 ## Required secrets
 - `GITHUB_TOKEN` – provided automatically inside Actions, but required when testing locally.
-- At least one AI key:
+- At least one AI key (exported as env vars inside your workflow step):
   - `CHATGPT_API_KEY` or `OPENAI_API_KEY`
   - `CLAUDE_API_KEY` or `ANTHROPIC_API_KEY`
   - `SELF_HOSTED_API_KEY` / `OPENWEBUI_API_KEY` (optional, when targeting self-hosted models)
@@ -136,10 +136,33 @@ The `examples/.github` folder in this project ships drop-in guidance files you c
 This repository ships `.github/workflows/ai-review-selftest.yml`, which:
 - Runs on every pull request (or manually via `workflow_dispatch`).
 - Auto-detects the PR number; manual runs can pass `pr_number`.
-- Uses a task matrix (`review`, `summary`, `suggestions`) to exercise all modes with the `mock` provider first, so no secrets are needed.
-- Still honors env overrides for real providers (`CHATGPT_MODEL`, `CLAUDE_MODEL`, `OPENWEBUI_MODEL`) and limits (`MAX_OUTPUT_TOKENS`, `MAX_FILES`, `MAX_DIFF_CHARS`).
+- Executes a task matrix (`review`, `summary`, `suggestions`) and tries `chatgpt`, then `claude`, then `self-hosted` before finally falling back to `mock` so CI stays green with no secrets.
+- Exposes the usual provider secrets/overrides as environment variables on the reviewer step so dropping keys into the repo immediately enables “real” output.
 
-Use it as a template for your own repo or copy it verbatim for a quick start.
+If you clone this workflow into another repository, make sure you export the secrets alongside `GITHUB_TOKEN`:
+
+```yaml
+      - name: Run Next Gen AI Reviewer
+        uses: ./next-gen-ai-reviewer
+        with:
+          task: review
+          ai-provider: chatgpt,claude,self-hosted,mock
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SELF_HOSTED_ENDPOINT: ${{ secrets.SELF_HOSTED_ENDPOINT }}
+          SELF_HOSTED_API_KEY: ${{ secrets.SELF_HOSTED_API_KEY }}
+          SELF_HOSTED_TOKEN: ${{ secrets.SELF_HOSTED_TOKEN }}
+          SELF_HOSTED_MODEL: ${{ secrets.SELF_HOSTED_MODEL }}
+          OPENWEBUI_API_URL: ${{ secrets.OPENWEBUI_API_URL }}
+          OPENWEBUI_API_KEY: ${{ secrets.OPENWEBUI_API_KEY }}
+          OPENWEBUI_MODEL: ${{ secrets.OPENWEBUI_MODEL }}
+```
+
+With that in place the bundled workflow behaves exactly like production—real providers produce the comments, and the mock provider only triggers when everything else fails.
 
 ## Example workflow
 ```yaml

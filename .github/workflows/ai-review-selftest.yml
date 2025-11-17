@@ -31,9 +31,24 @@ jobs:
         uses: ./next-gen-ai-reviewer
         with:
           task: ${{ matrix.task }}
-          ai-provider: mock,chatgpt,claude,self-hosted
+          ai-provider: chatgpt,claude,self-hosted,mock
           additional-context: |
             This run originates from ai-code-reviewer's self-test pipeline.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CHATGPT_MODEL: ${{ secrets.CHATGPT_MODEL }}
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_MODEL: ${{ secrets.CLAUDE_MODEL }}
+          SELF_HOSTED_ENDPOINT: ${{ secrets.SELF_HOSTED_ENDPOINT }}
+          SELF_HOSTED_API_KEY: ${{ secrets.SELF_HOSTED_API_KEY }}
+          SELF_HOSTED_TOKEN: ${{ secrets.SELF_HOSTED_TOKEN }}
+          SELF_HOSTED_MODEL: ${{ secrets.SELF_HOSTED_MODEL }}
+          OPENWEBUI_API_URL: ${{ secrets.OPENWEBUI_API_URL }}
+          OPENWEBUI_API_KEY: ${{ secrets.OPENWEBUI_API_KEY }}
+          OPENWEBUI_MODEL: ${{ secrets.OPENWEBUI_MODEL }}
+          AI_PROVIDER: ${{ secrets.AI_PROVIDER }}
+          MAX_OUTPUT_TOKENS: ${{ secrets.MAX_OUTPUT_TOKENS }}
