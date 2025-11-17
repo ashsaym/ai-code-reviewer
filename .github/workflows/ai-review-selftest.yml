@@ -2,7 +2,7 @@ name: Next Gen AI Reviewer (self-test)
 
 on:
   pull_request:
-    types: [assigned]
+    types: [opened]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -28,40 +28,19 @@ jobs:
     env:
       PR_NUMBER: ${{ inputs.pr_number }}
       AI_REVIEW_CHATGPT_MODEL: gpt-5-mini
-      AI_REVIEW_CLAUDE_MODEL: claude-sonnet-4-5
-      AI_REVIEW_MAX_OUTPUT_TOKENS: "64000"
+      AI_REVIEW_MAX_OUTPUT_TOKENS: "128000"
       AI_REVIEW_MAX_COMPLETION_MODE: auto
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-
-      - name: Detect AI Provider
-        id: detect-provider
-        run: |
-          # Auto-detect provider based on available API keys
-          if [[ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]] || [[ -n "${{ secrets.CLAUDE_API_KEY }}" ]]; then
-            echo "provider=claude" >> "$GITHUB_OUTPUT"
-            echo "Detected Claude API key"
-          elif [[ -n "${{ secrets.CHATGPT_API_KEY }}" ]] || [[ -n "${{ secrets.OPENAI_API_KEY }}" ]]; then
-            echo "provider=chatgpt" >> "$GITHUB_OUTPUT"
-            echo "Detected ChatGPT/OpenAI API key"
-          elif [[ -n "${{ secrets.OPENWEBUI_API_KEY }}" ]] || [[ -n "${{ secrets.SELF_HOSTED_API_KEY }}" ]]; then
-            echo "provider=self-hosted" >> "$GITHUB_OUTPUT"
-            echo "Detected Self-Hosted API key"
-          else
-            # Fallback: try all providers in order
-            echo "provider=claude,chatgpt,self-hosted" >> "$GITHUB_OUTPUT"
-            echo "No specific API key detected, trying all providers"
-          fi
 
       - name: Run Next Gen AI Reviewer
         uses: ./next-gen-ai-reviewer
         with:
           task: ${{ matrix.task }}
           pr-number: ${{ github.event.pull_request.number || inputs.pr_number }}
-          ai-provider: ${{ steps.detect-provider.outputs.provider }}
+          ai-provider: chatgpt
           chatgpt-model: ${{ env.AI_REVIEW_CHATGPT_MODEL }}
-          claude-model: ${{ env.AI_REVIEW_CLAUDE_MODEL }}
           max-output-tokens: ${{ env.AI_REVIEW_MAX_OUTPUT_TOKENS }}
           max-completion-tokens-mode: ${{ env.AI_REVIEW_MAX_COMPLETION_MODE }}
           reviewer-name: "AI Code Reviewer Bot"
@@ -70,10 +49,4 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # All possible API keys - the action will use whichever is available
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
-          CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENWEBUI_API_KEY: ${{ secrets.OPENWEBUI_API_KEY }}
-          SELF_HOSTED_API_KEY: ${{ secrets.SELF_HOSTED_API_KEY }}
