@@ -61,7 +61,14 @@ async function runChatGPT({ apiKey, model, prompt, task, maxTokens }) {
   const payload = await response.json();
   const content = payload.choices?.[0]?.message?.content?.trim();
   if (!content) {
-    throw new Error("ChatGPT response did not include any content.");
+    // Log the actual response for debugging
+    console.error("Empty response from ChatGPT. Payload:", JSON.stringify(payload, null, 2));
+    throw new Error(`ChatGPT response did not include any content. Response structure: ${JSON.stringify({
+      choices_length: payload.choices?.length,
+      has_message: !!payload.choices?.[0]?.message,
+      content_type: typeof payload.choices?.[0]?.message?.content,
+      finish_reason: payload.choices?.[0]?.finish_reason
+    })}`);
   }
 
   return {
