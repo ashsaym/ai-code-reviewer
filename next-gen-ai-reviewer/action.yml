@@ -1,0 +1,63 @@
+name: "Next Gen AI Reviewer"
+description: "Multi-provider AI reviewer capable of reviews, summaries, and suggestions."
+author: "GitHub Copilot"
+branding:
+  icon: "eye"
+  color: "purple"
+inputs:
+  pr-number:
+    description: "Pull request number to inspect."
+    required: true
+  repository:
+    description: "Full repository name in the form owner/repo. Defaults to github.repository."
+    required: false
+  task:
+    description: "Type of analysis to run: review, summary, or suggestions."
+    required: false
+    default: "review"
+  ai-provider:
+    description: "Comma-separated provider priority list. Supported: chatgpt, claude, self-hosted, mock."
+    required: false
+    default: "chatgpt,claude,self-hosted"
+  chatgpt-model:
+    description: "Model to use when hitting the ChatGPT/OpenAI API."
+    required: false
+    default: "gpt-4o-mini"
+  claude-model:
+    description: "Model to use when hitting the Claude API."
+    required: false
+    default: "claude-3-5-sonnet-20241022"
+  self-hosted-endpoint:
+    description: "Full URL for a self-hosted OpenAI-compatible endpoint (e.g. Open WebUI)."
+    required: false
+    default: ""
+  self-hosted-model:
+    description: "Model identifier to pass to the self-hosted endpoint."
+    required: false
+    default: "local-model"
+  self-hosted-token:
+    description: "Optional token to authenticate against the self-hosted endpoint (use secrets)."
+    required: false
+    default: ""
+  self-hosted-token-header:
+    description: "Header key used for the self-hosted token."
+    required: false
+    default: "Authorization"
+  max-files:
+    description: "Maximum number of changed files to include in the prompt."
+    required: false
+    default: "40"
+  max-diff-chars:
+    description: "Maximum number of diff characters per file chunk."
+    required: false
+    default: "12000"
+  additional-context:
+    description: "Extra instructions appended to every AI prompt."
+    required: false
+  max-output-tokens:
+    description: "Maximum tokens to request from the selected AI provider."
+    required: false
+    default: "4000"
+runs:
+  using: "node20"
+  main: "src/main.js"

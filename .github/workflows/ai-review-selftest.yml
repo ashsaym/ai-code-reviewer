@@ -1,0 +1,43 @@
+name: Next Gen AI Reviewer (self-test)
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to review when running manually
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        task: [review, summary, suggestions]
+    env:
+      PR_NUMBER: ${{ inputs.pr_number }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Next Gen AI Reviewer
+        uses: ./next-gen-ai-reviewer
+        with:
+          task: ${{ matrix.task }}
+          ai-provider: chatgpt
+          additional-context: |
+            This run originates from ai-code-reviewer's self-test pipeline.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
+          CHATGPT_MODEL: ${{ secrets.CHATGPT_MODEL }}
+          MAX_OUTPUT_TOKENS: ${{ secrets.MAX_OUTPUT_TOKENS }}
+          MAX_COMPLETION_TOKENS_MODE: ${{ secrets.MAX_COMPLETION_TOKENS_MODE }}
