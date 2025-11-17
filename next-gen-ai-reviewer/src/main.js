@@ -176,7 +176,7 @@ async function run() {
   const maxFiles = Number(getInput("max-files") || process.env.MAX_FILES || "40");
   const maxDiffChars = Number(getInput("max-diff-chars") || process.env.MAX_DIFF_CHARS || "12000");
   const additionalContext = getInput("additional-context") || process.env.ADDITIONAL_CONTEXT || "";
-  const maxTokens = Number(getInput("max-output-tokens") || process.env.MAX_OUTPUT_TOKENS || "1200");
+  const maxTokens = Number(process.env.MAX_OUTPUT_TOKENS || getInput("max-output-tokens") || "4000");
   const providerPreference = (getInput("ai-provider") || process.env.AI_PROVIDER || "chatgpt,claude,self-hosted")
     .split(",")
     .map((value) => value.trim().toLowerCase())
