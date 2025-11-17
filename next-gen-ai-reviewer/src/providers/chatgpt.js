@@ -19,7 +19,13 @@ async function runChatGPT({ apiKey, model, prompt, task, maxTokens }) {
   };
 
   if (maxTokens && Number.isFinite(maxTokens) && maxTokens > 0) {
-    requestPayload.max_tokens = maxTokens;
+    // Use max_completion_tokens for newer models (gpt-4o, o1, etc.)
+    // Fall back to max_tokens for older models
+    if (model.includes('o1') || model.includes('gpt-4o')) {
+      requestPayload.max_completion_tokens = maxTokens;
+    } else {
+      requestPayload.max_tokens = maxTokens;
+    }
   }
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
