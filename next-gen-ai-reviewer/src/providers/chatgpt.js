@@ -19,13 +19,23 @@ async function runChatGPT({ apiKey, model, prompt, task, maxTokens }) {
   };
 
   if (maxTokens && Number.isFinite(maxTokens) && maxTokens > 0) {
-    // Use max_completion_tokens for newer models that require it
-    // (gpt-4o, gpt-4o-mini, gpt-4o-*, o1-*, o3-*, chatgpt-4o-latest, etc.)
-    const usesNewParameter = model.match(/gpt-4o|o1-|o3-|chatgpt-4o/i);
-    if (usesNewParameter) {
+    // Check if user explicitly set MAX_COMPLETION_TOKENS_MODE via env/secret
+    const useCompletionTokens = process.env.MAX_COMPLETION_TOKENS_MODE;
+    
+    if (useCompletionTokens === 'true' || useCompletionTokens === '1') {
+      // Force max_completion_tokens (for gpt-4o, gpt-4o-mini, gpt-5-mini, o1, o3, etc.)
       requestPayload.max_completion_tokens = maxTokens;
-    } else {
+    } else if (useCompletionTokens === 'false' || useCompletionTokens === '0') {
+      // Force max_tokens (for older models like gpt-4-turbo, gpt-3.5-turbo)
       requestPayload.max_tokens = maxTokens;
+    } else {
+      // Auto-detect based on model name if not explicitly set
+      const usesNewParameter = model.match(/gpt-4o|gpt-5|o1-|o3-|chatgpt-4o/i);
+      if (usesNewParameter) {
+        requestPayload.max_completion_tokens = maxTokens;
+      } else {
+        requestPayload.max_tokens = maxTokens;
+      }
     }
   }
 

@@ -46,6 +46,7 @@ A multi-provider GitHub Action that turns any pull request into an AI-assisted e
 - Optional env overrides:
   - `CHATGPT_MODEL`, `CLAUDE_MODEL`, `OPENWEBUI_MODEL`
   - `AI_PROVIDER`, `MAX_FILES`, `MAX_DIFF_CHARS`, `MAX_OUTPUT_TOKENS`, `ADDITIONAL_CONTEXT`
+  - `MAX_COMPLETION_TOKENS_MODE` - Set to `true` for newer models (gpt-4o, gpt-5-mini, o1, o3) or `false` for older models (gpt-4-turbo, gpt-3.5-turbo). Auto-detected if not set.
 
 ## Repository guidance files
 Drop these files inside `.github/` of the repository under review and the action will automatically load them without a checkout:
@@ -80,6 +81,25 @@ Use any on-prem OpenAI-compatible endpoint by adding it to the provider list:
 ```
 
 If the endpoint accepts bearer auth, leave `self-hosted-token-header` at its default. Otherwise set it to the expected header name (for example `X-API-Key`).
+
+## ChatGPT model compatibility (max_completion_tokens)
+
+OpenAI introduced a new parameter `max_completion_tokens` for newer models (gpt-4o, gpt-4o-mini, gpt-5-mini, o1, o3, etc.) to replace the older `max_tokens` parameter.
+
+**Auto-detection (default):** The action automatically detects which parameter to use based on the model name.
+
+**Manual override:** Set the `MAX_COMPLETION_TOKENS_MODE` secret/environment variable:
+- `true` - Force `max_completion_tokens` (for gpt-4o, gpt-4o-mini, gpt-5-mini, o1, o3, chatgpt-4o-latest)
+- `false` - Force `max_tokens` (for gpt-4-turbo, gpt-3.5-turbo, older models)
+
+Example for gpt-5-mini:
+```yaml
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
+  CHATGPT_MODEL: gpt-5-mini
+  MAX_COMPLETION_TOKENS_MODE: true
+```
 
 ## Working example (external repo)
 The `examples/.github` folder in this project ships drop-in guidance files you can copy into another repository. Here's how to wire everything together for `acme/awesome-app` that wants to reuse this action from a submodule or checkout step:

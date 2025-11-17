@@ -52,3 +52,4 @@ jobs:
           OPENWEBUI_MODEL: ${{ secrets.OPENWEBUI_MODEL }}
           AI_PROVIDER: ${{ secrets.AI_PROVIDER }}
           MAX_OUTPUT_TOKENS: ${{ secrets.MAX_OUTPUT_TOKENS }}
+          MAX_COMPLETION_TOKENS_MODE: ${{ secrets.MAX_COMPLETION_TOKENS_MODE }}
