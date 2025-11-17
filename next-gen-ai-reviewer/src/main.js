@@ -306,15 +306,37 @@ async function run() {
     });
   }
 
-  // Validate that at least one real provider is configured
-  const firstRealProvider = providerPreference.find(p => p !== "mock" && p !== "demo");
-  if (firstRealProvider === "chatgpt" || firstRealProvider === "claude") {
-    const apiKeyEnv = firstRealProvider === "chatgpt"
-      ? (process.env.CHATGPT_API_KEY || process.env.OPENAI_API_KEY)
-      : (process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY);
-    if (!apiKeyEnv) {
-      throw new Error(`${firstRealProvider.toUpperCase()}_API_KEY is required but not set in secrets/environment.`);
+  // Validate that at least one real provider is configured with valid credentials
+  const realProviders = providerPreference.filter(p => p !== "mock" && p !== "demo");
+  const hasValidProvider = realProviders.some(provider => {
+    if (provider === "chatgpt") {
+      return !!(process.env.CHATGPT_API_KEY || process.env.OPENAI_API_KEY);
     }
+    if (provider === "claude") {
+      return !!(process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY);
+    }
+    if (provider === "self-hosted") {
+      return !!selfHostedConfig.endpoint;
+    }
+    return false;
+  });
+
+  if (!hasValidProvider) {
+    const providerList = realProviders.join(", ");
+    const missingKeys = [];
+    if (realProviders.includes("chatgpt")) {
+      missingKeys.push("CHATGPT_API_KEY or OPENAI_API_KEY");
+    }
+    if (realProviders.includes("claude")) {
+      missingKeys.push("CLAUDE_API_KEY or ANTHROPIC_API_KEY");
+    }
+    if (realProviders.includes("self-hosted")) {
+      missingKeys.push("self-hosted-endpoint configuration");
+    }
+    throw new Error(
+      `No valid AI provider configured. Providers requested: [${providerList}]. ` +
+      `Please set one of: ${missingKeys.join(", ")} in repository secrets/environment.`
+    );
   }
 
   console.log(`Requesting completion via providers: ${providerPreference.join(", ")}`);
