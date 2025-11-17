@@ -5,7 +5,6 @@ async function runChatGPT({ apiKey, model, prompt, task, maxTokens }) {
 
   const requestPayload = {
     model,
-    temperature: 0.2,
     messages: [
       {
         role: "system",
@@ -17,6 +16,12 @@ async function runChatGPT({ apiKey, model, prompt, task, maxTokens }) {
       }
     ]
   };
+
+  // Only set temperature for models that support it (not o1, o3, gpt-5-mini, etc.)
+  const supportsTemperature = !model.match(/o1-|o3-|gpt-5/i);
+  if (supportsTemperature) {
+    requestPayload.temperature = 0.2;
+  }
 
   if (maxTokens && Number.isFinite(maxTokens) && maxTokens > 0) {
     // Check if user explicitly set MAX_COMPLETION_TOKENS_MODE via env/secret
