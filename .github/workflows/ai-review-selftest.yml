@@ -31,6 +31,7 @@ jobs:
         uses: ./next-gen-ai-reviewer
         with:
           task: ${{ matrix.task }}
+          pr-number: ${{ github.event.pull_request.number || inputs.pr_number }}
           ai-provider: chatgpt
           additional-context: |
             This run originates from ai-code-reviewer's self-test pipeline.

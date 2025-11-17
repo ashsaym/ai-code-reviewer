@@ -30,17 +30,18 @@ jobs:
 
       - name: Parse command
         id: parse
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
-          COMMENT="${{ github.event.comment.body }}"
-          if [[ "$COMMENT" =~ ^/review ]]; then
-            echo "task=review" >> $GITHUB_OUTPUT
-            echo "emoji=🔍" >> $GITHUB_OUTPUT
-          elif [[ "$COMMENT" =~ ^/suggestion ]]; then
-            echo "task=suggestions" >> $GITHUB_OUTPUT
-            echo "emoji=💡" >> $GITHUB_OUTPUT
-          elif [[ "$COMMENT" =~ ^/summary ]]; then
-            echo "task=summary" >> $GITHUB_OUTPUT
-            echo "emoji=📋" >> $GITHUB_OUTPUT
+          if [[ "$COMMENT_BODY" =~ ^/review ]]; then
+            echo "task=review" >> "$GITHUB_OUTPUT"
+            echo "emoji=🔍" >> "$GITHUB_OUTPUT"
+          elif [[ "$COMMENT_BODY" =~ ^/suggestion ]]; then
+            echo "task=suggestions" >> "$GITHUB_OUTPUT"
+            echo "emoji=💡" >> "$GITHUB_OUTPUT"
+          elif [[ "$COMMENT_BODY" =~ ^/summary ]]; then
+            echo "task=summary" >> "$GITHUB_OUTPUT"
+            echo "emoji=📋" >> "$GITHUB_OUTPUT"
           fi
 
       - name: React to command
