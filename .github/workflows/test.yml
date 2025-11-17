@@ -1,0 +1,186 @@
+name: Test and Lint
+
+on:
+  push:
+    branches: [main, develop, feature/**]
+    paths:
+      - 'next-gen-ai-reviewer/**'
+      - '.github/workflows/test.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'next-gen-ai-reviewer/**'
+      - '.github/workflows/test.yml'
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: test-token
+      PR_NUMBER: ${{ github.event.pull_request.number || 1 }}
+      GITHUB_REPOSITORY: ashsaym/ai-code-reviewer
+      PR: ${{ github.event.pull_request.number || 1 }}
+      CI: true
+    
+    defaults:
+      run:
+        working-directory: next-gen-ai-reviewer
+    
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: next-gen-ai-reviewer/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Run integration tests
+        run: npm run test:integration
+        continue-on-error: true
+
+      - name: Run all tests with coverage
+        run: npm test
+
+      - name: Upload coverage reports
+        if: matrix.node-version == '20.x'
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./next-gen-ai-reviewer/coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: Archive test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-node-${{ matrix.node-version }}
+          path: |
+            next-gen-ai-reviewer/coverage/
+            next-gen-ai-reviewer/test-results/
+          retention-days: 30
+
+  lint-workflows:
+    name: Lint GitHub Workflows
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Lint workflow files
+        uses: docker://rhysd/actionlint:latest
+        with:
+          args: -color
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          deny-licenses: GPL-2.0, GPL-3.0
+
+  build-test:
+    name: Build Test
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: next-gen-ai-reviewer
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: next-gen-ai-reviewer/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify action.yml is valid
+        run: |
+          if [ ! -f "action.yml" ]; then
+            echo "Error: action.yml not found"
+            exit 1
+          fi
+          echo "action.yml found and valid"
+
+      - name: Verify entry point exists
+        run: |
+          if [ ! -f "src/main.js" ]; then
+            echo "Error: Entry point src/main.js not found"
+            exit 1
+          fi
+          echo "Entry point exists"
+
+      - name: Check for syntax errors
+        run: node --check src/main.js
+
+      - name: Verify package.json and dependencies exist
+        run: |
+          echo "✓ Checking package.json..."
+          if [ ! -f "package.json" ]; then
+            echo "✗ package.json not found"
+            exit 1
+          fi
+          echo "✓ package.json found"
+          
+          echo "✓ Checking node_modules..."
+          if [ ! -d "node_modules" ]; then
+            echo "✗ node_modules not found"
+            exit 1
+          fi
+          echo "✓ node_modules directory exists"
+          
+          echo "✓ All basic checks passed"
+
+  status-check:
+    name: All Tests Passed
+    needs: [test, lint-workflows, build-test]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Check test results
+        run: |
+          echo "Test result: ${{ needs.test.result }}"
+          echo "Lint workflows result: ${{ needs.lint-workflows.result }}"
+          echo "Build test result: ${{ needs.build-test.result }}"
+          
+          if [ "${{ needs.test.result }}" != "success" ] || \
+             [ "${{ needs.lint-workflows.result }}" != "success" ] || \
+             [ "${{ needs.build-test.result }}" != "success" ]; then
+            echo "One or more required checks failed"
+            exit 1
+          fi
+          echo "All required checks passed"

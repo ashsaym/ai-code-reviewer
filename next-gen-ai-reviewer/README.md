@@ -14,7 +14,6 @@ A multi-provider GitHub Action that turns any pull request into an AI-assisted e
 - Builds role-specific prompts with optional team instructions and repo-level guidance files (sample `.github` assets included).
 - Calls ChatGPT (OpenAI) or Claude (Anthropic) with temperature tuned for deterministic output.
 - Falls back to self-hosted/Open WebUI endpoints when the hosted providers are unavailable.
-- Provides a `mock` provider so CI pipelines can exercise the workflow without external API keys, but production providers are attempted first when their secrets are present.
 - Posts nicely formatted Markdown comments back onto the PR.
 - Ships with a small Node-based architecture and `node:test` coverage for the prompt builder logic.
 
@@ -24,7 +23,7 @@ A multi-provider GitHub Action that turns any pull request into an AI-assisted e
 | `pr-number` | _auto_ | Optional. Auto-detected from the workflow event or `PR_NUMBER` env. |
 | `repository` | `github.repository` | Useful for cross-repo workflows. Format: `owner/name`. |
 | `task` | `review` | One of `review`, `summary`, `suggestions` (aliases like `summarize` or `suggest` also work). |
-| `ai-provider` | `chatgpt,claude,self-hosted` | Priority-ordered list (or set `AI_PROVIDER`). Include `mock` for dry runs. |
+| `ai-provider` | `chatgpt,claude,self-hosted` | Priority-ordered list (or set `AI_PROVIDER`). |
 | `chatgpt-model` | `gpt-4o-mini` | Any ChatGPT-compatible model. |
 | `claude-model` | `claude-3-5-sonnet-20241022` | Any Claude-compatible model. |
 | `self-hosted-endpoint` | _empty_ | Full URL to an OpenAI-compatible chat completion endpoint (e.g. Open WebUI). |
@@ -34,7 +33,8 @@ A multi-provider GitHub Action that turns any pull request into an AI-assisted e
 | `max-files` | `40` | Cap on changed files included in the prompt (`MAX_FILES`). |
 | `max-diff-chars` | `12000` | Per-file diff truncation limit (`MAX_DIFF_CHARS`). |
 | `additional-context` | _empty_ | Extra guidance appended to every prompt (`ADDITIONAL_CONTEXT`). |
-| `max-output-tokens` | `1200` | Response cap applied to every provider (`MAX_OUTPUT_TOKENS`). |
+| `max-output-tokens` | `16000` | Response cap applied to every provider (`MAX_OUTPUT_TOKENS`). |
+| `max-completion-tokens-mode` | `auto` | Force ChatGPT to use `max_completion_tokens` (`true`), `max_tokens` (`false`), or auto-detect (`auto`). |
 
 ## Required secrets
 - `GITHUB_TOKEN` – provided automatically inside Actions, but required when testing locally.
@@ -42,11 +42,10 @@ A multi-provider GitHub Action that turns any pull request into an AI-assisted e
   - `CHATGPT_API_KEY` or `OPENAI_API_KEY`
   - `CLAUDE_API_KEY` or `ANTHROPIC_API_KEY`
   - `SELF_HOSTED_API_KEY` / `OPENWEBUI_API_KEY` (optional, when targeting self-hosted models)
-- No keys required when the `mock` provider is first in the list (ideal for CI smoke tests).
-- Optional env overrides:
-  - `CHATGPT_MODEL`, `CLAUDE_MODEL`, `OPENWEBUI_MODEL`
-  - `AI_PROVIDER`, `MAX_FILES`, `MAX_DIFF_CHARS`, `MAX_OUTPUT_TOKENS`, `ADDITIONAL_CONTEXT`
-  - `MAX_COMPLETION_TOKENS_MODE` - Set to `true` for newer models (gpt-4o, gpt-5-mini, o1, o3) or `false` for older models (gpt-4-turbo, gpt-3.5-turbo). Auto-detected if not set.
+- Optional inputs or repository variables (`vars.*`) you can set once and re-use across workflows:
+  - `chatgpt-model`, `claude-model`, `self-hosted-model`
+  - `ai-provider`, `max-files`, `max-diff-chars`, `max-output-tokens`, `additional-context`
+  - `max-completion-tokens-mode` - Set to `true` for newer models (gpt-4o, gpt-5-mini, o1, o3) or `false` for older models (gpt-4-turbo, gpt-3.5-turbo). Leave empty/`auto` to auto-detect.
 
 ## Repository guidance files
 Drop these files inside `.github/` of the repository under review and the action will automatically load them without a checkout:
@@ -73,11 +72,11 @@ Use any on-prem OpenAI-compatible endpoint by adding it to the provider list:
           self-hosted-endpoint: ${{ secrets.OPENWEBUI_URL }}/api/v1/chat/completions
           self-hosted-model: mistral-small
           self-hosted-token: ${{ secrets.OPENWEBUI_TOKEN }}
+          max-output-tokens: 1600
           pr-number: ${{ github.event.pull_request.number }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENWEBUI_MODEL: mistral-small
-          MAX_OUTPUT_TOKENS: 1600
+          CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }} # optional fallback provider
 ```
 
 If the endpoint accepts bearer auth, leave `self-hosted-token-header` at its default. Otherwise set it to the expected header name (for example `X-API-Key`).
@@ -88,17 +87,22 @@ OpenAI introduced a new parameter `max_completion_tokens` for newer models (gpt-
 
 **Auto-detection (default):** The action automatically detects which parameter to use based on the model name.
 
-**Manual override:** Set the `MAX_COMPLETION_TOKENS_MODE` secret/environment variable:
+**Manual override:** Set the `max-completion-tokens-mode` input (or repository variable):
 - `true` - Force `max_completion_tokens` (for gpt-4o, gpt-4o-mini, gpt-5-mini, o1, o3, chatgpt-4o-latest)
 - `false` - Force `max_tokens` (for gpt-4-turbo, gpt-3.5-turbo, older models)
 
 Example for gpt-5-mini:
 ```yaml
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
-  CHATGPT_MODEL: gpt-5-mini
-  MAX_COMPLETION_TOKENS_MODE: true
+      - uses: ./next-gen-ai-reviewer
+        with:
+          task: review
+          pr-number: ${{ github.event.pull_request.number }}
+          chatgpt-model: gpt-5-mini
+          max-output-tokens: 16000
+          max-completion-tokens-mode: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
 ```
 
 ## Working example (external repo)
@@ -123,6 +127,10 @@ The `examples/.github` folder in this project ships drop-in guidance files you c
    jobs:
      review:
        runs-on: ubuntu-latest
+        env:
+          AI_REVIEW_CHATGPT_MODEL: gpt-4o-mini
+          AI_REVIEW_MAX_OUTPUT_TOKENS: "1400"
+          AI_REVIEW_MAX_COMPLETION_MODE: auto
        steps:
          - uses: actions/checkout@v4
          - name: Install reviewer action
@@ -135,20 +143,21 @@ The `examples/.github` folder in this project ships drop-in guidance files you c
            with:
              pr-number: ${{ github.event.pull_request.number }}
              ai-provider: chatgpt,claude,self-hosted
-             additional-context: |
-               Reference the monorepo release checklist.
+            chatgpt-model: ${{ env.AI_REVIEW_CHATGPT_MODEL }}
+            claude-model: claude-3-5-sonnet-20241022
+            self-hosted-model: mistral-small
+            max-output-tokens: ${{ env.AI_REVIEW_MAX_OUTPUT_TOKENS }}
+            max-completion-tokens-mode: ${{ env.AI_REVIEW_MAX_COMPLETION_MODE }}
+            max-files: 60
+            max-diff-chars: 18000
+            additional-context: |
+              Reference the monorepo release checklist.
            env:
              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
              CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
-             CHATGPT_MODEL: gpt-4o-mini
              CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
-             CLAUDE_MODEL: claude-3-5-sonnet-20241022
              OPENWEBUI_API_KEY: ${{ secrets.OPENWEBUI_API_KEY }}
              OPENWEBUI_API_URL: ${{ secrets.OPENWEBUI_API_URL }}
-             OPENWEBUI_MODEL: mistral-small
-             MAX_OUTPUT_TOKENS: 1400
-             MAX_FILES: 60
-             MAX_DIFF_CHARS: 18000
    ```
 3. Commit `.github/review-*` and `.github/prompts/*.md` to keep repository-specific policy close to the code. The action automatically fetches them through the GitHub API—no extra checkout logic is required inside the action itself.
 
@@ -156,17 +165,26 @@ The `examples/.github` folder in this project ships drop-in guidance files you c
 This repository ships `.github/workflows/ai-review-selftest.yml`, which:
 - Runs on every pull request (or manually via `workflow_dispatch`).
 - Auto-detects the PR number; manual runs can pass `pr_number`.
-- Executes a task matrix (`review`, `summary`, `suggestions`) and tries `chatgpt`, then `claude`, then `self-hosted` before finally falling back to `mock` so CI stays green with no secrets.
-- Exposes the usual provider secrets/overrides as environment variables on the reviewer step so dropping keys into the repo immediately enables “real” output.
+- Executes a task matrix (`review`, `summary`, `suggestions`) and tries `chatgpt`, then `claude`, then `self-hosted`.
+- Reads API keys from secrets but relies on workflow inputs/repository variables for model + token limits, so the same configuration is shared across CI.
 
 If you clone this workflow into another repository, make sure you export the secrets alongside `GITHUB_TOKEN`:
 
 ```yaml
+      env:
+        AI_REVIEW_CHATGPT_MODEL: gpt-4o-mini
+        AI_REVIEW_MAX_OUTPUT_TOKENS: "16000"
+        AI_REVIEW_MAX_COMPLETION_MODE: auto
+
       - name: Run Next Gen AI Reviewer
         uses: ./next-gen-ai-reviewer
         with:
           task: review
-          ai-provider: chatgpt,claude,self-hosted,mock
+          pr-number: ${{ github.event.pull_request.number }}
+          ai-provider: chatgpt,claude,self-hosted
+          chatgpt-model: ${{ env.AI_REVIEW_CHATGPT_MODEL }}
+          max-output-tokens: ${{ env.AI_REVIEW_MAX_OUTPUT_TOKENS }}
+          max-completion-tokens-mode: ${{ env.AI_REVIEW_MAX_COMPLETION_MODE }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
@@ -182,7 +200,7 @@ If you clone this workflow into another repository, make sure you export the sec
           OPENWEBUI_MODEL: ${{ secrets.OPENWEBUI_MODEL }}
 ```
 
-With that in place the bundled workflow behaves exactly like production—real providers produce the comments, and the mock provider only triggers when everything else fails.
+With that in place the bundled workflow behaves exactly like production—real providers produce the comments.
 
 ## Example workflow
 ```yaml

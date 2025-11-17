@@ -1,13 +1,18 @@
-async function runClaude({ apiKey, model, prompt, task, maxTokens }) {
+async function runClaude({ apiKey, model, prompt, task, maxTokens, expectJson = false }) {
   if (!apiKey) {
     throw new Error("CLAUDE_API_KEY is required when Claude provider is selected.");
   }
+
+  // Use explicit expectJson flag instead of prompt inspection
+  const systemContent = expectJson
+    ? "You are an expert AI code reviewer. You analyze code and return structured JSON output for inline GitHub review comments. Always return valid JSON, never markdown."
+    : `You are an expert reviewer focusing on ${task}. Keep output concise and GitHub-ready.`;
 
   const requestPayload = {
     model,
     max_tokens: maxTokens && Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : 1200,
     temperature: 0.2,
-    system: `You are an expert reviewer focusing on ${task}. Keep output concise and GitHub-ready.`,
+    system: systemContent,
     messages: [
       {
         role: "user",

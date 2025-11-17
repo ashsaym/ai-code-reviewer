@@ -23,6 +23,9 @@ jobs:
         task: [review, summary, suggestions]
     env:
       PR_NUMBER: ${{ inputs.pr_number }}
+      AI_REVIEW_CHATGPT_MODEL: gpt-5-mini
+      AI_REVIEW_MAX_OUTPUT_TOKENS: "128000"
+      AI_REVIEW_MAX_COMPLETION_MODE: auto
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,13 +34,14 @@ jobs:
         uses: ./next-gen-ai-reviewer
         with:
           task: ${{ matrix.task }}
+          pr-number: ${{ github.event.pull_request.number || inputs.pr_number }}
           ai-provider: chatgpt
+          chatgpt-model: ${{ env.AI_REVIEW_CHATGPT_MODEL }}
+          max-output-tokens: ${{ env.AI_REVIEW_MAX_OUTPUT_TOKENS }}
+          max-completion-tokens-mode: ${{ env.AI_REVIEW_MAX_COMPLETION_MODE }}
           additional-context: |
             This run originates from ai-code-reviewer's self-test pipeline.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
           CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
-          CHATGPT_MODEL: ${{ secrets.CHATGPT_MODEL }}
-          MAX_OUTPUT_TOKENS: ${{ secrets.MAX_OUTPUT_TOKENS }}
-          MAX_COMPLETION_TOKENS_MODE: ${{ secrets.MAX_COMPLETION_TOKENS_MODE }}

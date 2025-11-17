@@ -11,7 +11,7 @@ function buildAuthHeader({ headerName, token }) {
   return { [normalized]: token };
 }
 
-async function runSelfHosted({ endpoint, apiKey, model, prompt, task, headerName, maxTokens }) {
+async function runSelfHosted({ endpoint, apiKey, model, prompt, task, headerName, maxTokens, expectJson = false }) {
   if (!endpoint) {
     throw new Error("Self-hosted endpoint URL is required when self-hosted provider is selected.");
   }
@@ -21,13 +21,17 @@ async function runSelfHosted({ endpoint, apiKey, model, prompt, task, headerName
     ...buildAuthHeader({ headerName, token: apiKey })
   };
 
+  const systemContent = expectJson
+    ? "You are an expert AI code reviewer. You analyze code and return structured JSON output for inline GitHub review comments. Always return valid JSON, never markdown."
+    : `You are an on-prem code reviewer focusing on ${task}. Return clean Markdown that can be posted on GitHub.`;
+
   const requestPayload = {
     model,
     temperature: 0.2,
     messages: [
       {
         role: "system",
-        content: `You are an on-prem code reviewer focusing on ${task}. Return clean Markdown that can be posted on GitHub.`
+        content: systemContent
       },
       {
         role: "user",

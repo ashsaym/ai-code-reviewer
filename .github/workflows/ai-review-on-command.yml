@@ -8,6 +8,7 @@ permissions:
   contents: read
   pull-requests: write
   issues: write
+  statuses: read
 
 jobs:
   handle-command:
@@ -20,7 +21,11 @@ jobs:
         startsWith(github.event.comment.body, '/summary')
       )
     runs-on: ubuntu-latest
-    
+    env:
+      AI_REVIEW_CHATGPT_MODEL: gpt-5-mini
+      AI_REVIEW_MAX_OUTPUT_TOKENS: "128000"
+      AI_REVIEW_MAX_COMPLETION_MODE: auto
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -29,17 +34,18 @@ jobs:
 
       - name: Parse command
         id: parse
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
-          COMMENT="${{ github.event.comment.body }}"
-          if [[ "$COMMENT" =~ ^/review ]]; then
-            echo "task=review" >> $GITHUB_OUTPUT
-            echo "emoji=🔍" >> $GITHUB_OUTPUT
-          elif [[ "$COMMENT" =~ ^/suggestion ]]; then
-            echo "task=suggestions" >> $GITHUB_OUTPUT
-            echo "emoji=💡" >> $GITHUB_OUTPUT
-          elif [[ "$COMMENT" =~ ^/summary ]]; then
-            echo "task=summary" >> $GITHUB_OUTPUT
-            echo "emoji=📋" >> $GITHUB_OUTPUT
+          if [[ "$COMMENT_BODY" =~ ^/review ]]; then
+            echo "task=review" >> "$GITHUB_OUTPUT"
+            echo "emoji=🔍" >> "$GITHUB_OUTPUT"
+          elif [[ "$COMMENT_BODY" =~ ^/suggestion ]]; then
+            echo "task=suggestions" >> "$GITHUB_OUTPUT"
+            echo "emoji=💡" >> "$GITHUB_OUTPUT"
+          elif [[ "$COMMENT_BODY" =~ ^/summary ]]; then
+            echo "task=summary" >> "$GITHUB_OUTPUT"
+            echo "emoji=📋" >> "$GITHUB_OUTPUT"
           fi
 
       - name: React to command
@@ -59,14 +65,15 @@ jobs:
           task: ${{ steps.parse.outputs.task }}
           pr-number: ${{ github.event.issue.number }}
           ai-provider: chatgpt
+          chatgpt-model: ${{ env.AI_REVIEW_CHATGPT_MODEL }}
+          max-output-tokens: ${{ env.AI_REVIEW_MAX_OUTPUT_TOKENS }}
+          max-completion-tokens-mode: ${{ env.AI_REVIEW_MAX_COMPLETION_MODE }}
+          inline-review: "true"
           additional-context: "Requested by @${{ github.event.comment.user.login }} via command"
         env:
           PR_NUMBER: ${{ github.event.issue.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
-          CHATGPT_MODEL: ${{ secrets.CHATGPT_MODEL }}
-          MAX_OUTPUT_TOKENS: ${{ secrets.MAX_OUTPUT_TOKENS }}
-          MAX_COMPLETION_TOKENS_MODE: ${{ secrets.MAX_COMPLETION_TOKENS_MODE }}
 
       - name: Mark command as completed
         if: success()

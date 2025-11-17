@@ -23,6 +23,10 @@ inputs:
     description: "Model to use when hitting the ChatGPT/OpenAI API."
     required: false
     default: "gpt-4o-mini"
+  max-completion-tokens-mode:
+    description: "Use max_completion_tokens instead of max_tokens for ChatGPT (true/false)."
+    required: false
+    default: "false"
   claude-model:
     description: "Model to use when hitting the Claude API."
     required: false
@@ -57,7 +61,11 @@ inputs:
   max-output-tokens:
     description: "Maximum tokens to request from the selected AI provider."
     required: false
-    default: "4000"
+    default: "16000"
+  inline-review:
+    description: "Enable GitHub-style inline review comments (true/false). Applies to review and suggestions tasks."
+    required: false
+    default: "true"
 runs:
   using: "node20"
   main: "src/main.js"
