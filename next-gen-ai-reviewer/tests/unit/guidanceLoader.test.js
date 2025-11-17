@@ -220,5 +220,21 @@ describe("guidanceLoader", () => {
         "src/utils/helper.js"
       ]);
     });
+
+    it("should handle null pattern in globToRegExp", () => {
+      const { filterFilesByPatterns } = require("../../src/guidanceLoader");
+      const result = filterFilesByPatterns(mockFiles, [null, undefined, ""]);
+
+      expect(result.filtered).toEqual(mockFiles);
+      expect(result.ignored).toEqual([]);
+    });
+
+    it("should handle patterns that result in no regexes", () => {
+      const { filterFilesByPatterns } = require("../../src/guidanceLoader");
+      const result = filterFilesByPatterns(mockFiles, ["", "", ""]);
+
+      expect(result.filtered).toEqual(mockFiles);
+      expect(result.ignored).toEqual([]);
+    });
   });
 });

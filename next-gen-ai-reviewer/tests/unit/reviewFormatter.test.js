@@ -242,4 +242,50 @@ describe("reviewFormatter", () => {
       expect(valid).toHaveLength(0);
     });
   });
+
+  describe("parseReviewJSON edge cases", () => {
+    it("should handle non-object parsed content", () => {
+      expect(() => parseReviewJSON('"just a string"')).toThrow("Parsed content is not an object");
+    });
+
+    it("should handle missing reviews array", () => {
+      expect(() => parseReviewJSON('{"summary": "test"}')).toThrow("missing 'reviews' array");
+    });
+
+    it("should warn about invalid review entries", () => {
+      const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
+
+      const result = parseReviewJSON(JSON.stringify({
+        summary: "Test",
+        reviews: [
+          { path: 123, line: "not a number", comment: null },
+          { path: "file.js", line: 10, comment: "Valid comment" }
+        ]
+      }));
+
+      expect(result).toBeDefined();
+      expect(result.reviews).toHaveLength(2);
+      expect(consoleSpy).toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe("computePositionFromPatch edge cases", () => {
+    it("should handle null or undefined patch", () => {
+      const result = computePositionFromPatch(null, 5);
+      expect(result).toBeNull();
+    });
+
+    it("should handle null or undefined target line", () => {
+      const result = computePositionFromPatch("@@ -1,3 +1,3 @@\n-old\n+new", null);
+      expect(result).toBeNull();
+    });
+
+    it("should handle patch without matching line", () => {
+      const patch = "@@ -1,3 +1,3 @@\n line1\n+line2\n line3";
+      const result = computePositionFromPatch(patch, 999);
+      expect(result).toBeNull();
+    });
+  });
 });

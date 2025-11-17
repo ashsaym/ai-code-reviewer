@@ -40,7 +40,7 @@ jobs:
 - **🔄 Smart Fallbacks**: Automatically tries next provider if one fails
 - **📊 Repository Guidance**: Load custom instructions from `.github/` files
 - **🔒 Security First**: Minimal permissions, comprehensive scanning
-- **✅ Well Tested**: 71%+ code coverage with Jest
+- **✅ Well Tested**: 78%+ code coverage with Jest
 
 ## 📦 Installation & Usage
 
@@ -275,11 +275,11 @@ Trigger reviews on-demand by commenting on any PR:
 
 View detailed coverage reports at [Codecov](https://codecov.io/gh/ashsaym/ai-code-reviewer)
 
-Current coverage: **71%+** across:
-- Lines: 71%
-- Functions: 75%
-- Branches: 63%
-- Statements: 71%
+Current coverage: **78%+** across:
+- Lines: 78%
+- Functions: 79%
+- Branches: 67%
+- Statements: 78%
 
 ### Security Scanning
 

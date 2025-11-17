@@ -219,5 +219,60 @@ describe("promptBuilder", () => {
 
       expect(prompt).toContain("EXAMPLE OUTPUT");
     });
+
+    it("should handle empty template in renderTemplate", () => {
+      const { buildPrompt } = require("../../src/promptBuilder");
+      // Test that empty template is handled correctly
+      const prompt = buildPrompt({
+        task: "review",
+        prMetadata: mockPRMetadata,
+        files: mockFiles,
+        guidance: {}
+      });
+
+      expect(prompt).toBeDefined();
+    });
+
+    it("should handle undefined context values in renderTemplate", () => {
+      const { buildPrompt } = require("../../src/promptBuilder");
+      // Test with guidance that has undefined values
+      const prompt = buildPrompt({
+        task: "review",
+        prMetadata: { ...mockPRMetadata, body: undefined },
+        files: mockFiles,
+        guidance: { customPrompt: undefined }
+      });
+
+      expect(prompt).toBeDefined();
+    });
+
+    it("should handle sanitizeMultiline with various inputs", () => {
+      const { buildPrompt } = require("../../src/promptBuilder");
+      // Test with very long body
+      const longBody = "a".repeat(5000);
+      const prompt = buildPrompt({
+        task: "review",
+        prMetadata: { ...mockPRMetadata, body: longBody },
+        files: mockFiles
+      });
+
+      expect(prompt).toBeDefined();
+    });
+
+    it("should handle file without changes field", () => {
+      const { buildPrompt } = require("../../src/promptBuilder");
+      const filesWithoutChanges = [
+        { filename: "test.js", status: "modified", patch: "@@ -1 +1 @@\n-old\n+new" }
+      ];
+
+      const prompt = buildPrompt({
+        task: "review",
+        prMetadata: mockPRMetadata,
+        files: filesWithoutChanges
+      });
+
+      expect(prompt).toBeDefined();
+      expect(prompt).toContain("test.js");
+    });
   });
 });

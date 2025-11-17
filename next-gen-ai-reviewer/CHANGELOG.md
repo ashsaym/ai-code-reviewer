@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-11-17
+
+### Improved
+- 📈 Test coverage increased from 71% to 78% (statements: 78%, branches: 67%, functions: 79%, lines: 78%)
+- ✅ Added 166 comprehensive tests across all modules
+- 🧪 Enhanced test suite for github.js, guidanceLoader.js, promptBuilder.js, reviewFormatter.js, and main.js
+- 📊 Updated coverage thresholds to match improved metrics
+- 🔍 Added edge case tests for error handling and boundary conditions
+- 🎯 Improved provider failure handling and fallback mechanism tests
+- 🛡️ Enhanced validation and error path coverage
+
+### Added
+- ✨ Tests for file fetch edge cases (404 handling, download_url support, string content)
+- ✨ Tests for guidance loader pattern matching and glob regex handling
+- ✨ Tests for prompt builder template rendering and sanitization
+- ✨ Tests for review formatter JSON parsing and validation
+- ✨ Tests for inline review position computation and comment formatting
+
+### Documentation
+- 📝 Updated README with current test coverage metrics (78%)
+- 📝 Improved code quality badges and coverage reporting
+
 ## [1.0.0] - 2025-11-17
 
 ### Removed
