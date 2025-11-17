@@ -16,13 +16,15 @@ permissions:
 
 jobs:
   handle-command:
-    # Only run on PR comments that start with /review, /suggestion, or /summary
+    # Only run on PR comments that start with slash commands
     if: |
       github.event.issue.pull_request &&
       (
         startsWith(github.event.comment.body, '/review') ||
         startsWith(github.event.comment.body, '/suggestion') ||
-        startsWith(github.event.comment.body, '/summary')
+        startsWith(github.event.comment.body, '/summary') ||
+        startsWith(github.event.comment.body, '/generate_description') ||
+        startsWith(github.event.comment.body, '/generate_reports')
       )
     runs-on: ubuntu-latest
     env:
@@ -71,6 +73,12 @@ jobs:
           elif [[ "$COMMENT_BODY" =~ ^/summary ]]; then
             echo "task=summary" >> "$GITHUB_OUTPUT"
             echo "emoji=📋" >> "$GITHUB_OUTPUT"
+          elif [[ "$COMMENT_BODY" =~ ^/generate_description ]]; then
+            echo "task=description" >> "$GITHUB_OUTPUT"
+            echo "emoji=📝" >> "$GITHUB_OUTPUT"
+          elif [[ "$COMMENT_BODY" =~ ^/generate_reports ]]; then
+            echo "task=combined" >> "$GITHUB_OUTPUT"
+            echo "emoji=📊" >> "$GITHUB_OUTPUT"
           fi
 
       - name: React to command

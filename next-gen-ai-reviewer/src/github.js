@@ -140,11 +140,31 @@ async function createReviewComment({ token, owner, repo, prNumber, body, commitI
   );
 }
 
+async function updatePullRequest({ token, owner, repo, prNumber, title, body }) {
+  const updateBody = {};
+  if (title !== undefined) {
+    updateBody.title = title;
+  }
+  if (body !== undefined) {
+    updateBody.body = body;
+  }
+
+  return githubRequest(
+    `/repos/${owner}/${repo}/pulls/${prNumber}`,
+    token,
+    {
+      method: "PATCH",
+      body: updateBody
+    }
+  );
+}
+
 module.exports = {
   fetchPullRequest,
   fetchPullFiles,
   postIssueComment,
   fetchRepoFile,
   createReview,
-  createReviewComment
+  createReviewComment,
+  updatePullRequest
 };

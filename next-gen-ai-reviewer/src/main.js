@@ -6,6 +6,7 @@ const { parseReviewJSON, formatReviewComments, validateReviewComments, computePo
 const { runChatGPT } = require("./providers/chatgpt");
 const { runClaude } = require("./providers/claude");
 const { runSelfHosted } = require("./providers/selfHosted");
+const { generatePRDescription, runCombinedTasks, formatCombinedReport } = require("./commandHandler");
 const packageJson = require("../package.json");
 
 function getInput(name, defaultValue = "") {
@@ -339,6 +340,70 @@ async function run() {
     );
   }
 
+  // Handle special tasks: description and combined
+  if (task === "description") {
+    console.log(`Requesting completion via providers: ${providerPreference.join(", ")}`);
+    const completion = await tryProviders({
+      providers: providerPreference,
+      prompt,
+      task,
+      models,
+      selfHostedConfig,
+      maxTokens,
+      maxCompletionTokensMode,
+      mockContext: { prMetadata, files: filtered }
+    });
+
+    const success = await generatePRDescription({
+      token: githubToken,
+      owner,
+      repo,
+      prNumber,
+      completion
+    });
+
+    if (success) {
+      console.log("Done. PR description successfully updated.");
+      return;
+    }
+
+    console.log("Failed to update PR description, posting as comment instead...");
+    const body = formatComment({ completion, repo: repository, prNumber });
+    await postIssueComment({ token: githubToken, owner, repo, issueNumber: prNumber, body });
+    console.log("Done. Description posted as comment.");
+    return;
+  }
+
+  if (task === "combined") {
+    const results = await runCombinedTasks({
+      tryProviders,
+      buildPrompt,
+      prMetadata,
+      files: filtered,
+      maxDiffChars,
+      additionalContext,
+      guidance,
+      providerPreference,
+      models,
+      selfHostedConfig,
+      maxTokens,
+      maxCompletionTokensMode
+    });
+
+    const combinedBody = formatCombinedReport({
+      results,
+      repo: repository,
+      prNumber,
+      packageVersion: packageJson.version
+    });
+
+    console.log("Posting combined report as a single PR comment...");
+    await postIssueComment({ token: githubToken, owner, repo, issueNumber: prNumber, body: combinedBody });
+    console.log("Done. Combined report successfully posted.");
+    return;
+  }
+
+  // Standard task handling (review, summary, suggestions)
   console.log(`Requesting completion via providers: ${providerPreference.join(", ")}`);
   const completion = await tryProviders({
     providers: providerPreference,
