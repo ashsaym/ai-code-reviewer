@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        task: [review, summary, suggestions]
+        task: [review, summary, suggestions, description]
     env:
       PR_NUMBER: ${{ inputs.pr_number }}
       AI_REVIEW_CHATGPT_MODEL: gpt-5-mini

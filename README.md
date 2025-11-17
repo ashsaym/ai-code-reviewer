@@ -167,33 +167,29 @@ with:
   task: description
 ```
 
-**Slash Command:** Use `/generate_description` as a PR comment to trigger this task interactively.
-
-### Combined Report (`combined`)
-Runs all three analysis tasks (summary, review, suggestions) and combines them into a single comprehensive comment. Saves time and API calls.
-
-```yaml
-with:
-  task: combined
-```
-
-**Slash Command:** Use `/generate_reports` as a PR comment to trigger this task interactively.
+**Slash Command:** Use `/description` as a PR comment to trigger this task interactively.
 
 ## 💬 Slash Commands
 
 Enable interactive AI analysis by commenting on your PRs:
 
-### `/generate_description`
+### `/review`
+Performs a comprehensive code review with inline comments, identifying issues and providing suggestions.
+
+### `/summary`
+Generates an executive summary of the PR changes.
+
+### `/suggestion`
+Provides actionable improvement suggestions.
+
+### `/description`
 Analyzes all changes in the PR and automatically updates the PR description with a comprehensive summary including:
 - Clear description of what changed
 - Type of change (bug fix, feature, etc.)
 - List of changes made
 - Testing notes
 
-### `/generate_reports`
-Generates a complete analysis combining summary, code review, and suggestions in **one single comment** instead of multiple separate comments.
-
-To enable slash commands, add the `.github/workflows/ai-slash-commands.yml` workflow to your repository (included in this action).
+To enable slash commands, add the `.github/workflows/ai-review-on-command.yml` workflow to your repository.
 
 ## ⚙️ Configuration Options
 
@@ -203,7 +199,7 @@ To enable slash commands, add the `.github/workflows/ai-slash-commands.yml` work
 |-------|---------|-------------|
 | `pr-number` | Auto-detected | Pull request number to review |
 | `repository` | `github.repository` | Repository in format `owner/repo` |
-| `task` | `review` | Analysis type: `review`, `summary`, `suggestions`, `description`, or `combined` |
+| `task` | `review` | Analysis type: `review`, `summary`, `suggestions`, or `description` |
 | `ai-provider` | `chatgpt,claude,self-hosted` | Provider priority list |
 | `chatgpt-model` | `gpt-5-mini` | OpenAI model to use |
 | `claude-model` | `claude-3-5-sonnet-20241022` | Anthropic model to use |

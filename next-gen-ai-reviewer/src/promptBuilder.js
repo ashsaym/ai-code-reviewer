@@ -1,8 +1,8 @@
 const TASK_LIBRARY = {
   review: {
     label: "Code Review",
-    focus: "Identify correctness issues, risky assumptions, missing tests, and architectural concerns. Provide concise, actionable findings with diffs when necessary.",
-    format: "Use markdown headings with bullet lists grouped by severity (High, Medium, Low).",
+    focus: "Identify correctness issues, risky assumptions, missing tests, and architectural concerns. Provide concise, actionable findings with diffs when necessary. IMPORTANT: Always include improvement suggestions in your review.",
+    format: "Use markdown headings with bullet lists grouped by severity (High, Medium, Low). Include a '## Suggestions' section with actionable improvements.",
     inline: true // Support inline comments
   },
   summary: {
@@ -21,12 +21,6 @@ const TASK_LIBRARY = {
     label: "PR Description",
     focus: "Generate a comprehensive pull request description that clearly explains what changes were made, why they were made, what was tested, and any relevant context. Include a summary of changes, type of change, related issues if evident from commits, and testing notes.",
     format: "Use markdown with clear sections: ## Description, ## Type of Change (with checkboxes), ## Changes Made (bullet list), ## Testing, ## Additional Notes (if needed). Be concise but thorough.",
-    inline: false
-  },
-  combined: {
-    label: "Combined Report",
-    focus: "Provide a comprehensive analysis combining summary, code review, and improvement suggestions in a single cohesive report.",
-    format: "Use markdown with clear section headings: ## Summary, ## Code Review, ## Suggestions. Each section should be complete and well-organized.",
     inline: false
   }
 };
@@ -55,9 +49,6 @@ function normalizeTask(rawValue = "") {
   }
   if (["description", "desc", "pr-description", "generate-description"].includes(value)) {
     return "description";
-  }
-  if (["combined", "all", "full", "complete", "generate-reports"].includes(value)) {
-    return "combined";
   }
   return "review";
 }

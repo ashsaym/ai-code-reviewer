@@ -6,6 +6,9 @@ jest.spyOn(process, "exit").mockImplementation(() => {});
 // Only mock fs for controlled file system tests
 jest.mock("node:fs");
 
+// Mock github module for generatePRDescription tests
+jest.mock("../../src/github");
+
 describe("main.js helper functions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -371,6 +374,67 @@ describe("main.js workflow functions", () => {
           provider: "ChatGPT"
         },
         files: []
+      });
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe("generatePRDescription", () => {
+    let github;
+    let generatePRDescription;
+
+    beforeEach(() => {
+      delete require.cache[require.resolve("../../src/main")];
+      delete require.cache[require.resolve("../../src/github")];
+      jest.clearAllMocks();
+
+      // Require github (already mocked by jest.mock at top)
+      github = require("../../src/github");
+
+      // Then require main which will use the mocked github
+      const main = require("../../src/main");
+      generatePRDescription = main.generatePRDescription;
+    });
+
+    it("should update PR description successfully", async () => {
+      github.updatePullRequest.mockResolvedValue({ body: "Updated description" });
+
+      const result = await generatePRDescription({
+        token: "test-token",
+        owner: "test-owner",
+        repo: "test-repo",
+        prNumber: 123,
+        completion: {
+          content: "## Description\nTest PR description",
+          model: "gpt-5-mini",
+          provider: "chatgpt"
+        }
+      });
+
+      expect(result).toBe(true);
+      expect(github.updatePullRequest).toHaveBeenCalledWith({
+        token: "test-token",
+        owner: "test-owner",
+        repo: "test-repo",
+        prNumber: 123,
+        body: "## Description\nTest PR description"
+      });
+    });
+
+    it("should handle update failures gracefully", async () => {
+      github.updatePullRequest.mockRejectedValue(new Error("API Error"));
+
+      const result = await generatePRDescription({
+        token: "test-token",
+        owner: "test-owner",
+        repo: "test-repo",
+        prNumber: 123,
+        completion: {
+          content: "Test description",
+          model: "gpt-5-mini",
+          provider: "chatgpt"
+        }
       });
 
       expect(result).toBe(false);

@@ -1,12 +1,11 @@
 const fs = require("node:fs");
-const { fetchPullRequest, fetchPullFiles, postIssueComment, createReview } = require("./github");
+const { fetchPullRequest, fetchPullFiles, postIssueComment, createReview, updatePullRequest } = require("./github");
 const { loadGuidance, filterFilesByPatterns } = require("./guidanceLoader");
 const { buildPrompt, buildInlineReviewPrompt, normalizeTask, TASK_LIBRARY } = require("./promptBuilder");
 const { parseReviewJSON, formatReviewComments, validateReviewComments, computePositionFromPatch } = require("./reviewFormatter");
 const { runChatGPT } = require("./providers/chatgpt");
 const { runClaude } = require("./providers/claude");
 const { runSelfHosted } = require("./providers/selfHosted");
-const { generatePRDescription, runCombinedTasks, combineTasks } = require("./commandHandler");
 const packageJson = require("../package.json");
 
 function getInput(name, defaultValue = "") {
@@ -66,6 +65,30 @@ function autoDetectPrNumber() {
 function formatComment({ completion, repo, prNumber, reviewerName = "next-gen-ai-reviewer" }) {
   const footer = `_Automated by ${reviewerName} v${packageJson.version} (${completion.model}, ${completion.provider}) for ${repo}#${prNumber}_`;
   return `${completion.content}\n\n${footer}`;
+}
+
+/**
+ * Generate and update PR description based on changes
+ */
+async function generatePRDescription({ token, owner, repo, prNumber, completion }) {
+  try {
+    console.log("Updating PR description with AI-generated content...");
+
+    // Update the PR description
+    await updatePullRequest({
+      token,
+      owner,
+      repo,
+      prNumber,
+      body: completion.content
+    });
+
+    console.log("PR description successfully updated.");
+    return true;
+  } catch (error) {
+    console.error("Failed to update PR description:", error.message);
+    return false;
+  }
 }
 
 async function postInlineReview({ token, owner, repo, prNumber, prMetadata: _prMetadata, completion, files, reviewerName = "next-gen-ai-reviewer" }) {
@@ -341,7 +364,7 @@ async function run() {
     );
   }
 
-  // Handle special tasks: description and combined
+  // Handle special task: description
   if (task === "description") {
     console.log(`Requesting completion via providers: ${providerPreference.join(", ")}`);
     const completion = await tryProviders({
@@ -372,38 +395,6 @@ async function run() {
     const body = formatComment({ completion, repo: repository, prNumber, reviewerName });
     await postIssueComment({ token: githubToken, owner, repo, issueNumber: prNumber, body });
     console.log("Done. Description posted as comment.");
-    return;
-  }
-
-  if (task === "combined") {
-    const completions = await runCombinedTasks({
-      tryProviders,
-      buildPrompt,
-      buildInlineReviewPrompt,
-      prMetadata,
-      files: filtered,
-      maxDiffChars,
-      additionalContext,
-      guidance,
-      providerPreference,
-      models,
-      selfHostedConfig,
-      maxTokens,
-      maxCompletionTokensMode
-    });
-
-    // Combine the task results into a single comment body
-    const combinedBody = combineTasks({
-      completions,
-      repo: repository,
-      prNumber,
-      packageVersion: packageJson.version,
-      reviewerName
-    });
-
-    console.log("Posting combined report as a single PR comment...");
-    await postIssueComment({ token: githubToken, owner, repo, issueNumber: prNumber, body: combinedBody });
-    console.log("Done. Combined report successfully posted.");
     return;
   }
 
@@ -504,6 +495,7 @@ if (typeof module !== "undefined" && module.exports) {
     autoDetectPrNumber,
     formatComment,
     postInlineReview,
-    tryProviders
+    tryProviders,
+    generatePRDescription
   };
 }

@@ -23,8 +23,7 @@ jobs:
         startsWith(github.event.comment.body, '/review') ||
         startsWith(github.event.comment.body, '/suggestion') ||
         startsWith(github.event.comment.body, '/summary') ||
-        startsWith(github.event.comment.body, '/generate_description') ||
-        startsWith(github.event.comment.body, '/generate_reports')
+        startsWith(github.event.comment.body, '/description')
       )
     runs-on: ubuntu-latest
     env:
@@ -58,12 +57,9 @@ jobs:
           elif [[ "$COMMENT_BODY" =~ ^/summary ]]; then
             echo "task=summary" >> "$GITHUB_OUTPUT"
             echo "emoji=📋" >> "$GITHUB_OUTPUT"
-          elif [[ "$COMMENT_BODY" =~ ^/generate_description ]]; then
+          elif [[ "$COMMENT_BODY" =~ ^/description ]]; then
             echo "task=description" >> "$GITHUB_OUTPUT"
             echo "emoji=📝" >> "$GITHUB_OUTPUT"
-          elif [[ "$COMMENT_BODY" =~ ^/generate_reports ]]; then
-            echo "task=combined" >> "$GITHUB_OUTPUT"
-            echo "emoji=📊" >> "$GITHUB_OUTPUT"
           fi
 
       - name: React to command

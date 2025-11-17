@@ -45,13 +45,6 @@ describe("promptBuilder", () => {
       expect(normalizeTask("generate-description")).toBe("description");
     });
 
-    it("should normalize combined variants", () => {
-      expect(normalizeTask("combined")).toBe("combined");
-      expect(normalizeTask("all")).toBe("combined");
-      expect(normalizeTask("full")).toBe("combined");
-      expect(normalizeTask("complete")).toBe("combined");
-      expect(normalizeTask("generate-reports")).toBe("combined");
-    });
 
     it("should default to review for unknown tasks", () => {
       expect(normalizeTask("unknown")).toBe("review");
@@ -66,7 +59,6 @@ describe("promptBuilder", () => {
       expect(TASK_LIBRARY.summary).toBeDefined();
       expect(TASK_LIBRARY.suggestions).toBeDefined();
       expect(TASK_LIBRARY.description).toBeDefined();
-      expect(TASK_LIBRARY.combined).toBeDefined();
     });
 
     it("should have correct inline support flags", () => {
@@ -74,7 +66,6 @@ describe("promptBuilder", () => {
       expect(TASK_LIBRARY.summary.inline).toBe(false);
       expect(TASK_LIBRARY.suggestions.inline).toBe(true);
       expect(TASK_LIBRARY.description.inline).toBe(false);
-      expect(TASK_LIBRARY.combined.inline).toBe(false);
     });
 
     it("should have labels and focus for all tasks", () => {
