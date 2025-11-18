@@ -17,10 +17,15 @@ export interface IncrementalReviewResult {
   threadsResolved: number;
   newIssuesCreated: number;
   reviewsDismissed: number;
-  oldIssues: Array<{ path: string; line: number; message: string; severity: string }>; // Track old issues before deletion
-  outdatedDeleted: number; // Keep for backwards compatibility
-  issuesResolved: number; // Keep for backwards compatibility
-  issuesUpdated: number; // Keep for backwards compatibility
+  
+  // Properly categorized changes
+  issuesResolved: Array<{ path: string; line: number; message: string; severity: string }>; // Actually fixed
+  issuesUpdated: Array<{ path: string; line: number; oldMessage: string; newMessage: string; severity: string }>; // Different issue on same line
+  issuesNew: Array<{ path: string; line: number; message: string; severity: string }>; // Truly new issues
+  
+  // Deprecated - keep for backwards compatibility
+  oldIssues: Array<{ path: string; line: number; message: string; severity: string }>;
+  outdatedDeleted: number;
 }
 
 interface ReviewComment {
@@ -52,9 +57,10 @@ export class IncrementalReviewStrategy {
       newIssuesCreated: newComments.length,
       reviewsDismissed: 0,
       oldIssues: [],
-      outdatedDeleted: 0, // All deleted comments are "outdated"
-      issuesResolved: 0, // All deleted comments are "resolved" too
-      issuesUpdated: 0, // No updates, only delete and recreate
+      issuesResolved: [],
+      issuesUpdated: [],
+      issuesNew: [],
+      outdatedDeleted: 0,
     };
 
     core.info('🔄 Starting incremental cleanup...');
@@ -77,13 +83,32 @@ export class IncrementalReviewStrategy {
 
     core.info(`📊 Found ${ourComments.length} Code Sentinel AI comments to clean up`);
 
-    // Track old issues before deletion for summary
+    // Extract old issues from existing comments
+    const oldIssues: Array<{ path: string; line: number; message: string; severity: string }> = [];
     for (const comment of ourComments) {
       const issue = this.extractIssueFromComment(comment);
       if (issue) {
-        result.oldIssues.push(issue);
+        oldIssues.push(issue);
+        result.oldIssues.push(issue); // Keep for backwards compatibility
       }
     }
+
+    // Extract new issues from new comments
+    const newIssues: Array<{ path: string; line: number; message: string; severity: string }> = [];
+    for (const comment of newComments) {
+      const issue = this.extractIssueFromNewComment(comment);
+      if (issue) {
+        newIssues.push(issue);
+      }
+    }
+
+    // Compare old vs new to categorize changes
+    this.categorizeChanges(oldIssues, newIssues, result);
+
+    core.info(`📊 Change analysis:`);
+    core.info(`   - Issues resolved: ${result.issuesResolved.length}`);
+    core.info(`   - Issues updated: ${result.issuesUpdated.length}`);
+    core.info(`   - Issues new: ${result.issuesNew.length}`);
 
     // Delete ALL old Code Sentinel AI comments
     // New comments will be created fresh
@@ -116,6 +141,90 @@ export class IncrementalReviewStrategy {
 
 
 
+
+  /**
+   * Categorize changes by comparing old and new issues
+   */
+  private categorizeChanges(
+    oldIssues: Array<{ path: string; line: number; message: string; severity: string }>,
+    newIssues: Array<{ path: string; line: number; message: string; severity: string }>,
+    result: IncrementalReviewResult
+  ): void {
+    // Create maps for easy lookup
+    const oldMap = new Map<string, { message: string; severity: string }>();
+    oldIssues.forEach(issue => {
+      const key = `${issue.path}:${issue.line}`;
+      oldMap.set(key, { message: issue.message, severity: issue.severity });
+    });
+
+    const newMap = new Map<string, { message: string; severity: string }>();
+    newIssues.forEach(issue => {
+      const key = `${issue.path}:${issue.line}`;
+      newMap.set(key, { message: issue.message, severity: issue.severity });
+    });
+
+    // Find resolved issues (in old but not in new)
+    oldIssues.forEach(oldIssue => {
+      const key = `${oldIssue.path}:${oldIssue.line}`;
+      if (!newMap.has(key)) {
+        result.issuesResolved.push(oldIssue);
+      }
+    });
+
+    // Find updated and new issues
+    newIssues.forEach(newIssue => {
+      const key = `${newIssue.path}:${newIssue.line}`;
+      const oldData = oldMap.get(key);
+      
+      if (oldData) {
+        // Same location exists in old - check if message changed
+        if (oldData.message !== newIssue.message) {
+          result.issuesUpdated.push({
+            path: newIssue.path,
+            line: newIssue.line,
+            oldMessage: oldData.message,
+            newMessage: newIssue.message,
+            severity: newIssue.severity
+          });
+        }
+        // If message is the same, it's neither updated nor new - just continuing
+      } else {
+        // Not in old - it's new
+        result.issuesNew.push(newIssue);
+      }
+    });
+  }
+
+  /**
+   * Extract issue information from new comment
+   */
+  private extractIssueFromNewComment(comment: { path: string; position: number; body: string }): { path: string; line: number; message: string; severity: string } | null {
+    try {
+      // Extract severity
+      let severity = 'info';
+      if (comment.body.includes('🔴') || comment.body.toLowerCase().includes('**error**')) {
+        severity = 'error';
+      } else if (comment.body.includes('🟡') || comment.body.toLowerCase().includes('**warning**')) {
+        severity = 'warning';
+      }
+      
+      // Extract first line as message (up to 100 chars)
+      const lines = comment.body.split('\n');
+      let message = lines[0].replace(/[🔴🟡ℹ️✅]/g, '').replace(/\*\*/g, '').trim();
+      if (message.length > 100) {
+        message = message.substring(0, 97) + '...';
+      }
+      
+      return {
+        path: comment.path,
+        line: comment.position, // Use position as line for new comments
+        message,
+        severity
+      };
+    } catch (error) {
+      return null;
+    }
+  }
 
   /**
    * Extract issue information from comment body

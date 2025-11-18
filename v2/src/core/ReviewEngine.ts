@@ -85,65 +85,49 @@ export class ReviewEngine {
 
     let summary = `## 🔄 Code Review Updated - ${timestamp}\n\n`;
     
-    // Show old issues resolved
-    if (incrementalResult.oldIssues.length > 0) {
-      summary += `### ✅ Old Issues Resolved (${incrementalResult.oldIssues.length})\n\n`;
-      
-      // Group by severity
-      const errorIssues = incrementalResult.oldIssues.filter(i => i.severity === 'error');
-      const warningIssues = incrementalResult.oldIssues.filter(i => i.severity === 'warning');
-      const infoIssues = incrementalResult.oldIssues.filter(i => i.severity === 'info');
-      
-      if (errorIssues.length > 0) {
-        summary += `#### 🔴 Errors Fixed (${errorIssues.length})\n`;
-        errorIssues.slice(0, 5).forEach(issue => {
-          summary += `- \`${issue.path}:${issue.line}\` - ${issue.message}\n`;
-        });
-        if (errorIssues.length > 5) {
-          summary += `- *...and ${errorIssues.length - 5} more*\n`;
-        }
-        summary += `\n`;
-      }
-      
-      if (warningIssues.length > 0) {
-        summary += `#### 🟡 Warnings Fixed (${warningIssues.length})\n`;
-        warningIssues.slice(0, 5).forEach(issue => {
-          summary += `- \`${issue.path}:${issue.line}\` - ${issue.message}\n`;
-        });
-        if (warningIssues.length > 5) {
-          summary += `- *...and ${warningIssues.length - 5} more*\n`;
-        }
-        summary += `\n`;
-      }
-      
-      if (infoIssues.length > 0) {
-        summary += `#### ℹ️ Info Items Resolved (${infoIssues.length})\n`;
-        infoIssues.slice(0, 3).forEach(issue => {
-          summary += `- \`${issue.path}:${issue.line}\` - ${issue.message}\n`;
-        });
-        if (infoIssues.length > 3) {
-          summary += `- *...and ${infoIssues.length - 3} more*\n`;
-        }
-        summary += `\n`;
-      }
-    }
+    // Show changes since last review
+    const hasChanges = incrementalResult.issuesResolved.length > 0 || 
+                       incrementalResult.issuesUpdated.length > 0 || 
+                       incrementalResult.issuesNew.length > 0;
     
-    // Add cleanup stats
-    summary += `### 🧹 Cleanup Summary\n\n`;
-    if (incrementalResult.oldIssues.length > 0) {
-      summary += `- ✅ **${incrementalResult.oldIssues.length} old issue(s) resolved**\n`;
-    }
-    if (incrementalResult.commentsDeleted > 0) {
-      summary += `- 🗑️  **${incrementalResult.commentsDeleted} old comment(s) removed**\n`;
-    }
-    if (incrementalResult.threadsResolved > 0) {
-      summary += `- 🔒 **${incrementalResult.threadsResolved} thread(s) closed**\n`;
-    }
-    if (incrementalResult.reviewsDismissed > 0) {
-      summary += `- 📦 **${incrementalResult.reviewsDismissed} old review(s) dismissed**\n`;
-    }
-    if (incrementalResult.newIssuesCreated > 0) {
-      summary += `- 🆕 **${incrementalResult.newIssuesCreated} new issue(s) found**\n`;
+    if (hasChanges) {
+      summary += `### 📊 Changes Since Last Review\n\n`;
+      
+      if (incrementalResult.issuesResolved.length > 0) {
+        summary += `✅ **${incrementalResult.issuesResolved.length} issue(s) resolved** (code was fixed)\n`;
+        incrementalResult.issuesResolved.slice(0, 5).forEach(issue => {
+          const severityIcon = issue.severity === 'error' ? '🔴' : issue.severity === 'warning' ? '🟡' : 'ℹ️';
+          summary += `  - \`${issue.path}:${issue.line}\` - ${severityIcon} ${issue.severity.toUpperCase()}\n`;
+        });
+        if (incrementalResult.issuesResolved.length > 5) {
+          summary += `  - *...and ${incrementalResult.issuesResolved.length - 5} more*\n`;
+        }
+        summary += `\n`;
+      }
+      
+      if (incrementalResult.issuesUpdated.length > 0) {
+        summary += `🔄 **${incrementalResult.issuesUpdated.length} issue(s) updated** (different problems on same lines)\n`;
+        incrementalResult.issuesUpdated.slice(0, 5).forEach(issue => {
+          const severityIcon = issue.severity === 'error' ? '🔴' : issue.severity === 'warning' ? '🟡' : 'ℹ️';
+          summary += `  - \`${issue.path}:${issue.line}\` - ${severityIcon} ${issue.severity.toUpperCase()}\n`;
+        });
+        if (incrementalResult.issuesUpdated.length > 5) {
+          summary += `  - *...and ${incrementalResult.issuesUpdated.length - 5} more*\n`;
+        }
+        summary += `\n`;
+      }
+      
+      if (incrementalResult.issuesNew.length > 0) {
+        summary += `🆕 **${incrementalResult.issuesNew.length} new issue(s) found**\n`;
+        incrementalResult.issuesNew.slice(0, 5).forEach(issue => {
+          const severityIcon = issue.severity === 'error' ? '🔴' : issue.severity === 'warning' ? '🟡' : 'ℹ️';
+          summary += `  - \`${issue.path}:${issue.line}\` - ${severityIcon} ${issue.severity.toUpperCase()}\n`;
+        });
+        if (incrementalResult.issuesNew.length > 5) {
+          summary += `  - *...and ${incrementalResult.issuesNew.length - 5} more*\n`;
+        }
+        summary += `\n`;
+      }
     }
     
     if (incrementalResult.newIssuesCreated === 0) {
