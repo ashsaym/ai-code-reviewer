@@ -13,7 +13,7 @@ import { CommentService } from '../github/CommentService';
 import { IncrementalAnalyzer, FileAnalysis } from '../analysis/IncrementalAnalyzer';
 import { ReviewComment } from '../parsers/ResponseParser';
 import { StorageManager } from '../storage/StorageManager';
-import { CommentState } from '../storage/models';
+import type { CommentState } from '../storage/models';
 
 export interface IncrementalReviewResult {
   outdatedDeleted: number;
@@ -52,11 +52,34 @@ export class IncrementalReviewStrategy {
 
     core.info('🔄 Starting incremental review update...');
 
-    // Get all existing comments from storage
+    // Get all existing comments from storage AND direct from GitHub
     const commentStorage = this.storage.getCommentStorage();
-    const existingComments = await commentStorage.getComments(prNumber);
+    const storedComments = await commentStorage.getComments(prNumber);
+    
+    // Also get ALL review comments directly from GitHub (including those without metadata)
+    const allGitHubComments = await this.commentService.listReviewComments(prNumber);
+    
+    // Convert GitHub comments to CommentState format for processing
+    const existingComments = storedComments.length > 0 
+      ? storedComments 
+      : allGitHubComments.map(c => ({
+          prNumber,
+          filePath: c.path,
+          line: c.line,
+          commentId: c.id,
+          commitSha: currentCommitSha, // Assume they're from a previous commit
+          body: c.body,
+          severity: this.inferSeverityFromBody(c.body),
+          isOutdated: c.position === null,
+          createdAt: c.createdAt,
+          updatedAt: c.updatedAt,
+          metadata: {
+            version: '1.0', // Legacy comment
+            sessionId: 'unknown',
+          },
+        }));
 
-    core.info(`📊 Found ${existingComments.length} existing comments`);
+    core.info(`📊 Found ${existingComments.length} existing comments (${storedComments.length} with metadata, ${allGitHubComments.length} total GitHub comments)`);
 
     // Build map of file SHA changes for quick lookup
     const fileChanges = new Map<string, { oldSha?: string; newSha: string }>();
@@ -257,6 +280,23 @@ export class IncrementalReviewStrategy {
       info: '🟢',
     };
     return badges[severity] || '🔵';
+  }
+
+  /**
+   * Infer severity from comment body text
+   */
+  private inferSeverityFromBody(body: string): 'error' | 'warning' | 'info' {
+    const lowerBody = body.toLowerCase();
+    
+    if (lowerBody.includes('🔴') || lowerBody.includes('error') || lowerBody.includes('critical') || lowerBody.includes('🚨')) {
+      return 'error';
+    }
+    
+    if (lowerBody.includes('🟡') || lowerBody.includes('warning') || lowerBody.includes('⚠️')) {
+      return 'warning';
+    }
+    
+    return 'info';
   }
 
   /**
