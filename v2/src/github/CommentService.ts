@@ -191,16 +191,57 @@ export class CommentService {
    */
   async resolveReviewThread(commentId: number): Promise<void> {
     try {
-      // First, get the comment details to find the node_id (needed for GraphQL)
+      // Get the comment to find the pull request review thread ID
       const comment = await this.octokit.pulls.getReviewComment({
         owner: this.owner,
         repo: this.repo,
         comment_id: commentId,
       });
 
-      const threadId = comment.data.node_id;
+      // Use GraphQL to find the thread ID and resolve it
+      // We need to query the PR's review threads and find the one containing this comment
+      const result: any = await this.octokit.graphql(`
+        query($owner: String!, $repo: String!, $prNumber: Int!, $commentId: ID!) {
+          repository(owner: $owner, name: $repo) {
+            pullRequest(number: $prNumber) {
+              reviewThreads(first: 100) {
+                nodes {
+                  id
+                  isResolved
+                  comments(first: 100) {
+                    nodes {
+                      databaseId
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `, {
+        owner: this.owner,
+        repo: this.repo,
+        prNumber: comment.data.pull_request_url.split('/').pop(),
+        commentId: comment.data.node_id,
+      });
 
-      // Use GraphQL API to resolve the thread
+      // Find the thread that contains this comment
+      const threads = result.repository.pullRequest.reviewThreads.nodes;
+      const thread = threads.find((t: any) => 
+        t.comments.nodes.some((c: any) => c.databaseId === commentId)
+      );
+
+      if (!thread) {
+        core.warning(`Could not find review thread for comment #${commentId}`);
+        return;
+      }
+
+      if (thread.isResolved) {
+        core.info(`Thread for comment #${commentId} is already resolved`);
+        return;
+      }
+
+      // Resolve the thread
       await this.octokit.graphql(`
         mutation($threadId: ID!) {
           resolveReviewThread(input: {threadId: $threadId}) {
@@ -210,7 +251,7 @@ export class CommentService {
           }
         }
       `, {
-        threadId: threadId,
+        threadId: thread.id,
       });
 
       core.info(`✅ Resolved review thread for comment #${commentId}`);
