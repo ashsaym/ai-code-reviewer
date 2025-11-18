@@ -41,8 +41,8 @@ export abstract class BaseProvider {
     this.model = options.model;
     this.maxTokens = options.maxTokens || 16000;
     this.maxCompletionTokensMode = options.maxCompletionTokensMode || false;
-    this.temperature = options.temperature || 0.3;
-    this.topP = options.topP || 0.95;
+    this.temperature = options.temperature || 1.0;
+    this.topP = options.topP || 1.0;
   }
 
   /**
