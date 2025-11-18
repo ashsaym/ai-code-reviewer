@@ -52,6 +52,7 @@ export class ReviewEngine {
   private maxLinesPerFile: number;
   private autoCleanOutdated: boolean;
   private incrementalMode: boolean;
+  private incrementalProcessedThisRun: boolean = false;
 
   constructor(options: ReviewEngineOptions) {
     this.storage = options.storage;
@@ -124,6 +125,7 @@ export class ReviewEngine {
       }
 
       // 5. Review files in batches
+      this.incrementalProcessedThisRun = false; // Reset for this PR review
       for (let i = 0; i < needsReview.length; i += this.maxFilesPerBatch) {
         const batch = needsReview.slice(i, i + this.maxFilesPerBatch);
         Logger.info(`📝 Reviewing batch ${Math.floor(i / this.maxFilesPerBatch) + 1} (${batch.length} files)`);
@@ -278,9 +280,14 @@ export class ReviewEngine {
       new IncrementalAnalyzer(this.storage, owner, repo, prNumber)
     );
 
-    // Use incremental mode if configured and there's an existing review
+    // Use incremental mode if configured, there's an existing review, AND we haven't processed it yet this run
     const shouldUseIncremental = this.incrementalMode && 
+      !this.incrementalProcessedThisRun &&
       await incrementalStrategy.shouldUseIncrementalMode(prNumber);
+    
+    if (shouldUseIncremental) {
+      this.incrementalProcessedThisRun = true; // Mark as processed
+    }
 
     // Create single review with summary + all inline comments
     if (reviewComments.length > 0) {
