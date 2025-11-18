@@ -114,7 +114,7 @@ export class PullRequestService {
 
         if (data.length === 0) break;
 
-        files.push(...data.map(f => ({
+        const pageFiles = data.map(f => ({
           filename: f.filename,
           sha: f.sha,
           status: f.status as PRFile['status'],
@@ -123,7 +123,14 @@ export class PullRequestService {
           changes: f.changes,
           patch: f.patch,
           previousFilename: f.previous_filename,
-        })));
+        }));
+        
+        // Log each file
+        for (const file of pageFiles) {
+          core.info(`  - ${file.filename} (${file.status}, +${file.additions}/-${file.deletions}, patch: ${file.patch ? 'YES' : 'NO'})`);
+        }
+        
+        files.push(...pageFiles);
 
         if (data.length < perPage) break;
         page++;

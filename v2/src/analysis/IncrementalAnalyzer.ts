@@ -84,7 +84,7 @@ export class IncrementalAnalyzer {
       });
     }
 
-    core.debug(
+    core.info(
       `📄 ${filename}: ${changedLines.length} changed lines, ` +
       `${linesToReview.length} need review (SHA: ${currentSha.substring(0, 7)})`
     );
@@ -182,7 +182,7 @@ export class IncrementalAnalyzer {
       cache
     );
 
-    core.debug(`✓ Marked ${filename} as reviewed (${reviewedLines.length} lines)`);
+    core.info(`✓ Marked ${filename} as reviewed (${reviewedLines.length} lines)`);
   }
 
   /**

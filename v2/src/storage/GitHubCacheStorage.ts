@@ -140,13 +140,13 @@ export class GitHubCacheStorage {
     const fileCache = prCache.files.find(f => f.filePath === filePath);
     
     if (!fileCache) {
-      core.debug(`File not found in cache: ${filePath}`);
+      core.info(`File not found in cache: ${filePath}`);
       return null;
     }
 
     // Check if SHA matches (file hasn't changed)
     if (fileCache.sha !== fileSha) {
-      core.debug(`File SHA mismatch - cache invalid for ${filePath}`);
+      core.info(`File SHA mismatch - cache invalid for ${filePath}`);
       return null;
     }
 
