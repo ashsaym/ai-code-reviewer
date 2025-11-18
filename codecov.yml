@@ -1,0 +1,48 @@
+codecov:
+  require_ci_to_pass: true
+  notify:
+    wait_for_ci: true
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+  
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+        if_ci_failed: error
+        
+    patch:
+      default:
+        target: auto
+        threshold: 1%
+        if_ci_failed: error
+
+# Flags for different versions
+flags:
+  v2:
+    paths:
+      - v2/src/
+    carryforward: true
+
+# Ignore patterns
+ignore:
+  - "v1/**"
+  - "v2/tests/**"
+  - "v2/dist/**"
+  - "v2/coverage/**"
+  - "**/node_modules/**"
+  - "**/*.test.ts"
+  - "**/*.spec.ts"
+  - "**/__mocks__/**"
+
+# Comment on PRs
+comment:
+  layout: "header, diff, flags, files"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
