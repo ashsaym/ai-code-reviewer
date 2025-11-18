@@ -196,12 +196,16 @@ export class IncrementalReviewStrategy {
       
       if (!commentBody.startsWith(resolvedPrefix)) {
         if (isReviewComment) {
+          // Update the comment body with resolved prefix
           await this.commentService.updateReviewComment(commentId, resolvedPrefix + commentBody);
+          
+          // Also resolve the conversation thread
+          await this.commentService.resolveReviewThread(commentId);
         } else {
           const commentStorage = this.storage.getCommentStorage();
           await commentStorage.updateComment(commentId, resolvedPrefix + commentBody, false);
         }
-        core.info(`✅ Marked comment #${commentId} as resolved`);
+        core.info(`✅ Marked comment #${commentId} as resolved and closed thread`);
       }
     } catch (error) {
       core.error(`Failed to mark comment as resolved: ${error}`);

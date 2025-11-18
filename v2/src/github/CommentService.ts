@@ -186,6 +186,41 @@ export class CommentService {
   }
 
   /**
+   * Resolve a review thread (conversation)
+   * This uses the GraphQL API to resolve the thread associated with a comment
+   */
+  async resolveReviewThread(commentId: number): Promise<void> {
+    try {
+      // First, get the comment details to find the node_id (needed for GraphQL)
+      const comment = await this.octokit.pulls.getReviewComment({
+        owner: this.owner,
+        repo: this.repo,
+        comment_id: commentId,
+      });
+
+      const threadId = comment.data.node_id;
+
+      // Use GraphQL API to resolve the thread
+      await this.octokit.graphql(`
+        mutation($threadId: ID!) {
+          resolveReviewThread(input: {threadId: $threadId}) {
+            thread {
+              isResolved
+            }
+          }
+        }
+      `, {
+        threadId: threadId,
+      });
+
+      core.info(`✅ Resolved review thread for comment #${commentId}`);
+    } catch (error) {
+      // Don't throw - resolving threads is a nice-to-have, not critical
+      core.warning(`Failed to resolve review thread for comment #${commentId}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
    * Delete review comment
    */
   async deleteReviewComment(commentId: number): Promise<void> {
