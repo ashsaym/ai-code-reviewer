@@ -23,10 +23,6 @@ export default {
     commonjs()
   ],
   external: [
-    '@actions/core',
-    '@actions/cache',
-    '@actions/github',
-    '@octokit/rest',
     'node:fs',
     'node:fs/promises',
     'node:path',
