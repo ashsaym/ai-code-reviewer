@@ -53,6 +53,39 @@ jobs:
       working-directory: ./v2
       run: npm run test:coverage
     
+    - name: Generate test summary
+      if: matrix.node-version == '20.x'
+      working-directory: ./v2
+      run: |
+        echo "## 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ -f "coverage/coverage-summary.json" ]; then
+          echo "### Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          cat coverage/coverage-summary.json | jq '.total' >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "✅ Tests passed on Node.js ${{ matrix.node-version }}" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Upload coverage reports
+      if: matrix.node-version == '20.x'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-reports
+        path: |
+          v2/coverage/lcov.info
+          v2/coverage/coverage-final.json
+          v2/coverage/lcov-report/
+        retention-days: 30
+    
+    - name: Upload test results
+      if: always() && matrix.node-version == '20.x'
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: v2/coverage/
+        retention-days: 7
+    
     - name: Build production bundle
       working-directory: ./v2
       run: npm run build
@@ -66,25 +99,18 @@ jobs:
         name: v2-coverage
         fail_ci_if_error: false
     
-    - name: Commit dist and coverage artifacts
-      if: matrix.node-version == '20.x' && github.event_name == 'push'
-      working-directory: ./v2
+    - name: Commit and push v2 build artifacts
+      if: matrix.node-version == '20.x' && github.event_name == 'push' && github.actor != 'github-actions[bot]'
       run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git add -f dist/ coverage/
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git config user.name "github-actions[bot]"
+        git add -f v2/dist v2/coverage
         if git diff --staged --quiet; then
           echo "No changes to commit"
         else
-          git commit -m "chore: update build artifacts [skip ci]"
+          git commit -m "chore: update v2 build artifacts [skip ci]"
+          git push origin HEAD:${{ github.ref_name }}
         fi
-    
-    - name: Push build artifacts
-      if: matrix.node-version == '20.x' && github.event_name == 'push'
-      uses: ad-m/github-push-action@master
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        branch: ${{ github.ref }}
 
   validate:
     name: Validate Action
