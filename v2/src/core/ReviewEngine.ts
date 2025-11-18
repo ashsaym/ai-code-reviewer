@@ -237,14 +237,14 @@ export class ReviewEngine {
           continue;
         }
 
-        // Parse diff to get position
-        const parsedDiff = DiffParser.parse(file.patch);
-        if (parsedDiff.length === 0) {
+        // Parse diff to get position (use parsePatch for GitHub API patches)
+        const parsedDiff = DiffParser.parsePatch(file.filename, file.patch);
+        if (parsedDiff.hunks.length === 0) {
           core.warning(`⚠️ Could not parse diff for: ${comment.path}`);
           continue;
         }
 
-        const position = DiffParser.getPositionForLine(parsedDiff[0], comment.line);
+        const position = DiffParser.getPositionForLine(parsedDiff, comment.line);
         if (!position) {
           core.warning(`⚠️ Line ${comment.line} not in diff for: ${comment.path}`);
           continue;
