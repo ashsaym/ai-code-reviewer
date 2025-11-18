@@ -200,8 +200,10 @@ export class CommentService {
 
       // Use GraphQL to find the thread ID and resolve it
       // We need to query the PR's review threads and find the one containing this comment
+      const prNumber = parseInt(comment.data.pull_request_url.split('/').pop() || '0', 10);
+      
       const result: any = await this.octokit.graphql(`
-        query($owner: String!, $repo: String!, $prNumber: Int!, $commentId: ID!) {
+        query($owner: String!, $repo: String!, $prNumber: Int!) {
           repository(owner: $owner, name: $repo) {
             pullRequest(number: $prNumber) {
               reviewThreads(first: 100) {
@@ -221,8 +223,7 @@ export class CommentService {
       `, {
         owner: this.owner,
         repo: this.repo,
-        prNumber: comment.data.pull_request_url.split('/').pop(),
-        commentId: comment.data.node_id,
+        prNumber: prNumber,
       });
 
       // Find the thread that contains this comment
