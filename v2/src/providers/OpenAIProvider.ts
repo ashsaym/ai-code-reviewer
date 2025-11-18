@@ -11,19 +11,16 @@ import { BaseProvider, AIMessage, AIResponse, AIProviderOptions } from './BasePr
 export interface OpenAIProviderOptions extends AIProviderOptions {
   baseURL?: string;
   organizationId?: string;
-  useMaxCompletionTokens?: boolean;
 }
 
 export class OpenAIProvider extends BaseProvider {
   private readonly baseURL: string;
   private readonly organizationId?: string;
-  private readonly useMaxCompletionTokens: boolean;
 
   constructor(options: OpenAIProviderOptions) {
     super(options);
     this.baseURL = options.baseURL || 'https://api.openai.com/v1';
     this.organizationId = options.organizationId;
-    this.useMaxCompletionTokens = options.useMaxCompletionTokens || false;
   }
 
   /**
@@ -46,7 +43,7 @@ export class OpenAIProvider extends BaseProvider {
       };
 
       // Use max_completion_tokens for newer models if enabled, otherwise max_tokens
-      if (this.useMaxCompletionTokens) {
+      if (this.maxCompletionTokensMode) {
         requestBody.max_completion_tokens = this.maxTokens;
       } else {
         requestBody.max_tokens = this.maxTokens;

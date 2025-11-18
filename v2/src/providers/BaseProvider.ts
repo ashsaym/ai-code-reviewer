@@ -22,7 +22,9 @@ export interface AIProviderOptions {
   apiKey: string;
   model: string;
   maxTokens?: number;
+  maxCompletionTokensMode?: boolean;
   temperature?: number;
+  timeout?: number;
   topP?: number;
 }
 
@@ -30,6 +32,7 @@ export abstract class BaseProvider {
   protected readonly apiKey: string;
   protected readonly model: string;
   protected readonly maxTokens: number;
+  protected readonly maxCompletionTokensMode: boolean;
   protected readonly temperature: number;
   protected readonly topP: number;
 
@@ -37,6 +40,7 @@ export abstract class BaseProvider {
     this.apiKey = options.apiKey;
     this.model = options.model;
     this.maxTokens = options.maxTokens || 16000;
+    this.maxCompletionTokensMode = options.maxCompletionTokensMode || false;
     this.temperature = options.temperature || 0.3;
     this.topP = options.topP || 0.95;
   }

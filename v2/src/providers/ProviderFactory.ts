@@ -16,13 +16,13 @@ export interface ProviderConfig {
   apiKey: string;
   model: string;
   maxTokens?: number;
+  maxCompletionTokensMode?: boolean;
   temperature?: number;
   topP?: number;
   
   // OpenAI specific
   baseURL?: string;
   organizationId?: string;
-  useMaxCompletionTokens?: boolean;
   
   // OpenWebUI specific
   endpoint?: string;
@@ -41,11 +41,11 @@ export class ProviderFactory {
           apiKey: config.apiKey,
           model: config.model,
           maxTokens: config.maxTokens,
+          maxCompletionTokensMode: config.maxCompletionTokensMode,
           temperature: config.temperature,
           topP: config.topP,
           baseURL: config.baseURL,
           organizationId: config.organizationId,
-          useMaxCompletionTokens: config.useMaxCompletionTokens,
         } as OpenAIProviderOptions);
 
       case 'openwebui':
@@ -100,7 +100,7 @@ export class ProviderFactory {
         apiKey: openwebuiKey,
         model,
         endpoint: openwebuiEndpoint,
-        maxTokens: parseInt(process.env.MAX_TOKENS || '8000', 10),
+        maxTokens: parseInt(process.env.MAX_TOKENS || '16000', 10),
         temperature: parseFloat(process.env.TEMPERATURE || '0.3'),
       });
     }
