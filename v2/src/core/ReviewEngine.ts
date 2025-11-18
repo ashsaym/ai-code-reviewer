@@ -69,9 +69,9 @@ export class ReviewEngine {
    * Create summary for incremental review with change stats
    */
   private createIncrementalSummary(
-    comments: ReviewComment[],
+    comments: Array<{ path: string; position: number; body: string }>,
     aiSummary: string,
-    incrementalResult: { issuesResolved: number; issuesUpdated: number; newIssuesCreated: number }
+    incrementalResult: { commentsDeleted: number; threadsResolved: number; newIssuesCreated: number }
   ): string {
     const timestamp = new Date().toLocaleString('en-US', {
       year: 'numeric',
@@ -85,21 +85,28 @@ export class ReviewEngine {
 
     let summary = `## 🔄 Code Review Updated - ${timestamp}\n\n`;
     
-    // Add incremental stats
-    summary += `### 📊 Changes Since Last Review\n\n`;
-    if (incrementalResult.issuesResolved > 0) {
-      summary += `- ✅ **${incrementalResult.issuesResolved} issue(s) resolved** (code was fixed)\n`;
+    // Add cleanup stats
+    summary += `### 🧹 Cleanup Summary\n\n`;
+    if (incrementalResult.commentsDeleted > 0) {
+      summary += `- 🗑️  **${incrementalResult.commentsDeleted} old comment(s) removed** (outdated or resolved)\n`;
     }
-    if (incrementalResult.issuesUpdated > 0) {
-      summary += `- 🔄 **${incrementalResult.issuesUpdated} issue(s) updated** (different problems on same lines)\n`;
+    if (incrementalResult.threadsResolved > 0) {
+      summary += `- ✅ **${incrementalResult.threadsResolved} thread(s) closed**\n`;
     }
     if (incrementalResult.newIssuesCreated > 0) {
-      summary += `- 🆕 **${incrementalResult.newIssuesCreated} new issue(s) found**\n`;
+      summary += `- 🆕 **${incrementalResult.newIssuesCreated} new issue(s) found in latest changes**\n`;
     }
-    summary += `\n`;
     
-    // Add regular summary with current issue count
-    summary += ResponseParser.createReviewSummary(comments, aiSummary);
+    if (incrementalResult.newIssuesCreated === 0) {
+      summary += `\n✨ **All clean!** No new issues found.\n`;
+    } else {
+      summary += `\n### 📋 Current Issues (${incrementalResult.newIssuesCreated} active)\n\n`;
+      summary += `See inline comments below for details.\n`;
+    }
+    
+    if (aiSummary) {
+      summary += `\n### 🤖 AI Analysis\n\n${aiSummary}\n`;
+    }
     
     return summary;
   }
@@ -314,9 +321,7 @@ export class ReviewEngine {
 
     // Check if we should use incremental mode
     const incrementalStrategy = new IncrementalReviewStrategy(
-      this.commentService,
-      this.storage,
-      new IncrementalAnalyzer(this.storage, owner, repo, prNumber)
+      this.commentService
     );
 
     // Use incremental mode if configured, there's an existing review, AND we haven't processed it yet this run
@@ -340,19 +345,19 @@ export class ReviewEngine {
             prNumber,
             pr.headSha,
             latestReviewId,
-            validComments,
-            '',  // Don't pass summary yet, we'll create it below
+            reviewComments,
+            parseResult.data?.summary || '',
             batch
           );
 
-          result.outdatedCleaned += incrementalResult.outdatedDeleted;
+          result.outdatedCleaned += incrementalResult.commentsDeleted;
           
-          core.info(`✓ Incremental update: ${incrementalResult.issuesResolved} resolved, ${incrementalResult.issuesUpdated} updated, ${incrementalResult.newIssuesCreated} new`);
+          core.info(`✓ Incremental cleanup: ${incrementalResult.commentsDeleted} old comments deleted, ${incrementalResult.threadsResolved} threads resolved, ${incrementalResult.newIssuesCreated} new issues`);
           
           // Create incremental summary with stats
           const incrementalSummary = this.createIncrementalSummary(
-            validComments,
-            parseResult.data!.summary,
+            reviewComments,
+            parseResult.data?.summary || '',
             incrementalResult
           );
           

@@ -36,6 +36,27 @@ export class CommentService {
   }
 
   /**
+   * Get owner (for internal use by strategies)
+   */
+  public getOwner(): string {
+    return this.owner;
+  }
+
+  /**
+   * Get repo (for internal use by strategies)
+   */
+  public getRepo(): string {
+    return this.repo;
+  }
+
+  /**
+   * Get octokit instance (for internal use by strategies)
+   */
+  public getOctokit(): Octokit {
+    return this.octokit;
+  }
+
+  /**
    * Create inline review comment
    */
   async createReviewComment(
@@ -61,7 +82,7 @@ export class CommentService {
       return {
         id: data.id,
         path: data.path,
-        position: data.position,
+        position: data.position ?? null,
         line: data.line || null,
         body: data.body,
         createdAt: data.created_at,
@@ -387,6 +408,122 @@ export class CommentService {
     } catch (error) {
       core.error(`Failed to list reviews: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
+    }
+  }
+
+  /**
+   * Resolve all Code Sentinel AI review threads
+   */
+  async resolveAllOurThreads(prNumber: number): Promise<number> {
+    try {
+      core.info('🔄 Resolving all Code Sentinel AI review threads...');
+      
+      const result: any = await this.octokit.graphql(`
+        query($owner: String!, $repo: String!, $prNumber: Int!) {
+          repository(owner: $owner, name: $repo) {
+            pullRequest(number: $prNumber) {
+              reviewThreads(first: 100) {
+                nodes {
+                  id
+                  isResolved
+                  comments(first: 1) {
+                    nodes {
+                      body
+                      author {
+                        login
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `, {
+        owner: this.owner,
+        repo: this.repo,
+        prNumber: prNumber,
+      });
+
+      const threads = result.repository.pullRequest.reviewThreads.nodes;
+      let resolved = 0;
+      
+      for (const thread of threads) {
+        if (thread.isResolved) continue;
+        
+        // Check if this is a Code Sentinel AI thread
+        const firstComment = thread.comments.nodes[0];
+        if (!firstComment) continue;
+        
+        const isOurs = firstComment.author.login === 'github-actions[bot]' ||
+                       firstComment.body.toLowerCase().includes('code sentinel');
+        
+        if (isOurs) {
+          try {
+            await this.octokit.graphql(`
+              mutation($threadId: ID!) {
+                resolveReviewThread(input: {threadId: $threadId}) {
+                  thread {
+                    isResolved
+                  }
+                }
+              }
+            `, {
+              threadId: thread.id,
+            });
+            resolved++;
+            core.info(`✅ Resolved thread ${thread.id}`);
+          } catch (error) {
+            core.warning(`Failed to resolve thread ${thread.id}: ${error}`);
+          }
+        }
+      }
+
+      core.info(`✅ Resolved ${resolved} Code Sentinel AI threads`);
+      return resolved;
+    } catch (error) {
+      core.warning(`Failed to resolve threads: ${error}`);
+      return 0;
+    }
+  }
+
+  /**
+   * Count resolved threads created by Code Sentinel AI
+   */
+  async countResolvedThreads(prNumber: number): Promise<number> {
+    try {
+      const result: any = await this.octokit.graphql(`
+        query($owner: String!, $repo: String!, $prNumber: Int!) {
+          repository(owner: $owner, name: $repo) {
+            pullRequest(number: $prNumber) {
+              reviewThreads(first: 100) {
+                nodes {
+                  isResolved
+                  comments(first: 1) {
+                    nodes {
+                      author {
+                        login
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `, {
+        owner: this.owner,
+        repo: this.repo,
+        prNumber: prNumber,
+      });
+
+      const threads = result.repository.pullRequest.reviewThreads.nodes;
+      return threads.filter((t: any) => 
+        t.isResolved && 
+        t.comments.nodes[0]?.author.login === 'github-actions[bot]'
+      ).length;
+    } catch (error) {
+      return 0;
     }
   }
 }
