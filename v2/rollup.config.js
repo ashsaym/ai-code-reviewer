@@ -28,5 +28,12 @@ export default {
     'node:path',
     'node:crypto',
     'node:util'
-  ]
+  ],
+  onwarn(warning, warn) {
+    // Suppress circular dependency warnings from @actions/core
+    if (warning.code === 'CIRCULAR_DEPENDENCY' && warning.message.includes('@actions/core')) {
+      return;
+    }
+    warn(warning);
+  }
 };

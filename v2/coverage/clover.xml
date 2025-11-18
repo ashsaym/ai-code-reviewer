@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1763505605957" clover="3.2.0">
-  <project timestamp="1763505605957" name="All files">
+<coverage generated="1763506712581" clover="3.2.0">
+  <project timestamp="1763506712581" name="All files">
     <metrics statements="38" coveredstatements="30" conditionals="5" coveredconditionals="3" methods="19" coveredmethods="12" elements="62" coveredelements="45" complexity="0" loc="38" ncloc="38" packages="1" files="2" classes="2"/>
     <file name="Logger.ts" path="/Users/saym/Documents/GitHub/ai-code-reviewer/v2/src/utils/Logger.ts">
       <metrics statements="17" coveredstatements="9" conditionals="2" coveredconditionals="1" methods="13" coveredmethods="6"/>
