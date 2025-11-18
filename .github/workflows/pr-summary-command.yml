@@ -1,0 +1,56 @@
+name: PR Summary Command
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  summary:
+    # Only run on PR comments that contain /summary
+    if: github.event.issue.pull_request && contains(github.event.comment.body, '/summary')
+    runs-on: ubuntu-latest
+    name: Generate PR Summary
+    
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.issue.pull_request.head.ref }}
+      
+      - name: Get PR branch
+        id: pr-branch
+        run: |
+          PR_NUMBER=${{ github.event.issue.number }}
+          BRANCH=$(gh pr view $PR_NUMBER --json headRefName -q .headRefName)
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Checkout correct branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.pr-branch.outputs.branch }}
+      
+      - name: Verify dist exists
+        run: |
+          if [ ! -f "v2/dist/index.js" ]; then
+            echo "❌ dist/index.js not found. Running build..."
+            cd v2
+            npm ci
+            npm run build
+          else
+            echo "✅ dist/index.js found"
+          fi
+      
+      - name: Generate PR Summary
+        uses: ./v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          api-key: ${{ secrets.OPENAI_API_KEY }}
+          provider: 'openai'
+          model: 'gpt-5-mini'

@@ -579,4 +579,53 @@ export class CommentService {
       return 0;
     }
   }
+
+  /**
+   * List all issue comments (PR-level comments) on a PR
+   */
+  async listIssueComments(prNumber: number): Promise<Array<{
+    id: number;
+    body: string;
+    user: string;
+    createdAt: string;
+    updatedAt: string;
+  }>> {
+    try {
+      const { data } = await this.octokit.issues.listComments({
+        owner: this.owner,
+        repo: this.repo,
+        issue_number: prNumber,
+        per_page: 100,
+      });
+
+      return data.map(c => ({
+        id: c.id,
+        body: c.body || '',
+        user: c.user?.login || 'unknown',
+        createdAt: c.created_at,
+        updatedAt: c.updated_at,
+      }));
+    } catch (error) {
+      core.error(`Failed to list issue comments: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete an issue comment (PR-level comment)
+   */
+  async deleteIssueComment(commentId: number): Promise<void> {
+    try {
+      await this.octokit.issues.deleteComment({
+        owner: this.owner,
+        repo: this.repo,
+        comment_id: commentId,
+      });
+
+      core.info(`✅ Deleted issue comment #${commentId}`);
+    } catch (error) {
+      core.error(`Failed to delete issue comment: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
+  }
 }
