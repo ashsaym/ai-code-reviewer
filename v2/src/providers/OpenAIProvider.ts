@@ -6,7 +6,7 @@
 
 import * as core from '@actions/core';
 import axios from 'axios';
-import { BaseProvider, AIMessage, AIResponse, AIProviderOptions } from './BaseProvider';
+import { BaseProvider, AIMessage, AIResponse, AIProviderOptions, SendMessageOptions } from './BaseProvider';
 
 export interface OpenAIProviderOptions extends AIProviderOptions {
   baseURL?: string;
@@ -26,7 +26,7 @@ export class OpenAIProvider extends BaseProvider {
   /**
    * Send messages to OpenAI
    */
-  async sendMessage(messages: AIMessage[]): Promise<AIResponse> {
+  async sendMessage(messages: AIMessage[], options?: SendMessageOptions): Promise<AIResponse> {
     try {
       core.debug(`Sending ${messages.length} messages to OpenAI (${this.model})`);
 
@@ -39,8 +39,13 @@ export class OpenAIProvider extends BaseProvider {
         })),
         temperature: this.temperature,
         top_p: this.topP,
-        response_format: { type: 'json_object' },
       };
+
+      // Only request JSON format if explicitly requested (default is json for backwards compatibility)
+      const responseFormat = options?.responseFormat ?? 'json';
+      if (responseFormat === 'json') {
+        requestBody.response_format = { type: 'json_object' };
+      }
 
       // Use max_completion_tokens for newer models if enabled, otherwise max_tokens
       if (this.maxCompletionTokensMode) {

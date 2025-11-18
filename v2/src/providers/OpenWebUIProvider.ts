@@ -6,7 +6,7 @@
 
 import * as core from '@actions/core';
 import axios from 'axios';
-import { BaseProvider, AIMessage, AIResponse, AIProviderOptions } from './BaseProvider';
+import { BaseProvider, AIMessage, AIResponse, AIProviderOptions, SendMessageOptions } from './BaseProvider';
 
 export interface OpenWebUIProviderOptions extends AIProviderOptions {
   endpoint: string;
@@ -23,7 +23,7 @@ export class OpenWebUIProvider extends BaseProvider {
   /**
    * Send messages to OpenWebUI
    */
-  async sendMessage(messages: AIMessage[]): Promise<AIResponse> {
+  async sendMessage(messages: AIMessage[], options?: SendMessageOptions): Promise<AIResponse> {
     try {
       core.debug(`Sending ${messages.length} messages to OpenWebUI (${this.model})`);
 

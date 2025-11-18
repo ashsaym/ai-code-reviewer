@@ -102868,7 +102868,7 @@ class OpenAIProvider extends BaseProvider {
     /**
      * Send messages to OpenAI
      */
-    async sendMessage(messages) {
+    async sendMessage(messages, options) {
         try {
             coreExports.debug(`Sending ${messages.length} messages to OpenAI (${this.model})`);
             // Build request body with appropriate token parameter
@@ -102880,8 +102880,12 @@ class OpenAIProvider extends BaseProvider {
                 })),
                 temperature: this.temperature,
                 top_p: this.topP,
-                response_format: { type: 'json_object' },
             };
+            // Only request JSON format if explicitly requested (default is json for backwards compatibility)
+            const responseFormat = options?.responseFormat ?? 'json';
+            if (responseFormat === 'json') {
+                requestBody.response_format = { type: 'json_object' };
+            }
             // Use max_completion_tokens for newer models if enabled, otherwise max_tokens
             if (this.maxCompletionTokensMode) {
                 requestBody.max_completion_tokens = this.maxTokens;
@@ -103010,7 +103014,7 @@ class OpenWebUIProvider extends BaseProvider {
     /**
      * Send messages to OpenWebUI
      */
-    async sendMessage(messages) {
+    async sendMessage(messages, options) {
         try {
             coreExports.debug(`Sending ${messages.length} messages to OpenWebUI (${this.model})`);
             const response = await axios.post(this.endpoint, {
@@ -116969,7 +116973,7 @@ class SummaryService {
             coreExports.info('🤖 Requesting summary from AI...');
             const response = await this.aiProvider.sendMessage([
                 { role: 'user', content: prompt }
-            ]);
+            ], { responseFormat: 'text' });
             // Format summary with commit analysis
             const formattedSummary = this.formatSummary(response.content, prInfo, commitDetails);
             // Delete old summary comments

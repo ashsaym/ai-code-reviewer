@@ -69,7 +69,7 @@ export class SummaryService {
       core.info('🤖 Requesting summary from AI...');
       const response = await this.aiProvider.sendMessage([
         { role: 'user', content: prompt }
-      ]);
+      ], { responseFormat: 'text' });
 
       // Format summary with commit analysis
       const formattedSummary = this.formatSummary(response.content, prInfo, commitDetails);

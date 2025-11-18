@@ -28,6 +28,11 @@ export interface AIProviderOptions {
   topP?: number;
 }
 
+export interface SendMessageOptions {
+  /** Request JSON response format (requires prompt to mention 'JSON') */
+  responseFormat?: 'json' | 'text';
+}
+
 export abstract class BaseProvider {
   protected readonly apiKey: string;
   protected readonly model: string;
@@ -48,7 +53,7 @@ export abstract class BaseProvider {
   /**
    * Send messages to AI and get response
    */
-  abstract sendMessage(messages: AIMessage[]): Promise<AIResponse>;
+  abstract sendMessage(messages: AIMessage[], options?: SendMessageOptions): Promise<AIResponse>;
 
   /**
    * Get model name
