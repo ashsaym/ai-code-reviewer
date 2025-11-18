@@ -79,6 +79,7 @@ export class ActionOrchestrator {
         model: config.model,
         apiKey: config.apiKey,
         endpoint: config.apiEndpoint,
+        useMaxCompletionTokens: config.maxCompletionTokensMode,
       });
 
       // Test provider connection

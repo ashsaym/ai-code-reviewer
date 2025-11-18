@@ -11,16 +11,19 @@ import { BaseProvider, AIMessage, AIResponse, AIProviderOptions } from './BasePr
 export interface OpenAIProviderOptions extends AIProviderOptions {
   baseURL?: string;
   organizationId?: string;
+  useMaxCompletionTokens?: boolean;
 }
 
 export class OpenAIProvider extends BaseProvider {
   private readonly baseURL: string;
   private readonly organizationId?: string;
+  private readonly useMaxCompletionTokens: boolean;
 
   constructor(options: OpenAIProviderOptions) {
     super(options);
     this.baseURL = options.baseURL || 'https://api.openai.com/v1';
     this.organizationId = options.organizationId;
+    this.useMaxCompletionTokens = options.useMaxCompletionTokens || false;
   }
 
   /**
@@ -30,19 +33,28 @@ export class OpenAIProvider extends BaseProvider {
     try {
       core.debug(`Sending ${messages.length} messages to OpenAI (${this.model})`);
 
+      // Build request body with appropriate token parameter
+      const requestBody: any = {
+        model: this.model,
+        messages: messages.map(m => ({
+          role: m.role,
+          content: m.content,
+        })),
+        temperature: this.temperature,
+        top_p: this.topP,
+        response_format: { type: 'json_object' },
+      };
+
+      // Use max_completion_tokens for newer models if enabled, otherwise max_tokens
+      if (this.useMaxCompletionTokens) {
+        requestBody.max_completion_tokens = this.maxTokens;
+      } else {
+        requestBody.max_tokens = this.maxTokens;
+      }
+
       const response = await axios.post(
         `${this.baseURL}/chat/completions`,
-        {
-          model: this.model,
-          messages: messages.map(m => ({
-            role: m.role,
-            content: m.content,
-          })),
-          max_tokens: this.maxTokens,
-          temperature: this.temperature,
-          top_p: this.topP,
-          response_format: { type: 'json_object' },
-        },
+        requestBody,
         {
           headers: {
             'Content-Type': 'application/json',

@@ -197,6 +197,54 @@ export class ResponseParser {
   }
 
   /**
+   * Create detailed summary with all findings
+   */
+  static createDetailedSummary(
+    comments: ReviewComment[],
+    aiSummary?: string,
+    files?: Array<{ filename: string }>
+  ): string {
+    const errorCount = comments.filter(c => c.severity === 'error').length;
+    const warningCount = comments.filter(c => c.severity === 'warning').length;
+    const infoCount = comments.filter(c => c.severity === 'info').length;
+
+    let summary = `## 🤖 AI Code Review\n\n`;
+    summary += `**Total Issues Found:** ${comments.length}\n`;
+    summary += `- 🚨 Errors: ${errorCount}\n`;
+    summary += `- ⚠️ Warnings: ${warningCount}\n`;
+    summary += `- ℹ️ Info: ${infoCount}\n\n`;
+
+    if (aiSummary) {
+      summary += `### Overall Assessment\n${aiSummary}\n\n`;
+    }
+
+    // Group comments by file
+    const grouped = this.groupByFile(comments);
+
+    summary += `---\n\n`;
+
+    // Add detailed findings per file
+    for (const [filePath, fileComments] of grouped) {
+      summary += `### 📄 \`${filePath}\`\n\n`;
+      
+      const sorted = this.sortByLine(fileComments);
+      for (const comment of sorted) {
+        const icon = this.getSeverityIcon(comment.severity);
+        summary += `${icon} **Line ${comment.line}** (${comment.severity})\n`;
+        summary += `${comment.message}\n`;
+        
+        if (comment.suggestion) {
+          summary += `\n💡 **Suggestion:** ${comment.suggestion}\n`;
+        }
+        summary += `\n`;
+      }
+      summary += `\n`;
+    }
+
+    return summary;
+  }
+
+  /**
    * Deduplicate comments
    */
   static deduplicateComments(comments: ReviewComment[]): ReviewComment[] {

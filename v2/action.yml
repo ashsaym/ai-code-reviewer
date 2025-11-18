@@ -22,9 +22,14 @@ inputs:
     default: 'openai'
   
   model:
-    description: 'Model to use (e.g., gpt-5-mini, gpt-4o, gpt-4-turbo for OpenAI)'
+    description: 'Model to use (gpt-5-mini)'
     required: false
     default: 'gpt-5-mini'
+  
+  max-completion-tokens-mode:
+    description: 'Use max_completion_tokens instead of max_tokens (true/false)'
+    required: false
+    default: 'false'
   
   api-endpoint:
     description: 'Custom API endpoint (for OpenWebUI)'

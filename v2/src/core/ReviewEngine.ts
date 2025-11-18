@@ -8,7 +8,7 @@ import * as core from '@actions/core';
 import { StorageManager } from '../storage/StorageManager';
 import { PullRequestService, PRFile } from '../github/PullRequestService';
 import { CommentService } from '../github/CommentService';
-import { DiffParser } from '../github/DiffParser';
+
 import { BaseProvider, AIMessage } from '../providers/BaseProvider';
 import { IncrementalAnalyzer, FileAnalysis } from '../analysis/IncrementalAnalyzer';
 import { OutdatedCommentCleaner } from '../analysis/OutdatedCommentCleaner';
@@ -228,43 +228,25 @@ export class ReviewEngine {
     // Deduplicate and validate
     const validComments = ResponseParser.deduplicateComments(comments);
 
-    // Create comments on GitHub
-    for (const comment of validComments) {
+    // Create single summary comment with all reviews
+    if (validComments.length > 0) {
       try {
-        const file = allFiles.find(f => f.filename === comment.path);
-        if (!file || !file.patch) {
-          core.warning(`⚠️ File not found or no patch: ${comment.path}`);
-          continue;
-        }
-
-        // Parse diff to get position (use parsePatch for GitHub API patches)
-        const parsedDiff = DiffParser.parsePatch(file.filename, file.patch);
-        if (parsedDiff.hunks.length === 0) {
-          core.warning(`⚠️ Could not parse diff for: ${comment.path}`);
-          continue;
-        }
-
-        const position = DiffParser.getPositionForLine(parsedDiff, comment.line);
-        if (!position) {
-          core.warning(`⚠️ Line ${comment.line} not in diff for: ${comment.path}`);
-          continue;
-        }
-
-        const body = ResponseParser.formatForGitHub(comment);
-
-        await this.commentService.createReviewComment(
-          prNumber,
-          pr.headSha,
-          file.filename,
-          position,
-          body
+        const summaryBody = ResponseParser.createDetailedSummary(
+          validComments,
+          parseResult.data!.summary,
+          allFiles
         );
 
-        result.commentsCreated++;
-        core.debug(`✓ Created comment on ${comment.path}:${comment.line}`);
+        await this.commentService.createComment(
+          prNumber,
+          summaryBody
+        );
+
+        result.commentsCreated = 1;
+        core.info(`✓ Created review summary with ${validComments.length} findings`);
 
       } catch (error) {
-        const errorMsg = `Failed to create comment: ${error}`;
+        const errorMsg = `Failed to create review summary: ${error}`;
         result.errors.push(errorMsg);
         core.warning(errorMsg);
       }

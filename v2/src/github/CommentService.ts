@@ -99,6 +99,13 @@ export class CommentService {
   }
 
   /**
+   * Create comment (alias for createIssueComment)
+   */
+  async createComment(prNumber: number, body: string): Promise<{ id: number; body: string }> {
+    return this.createIssueComment(prNumber, body);
+  }
+
+  /**
    * Create review with multiple comments
    */
   async createReview(
@@ -146,7 +153,7 @@ export class CommentService {
       return data.map(c => ({
         id: c.id,
         path: c.path,
-        position: c.position,
+        position: c.position || null,
         line: c.line || null,
         body: c.body,
         createdAt: c.created_at,

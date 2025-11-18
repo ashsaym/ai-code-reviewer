@@ -17,6 +17,7 @@ export interface ActionConfig {
   model: string;
   apiKey: string;
   apiEndpoint?: string;
+  maxCompletionTokensMode: boolean;
   
   // Review settings
   includePatterns: string[];
@@ -63,11 +64,12 @@ export class ConfigLoader {
 
     // AI Provider
     const provider = this.getInput('provider', 'openai') as 'openai' | 'openwebui';
-    const model = this.getInput('model', provider === 'openai' ? 'gpt-5-mini' : 'llama2') || 'gpt-5-mini';
+    const model = this.getInput('model', 'gpt-5-mini') || 'gpt-5-mini';
     const apiKey = this.getRequiredInput('api-key');
     const apiEndpoint = this.getInput('api-endpoint', 
       provider === 'openwebui' ? 'http://localhost:8080' : undefined
     );
+    const maxCompletionTokensMode = this.getBooleanInput('max-completion-tokens-mode', false);
 
     // Review settings
     const includePatterns = this.getArrayInput('include-patterns', ['**/*.{js,ts,jsx,tsx,py,java,go,rb,php}']);
@@ -105,6 +107,7 @@ export class ConfigLoader {
       model,
       apiKey,
       apiEndpoint,
+      maxCompletionTokensMode,
       includePatterns,
       excludePatterns,
       maxFilesPerBatch,

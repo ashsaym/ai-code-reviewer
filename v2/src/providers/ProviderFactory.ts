@@ -22,6 +22,7 @@ export interface ProviderConfig {
   // OpenAI specific
   baseURL?: string;
   organizationId?: string;
+  useMaxCompletionTokens?: boolean;
   
   // OpenWebUI specific
   endpoint?: string;
@@ -44,6 +45,7 @@ export class ProviderFactory {
           topP: config.topP,
           baseURL: config.baseURL,
           organizationId: config.organizationId,
+          useMaxCompletionTokens: config.useMaxCompletionTokens,
         } as OpenAIProviderOptions);
 
       case 'openwebui':
@@ -78,7 +80,7 @@ export class ProviderFactory {
         type: 'openai',
         apiKey: openaiKey,
         model,
-        maxTokens: parseInt(process.env.MAX_TOKENS || '4000', 10),
+        maxTokens: parseInt(process.env.MAX_TOKENS || '16000', 10),
         temperature: parseFloat(process.env.TEMPERATURE || '0.3'),
         baseURL: process.env.OPENAI_BASE_URL,
         organizationId: process.env.OPENAI_ORG_ID,
