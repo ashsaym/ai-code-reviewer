@@ -1,90 +1,121 @@
 name: 'Code Sentinel AI'
-description: 'Production-ready AI code sentinel with zero external dependencies - OpenAI GPT-5-mini default'
+description: 'AI-powered code review with incremental analysis and GitHub-native caching'
 author: 'ashsaym'
 
 branding:
-  icon: 'eye'
-  color: 'purple'
+  icon: 'shield'
+  color: 'blue'
 
 inputs:
-  # Core inputs
-  pr-number:
-    description: 'Pull request number (auto-detected if not provided)'
-    required: false
+  github-token:
+    description: 'GitHub token for API access'
+    required: true
+    default: ${{ github.token }}
   
-  repository:
-    description: 'Repository in format owner/repo (defaults to current repo)'
-    required: false
+  api-key:
+    description: 'API key for AI provider (OpenAI or OpenWebUI)'
+    required: true
   
-  task:
-    description: 'Task type: review, summary, suggestions, description'
+  provider:
+    description: 'AI provider: openai or openwebui'
     required: false
-    default: 'review'
+    default: 'openai'
   
-  # Provider configuration
-  providers:
-    description: 'Comma-separated provider list (openai,openwebui)'
-    required: false
-    default: 'openai,openwebui'
-  
-  openai-model:
-    description: 'OpenAI model to use'
+  model:
+    description: 'Model to use (e.g., gpt-5-mini, gpt-4o, gpt-4-turbo for OpenAI)'
     required: false
     default: 'gpt-5-mini'
   
-  openai-api-key:
-    description: 'OpenAI API key (can also use OPENAI_API_KEY env var)'
+  api-endpoint:
+    description: 'Custom API endpoint (for OpenWebUI)'
     required: false
+    default: ''
   
-  openwebui-endpoint:
-    description: 'OpenWebUI endpoint URL'
+  include-patterns:
+    description: 'File patterns to include (comma or newline separated)'
     required: false
+    default: '**/*.{js,ts,jsx,tsx,py,java,go,rb,php,cs,cpp,c,rs,swift,kt}'
   
-  openwebui-model:
-    description: 'OpenWebUI model name'
+  exclude-patterns:
+    description: 'File patterns to exclude (comma or newline separated)'
     required: false
-    default: 'llama3'
+    default: |
+      **/node_modules/**
+      **/dist/**
+      **/build/**
+      **/*.min.js
+      **/*.lock
+      **/package-lock.json
+      **/yarn.lock
   
-  openwebui-api-key:
-    description: 'OpenWebUI API key'
+  max-files-per-batch:
+    description: 'Maximum files to review in one AI call'
     required: false
+    default: '10'
   
-  # Review configuration
-  review-mode:
-    description: 'Review mode: incremental (default) or full'
+  max-lines-per-file:
+    description: 'Maximum lines per file to review'
     required: false
-    default: 'incremental'
+    default: '500'
   
-  auto-resolve-outdated:
-    description: 'Automatically resolve/delete outdated comments (true/false)'
+  auto-clean-outdated:
+    description: 'Automatically mark outdated comments'
     required: false
     default: 'true'
   
-  force-review:
-    description: 'Force review even if commit already reviewed (bypasses cache)'
+  enable-check-runs:
+    description: 'Enable GitHub Check Runs for review history'
+    required: false
+    default: 'true'
+  
+  check-name:
+    description: 'Name for the GitHub Check Run'
+    required: false
+    default: 'Code Sentinel AI Review'
+  
+  custom-prompt-path:
+    description: 'Path to custom prompt template (Handlebars)'
+    required: false
+    default: ''
+  
+  custom-rules:
+    description: 'Custom review rules to add to the prompt'
+    required: false
+    default: ''
+  
+  cache-enabled:
+    description: 'Enable GitHub Actions cache'
+    required: false
+    default: 'true'
+  
+  cache-ttl-days:
+    description: 'Cache TTL in days (1-7)'
+    required: false
+    default: '7'
+  
+  debug-mode:
+    description: 'Enable debug logging'
     required: false
     default: 'false'
+
+outputs:
+  files-reviewed:
+    description: 'Number of files reviewed'
   
-  # Advanced configuration
-  max-files:
-    description: 'Maximum number of files to include in review'
-    required: false
-    default: '50'
+  comments-created:
+    description: 'Number of review comments created'
   
-  max-diff-chars:
-    description: 'Maximum characters per file diff'
-    required: false
-    default: '15000'
+  outdated-cleaned:
+    description: 'Number of outdated comments marked'
   
-  max-output-tokens:
-    description: 'Maximum tokens for LLM response'
-    required: false
-    default: '8000'
+  tokens-used:
+    description: 'Total tokens used'
   
-  reviewer-name:
-    description: 'Custom name for the AI reviewer'
-    required: false
-    default: 'Code Sentinel AI'
+  estimated-cost:
+    description: 'Estimated cost in USD'
+  
+  success:
+    description: 'Whether the review completed successfully'
 
 runs:
   using: 'node20'
