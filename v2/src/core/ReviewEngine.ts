@@ -8,11 +8,12 @@ import * as core from '@actions/core';
 import { StorageManager } from '../storage/StorageManager';
 import { PullRequestService, PRFile } from '../github/PullRequestService';
 import { CommentService } from '../github/CommentService';
-import { BaseProvider } from '../providers/BaseProvider';
+import { DiffParser } from '../github/DiffParser';
+import { BaseProvider, AIMessage } from '../providers/BaseProvider';
 import { IncrementalAnalyzer, FileAnalysis } from '../analysis/IncrementalAnalyzer';
 import { OutdatedCommentCleaner } from '../analysis/OutdatedCommentCleaner';
-import { PromptBuilder, PromptContext } from '../prompts/PromptBuilder';
-import { ResponseParser, ReviewComment } from '../parsers/ResponseParser';
+import { PromptBuilder } from '../prompts/PromptBuilder';
+import { ResponseParser } from '../parsers/ResponseParser';
 import { Logger } from '../utils/Logger';
 import { TokenCounter } from '../utils/TokenCounter';
 
@@ -68,9 +69,9 @@ export class ReviewEngine {
     prNumber: number
   ): Promise<ReviewResult> {
     const sessionId = `review-${Date.now()}`;
-    const logger = new Logger('ReviewEngine', { sessionId });
+    Logger.setContext('ReviewEngine');
 
-    logger.info('🚀 Starting code review workflow');
+    Logger.info('🚀 Starting code review workflow');
 
     const result: ReviewResult = {
       success: false,
@@ -84,33 +85,33 @@ export class ReviewEngine {
 
     try {
       // 1. Get PR information
-      logger.info('📥 Fetching PR information');
-      const pr = await this.prService.getPullRequest(owner, repo, prNumber);
-      const files = await this.prService.getFiles(owner, repo, prNumber);
+      Logger.info('📥 Fetching PR information');
+      const pr = await this.prService.getPullRequest(prNumber);
+      const files = await this.prService.getFiles(prNumber);
 
-      logger.info(`📦 PR #${prNumber}: ${pr.title} (${files.length} files)`);
+      Logger.info(`📦 PR #${prNumber}: ${pr.title} (${files.length} files)`);
 
       // 2. Initialize incremental analyzer
       const analyzer = new IncrementalAnalyzer(this.storage, owner, repo, prNumber);
 
       // 3. Analyze files to determine what needs review
-      logger.info('🔍 Analyzing files for changes');
+      Logger.info('🔍 Analyzing files for changes');
       const analyses = await analyzer.analyzeFiles(files);
       const needsReview = IncrementalAnalyzer.getFilesNeedingReview(analyses);
 
-      logger.info(`✓ ${needsReview.length}/${files.length} files need review`);
+      Logger.info(`✓ ${needsReview.length}/${files.length} files need review`);
 
       if (needsReview.length === 0) {
-        logger.info('✅ No changes to review');
+        Logger.info('✅ No changes to review');
         result.success = true;
         return result;
       }
 
       // 4. Clean outdated comments
       if (this.autoCleanOutdated) {
-        logger.info('🧹 Cleaning outdated comments');
+        Logger.info('🧹 Cleaning outdated comments');
         const cleaner = new OutdatedCommentCleaner(this.storage, prNumber);
-        const cleanResult = await cleaner.checkAndMarkOutdated(pr.head.sha);
+        const cleanResult = await cleaner.checkAndMarkOutdated(pr.headSha);
         result.outdatedCleaned = cleanResult.markedOutdated;
         
         if (cleanResult.errors.length > 0) {
@@ -121,7 +122,7 @@ export class ReviewEngine {
       // 5. Review files in batches
       for (let i = 0; i < needsReview.length; i += this.maxFilesPerBatch) {
         const batch = needsReview.slice(i, i + this.maxFilesPerBatch);
-        logger.info(`📝 Reviewing batch ${Math.floor(i / this.maxFilesPerBatch) + 1} (${batch.length} files)`);
+        Logger.info(`📝 Reviewing batch ${Math.floor(i / this.maxFilesPerBatch) + 1} (${batch.length} files)`);
 
         try {
           await this.reviewBatch(
@@ -137,38 +138,20 @@ export class ReviewEngine {
         } catch (error) {
           const errorMsg = `Batch review failed: ${error}`;
           result.errors.push(errorMsg);
-          logger.error(errorMsg);
+          Logger.error(errorMsg);
         }
       }
 
-      // 6. Save final cache state
-      await this.storage.savePRCache({
-        prNumber,
-        owner,
-        repo,
-        lastCommitSha: pr.head.sha,
-        files: [],
-        tokenUsage: {
-          promptTokens: result.tokensUsed.prompt,
-          completionTokens: result.tokensUsed.completion,
-          totalTokens: result.tokensUsed.total,
-          estimatedCost: result.cost,
-        },
-        metadata: {
-          cacheVersion: 1,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          reviewCount: 1,
-        },
-      });
-
+      // 6. Cache is automatically saved by storage manager
+      // Token usage is tracked in result object
+      
       result.success = result.errors.length === 0;
-      logger.info(`✅ Review complete: ${result.filesReviewed} files, ${result.commentsCreated} comments`);
+      Logger.info(`✅ Review complete: ${result.filesReviewed} files, ${result.commentsCreated} comments`);
 
     } catch (error) {
       const errorMsg = `Review workflow failed: ${error}`;
       result.errors.push(errorMsg);
-      logger.error(errorMsg);
+      Logger.error(errorMsg);
     }
 
     return result;
@@ -197,10 +180,10 @@ export class ReviewEngine {
       `${owner}/${repo}`,
       prNumber,
       pr.title,
-      pr.body || '',
-      pr.user.login,
-      pr.head.ref,
-      pr.base.ref,
+      pr.body,
+      pr.author,
+      pr.headRef,
+      pr.baseRef,
       batchFiles
     );
 
@@ -217,19 +200,23 @@ export class ReviewEngine {
     core.debug(`Prompt: ${promptTokens} tokens`);
 
     // Send to AI provider
-    const response = await this.aiProvider.sendMessage(prompt);
-    const completionTokens = TokenCounter.estimate(response);
+    const messages: AIMessage[] = [
+      { role: 'user', content: prompt }
+    ];
+    const response = await this.aiProvider.sendMessage(messages);
+    
+    // Track token usage from response
+    result.tokensUsed.prompt += response.usage.promptTokens;
+    result.tokensUsed.completion += response.usage.completionTokens;
+    result.tokensUsed.total += response.usage.totalTokens;
 
-    result.tokensUsed.prompt += promptTokens;
-    result.tokensUsed.completion += completionTokens;
-    result.tokensUsed.total += promptTokens + completionTokens;
-
-    // Estimate cost
-    const batchCost = await this.aiProvider.estimateCost(promptTokens, completionTokens);
-    result.cost += batchCost;
+    // Estimate cost (simple calculation based on GPT-3.5 pricing)
+    const promptCost = (response.usage.promptTokens / 1000000) * 0.15;
+    const completionCost = (response.usage.completionTokens / 1000000) * 0.60;
+    result.cost += promptCost + completionCost;
 
     // Parse response
-    const parseResult = ResponseParser.parse(response);
+    const parseResult = ResponseParser.parse(response.content);
 
     if (!parseResult.success) {
       throw new Error(`Failed to parse AI response: ${parseResult.errors?.join(', ')}`);
@@ -245,21 +232,32 @@ export class ReviewEngine {
     for (const comment of validComments) {
       try {
         const file = allFiles.find(f => f.filename === comment.path);
-        if (!file) {
-          core.warning(`⚠️ File not found: ${comment.path}`);
+        if (!file || !file.patch) {
+          core.warning(`⚠️ File not found or no patch: ${comment.path}`);
+          continue;
+        }
+
+        // Parse diff to get position
+        const parsedDiff = DiffParser.parse(file.patch);
+        if (parsedDiff.length === 0) {
+          core.warning(`⚠️ Could not parse diff for: ${comment.path}`);
+          continue;
+        }
+
+        const position = DiffParser.getPositionForLine(parsedDiff[0], comment.line);
+        if (!position) {
+          core.warning(`⚠️ Line ${comment.line} not in diff for: ${comment.path}`);
           continue;
         }
 
         const body = ResponseParser.formatForGitHub(comment);
 
         await this.commentService.createReviewComment(
-          owner,
-          repo,
           prNumber,
+          pr.headSha,
           file.filename,
-          comment.line,
-          body,
-          pr.head.sha
+          position,
+          body
         );
 
         result.commentsCreated++;
