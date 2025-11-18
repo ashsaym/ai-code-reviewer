@@ -104,40 +104,35 @@ export class IncrementalAnalyzer {
    */
   private extractChangedLines(file: PRFile): ChangedLine[] {
     if (!file.patch) {
+      core.info(`  ⚠️ ${file.filename}: No patch data`);
       return [];
     }
 
     try {
-      const parsed = DiffParser.parse(file.patch);
+      // Use parsePatch for GitHub API patches (without diff --git header)
+      const diff = DiffParser.parsePatch(file.filename, file.patch);
       
-      if (parsed.length === 0) {
+      if (diff.hunks.length === 0) {
+        core.info(`  ⚠️ ${file.filename}: No hunks in diff`);
         return [];
       }
 
-      const diff = parsed[0]; // Single file diff
       const lines: ChangedLine[] = [];
 
       for (const hunk of diff.hunks) {
-        let newLine = hunk.newStart;
-
         for (const line of hunk.lines) {
-          if (line.type === 'add') {
+          if (line.type === 'add' && line.newLineNumber !== null) {
             lines.push({
-              lineNumber: newLine,
+              lineNumber: line.newLineNumber,
               content: line.content,
               type: 'added',
             });
-            newLine++;
-          } else if (line.type === 'delete') {
+          } else if (line.type === 'delete' && line.oldLineNumber !== null) {
             lines.push({
-              lineNumber: newLine,
+              lineNumber: line.oldLineNumber,
               content: line.content,
               type: 'deleted',
             });
-            // Don't increment line number for deletions
-          } else {
-            // Context line
-            newLine++;
           }
         }
       }
