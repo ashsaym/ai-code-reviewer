@@ -7,3 +7,5 @@ export {
   type ReviewEngineOptions,
   type ReviewResult,
 } from './ReviewEngine';
+
+export { ActionOrchestrator } from './ActionOrchestrator';
