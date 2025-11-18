@@ -304,10 +304,22 @@ export class ReviewEngine {
             batch
           );
 
-          result.commentsCreated = incrementalResult.newIssuesCreated;
           result.outdatedCleaned += incrementalResult.outdatedDeleted;
           
           core.info(`✓ Incremental update: ${incrementalResult.issuesResolved} resolved, ${incrementalResult.issuesUpdated} updated, ${incrementalResult.newIssuesCreated} new`);
+          
+          // Still need to post new/remaining comments
+          if (reviewComments.length > 0) {
+            await this.commentService.createReview(
+              prNumber,
+              pr.headSha,
+              summary,
+              'COMMENT',
+              reviewComments
+            );
+            result.commentsCreated = reviewComments.length;
+            core.info(`✓ Posted ${reviewComments.length} new/updated inline comments`);
+          }
         } else {
           // First review: create new review
           core.info('📝 Creating new review');
