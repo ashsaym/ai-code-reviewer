@@ -1,0 +1,91 @@
+name: 'AI Code Reviewer v2'
+description: 'Production-ready AI code reviewer with zero external dependencies - OpenAI GPT-5-mini default'
+author: 'ashsaym'
+
+branding:
+  icon: 'eye'
+  color: 'purple'
+
+inputs:
+  # Core inputs
+  pr-number:
+    description: 'Pull request number (auto-detected if not provided)'
+    required: false
+  
+  repository:
+    description: 'Repository in format owner/repo (defaults to current repo)'
+    required: false
+  
+  task:
+    description: 'Task type: review, summary, suggestions, description'
+    required: false
+    default: 'review'
+  
+  # Provider configuration
+  providers:
+    description: 'Comma-separated provider list (openai,openwebui)'
+    required: false
+    default: 'openai,openwebui'
+  
+  openai-model:
+    description: 'OpenAI model to use'
+    required: false
+    default: 'gpt-5-mini'
+  
+  openai-api-key:
+    description: 'OpenAI API key (can also use OPENAI_API_KEY env var)'
+    required: false
+  
+  openwebui-endpoint:
+    description: 'OpenWebUI endpoint URL'
+    required: false
+  
+  openwebui-model:
+    description: 'OpenWebUI model name'
+    required: false
+    default: 'llama3'
+  
+  openwebui-api-key:
+    description: 'OpenWebUI API key'
+    required: false
+  
+  # Review configuration
+  review-mode:
+    description: 'Review mode: incremental (default) or full'
+    required: false
+    default: 'incremental'
+  
+  auto-resolve-outdated:
+    description: 'Automatically resolve/delete outdated comments (true/false)'
+    required: false
+    default: 'true'
+  
+  force-review:
+    description: 'Force review even if commit already reviewed (bypasses cache)'
+    required: false
+    default: 'false'
+  
+  # Advanced configuration
+  max-files:
+    description: 'Maximum number of files to include in review'
+    required: false
+    default: '50'
+  
+  max-diff-chars:
+    description: 'Maximum characters per file diff'
+    required: false
+    default: '15000'
+  
+  max-output-tokens:
+    description: 'Maximum tokens for LLM response'
+    required: false
+    default: '8000'
+  
+  reviewer-name:
+    description: 'Custom name for the AI reviewer'
+    required: false
+    default: 'AI Code Reviewer'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
