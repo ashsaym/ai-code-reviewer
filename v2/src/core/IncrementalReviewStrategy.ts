@@ -37,9 +37,9 @@ export class IncrementalReviewStrategy {
   async processIncrementalUpdate(
     prNumber: number,
     currentCommitSha: string,
-    existingReviewId: number | null,
+    _existingReviewId: number | null,
     newComments: ReviewComment[],
-    newSummary: string,
+    _newSummary: string,
     analyses: FileAnalysis[]
   ): Promise<IncrementalReviewResult> {
     const result: IncrementalReviewResult = {
@@ -148,16 +148,6 @@ export class IncrementalReviewStrategy {
       // If comment is still valid (same commit, not outdated), leave as-is
     }
 
-    // Update existing review with new summary
-    if (existingReviewId) {
-      try {
-        await this.appendReviewSummary(prNumber, existingReviewId, newSummary);
-        result.reviewUpdated = true;
-      } catch (error) {
-        core.warning(`Failed to update review summary: ${error}`);
-      }
-    }
-
     // Count remaining new comments that need to be created
     for (const fileMap of newCommentMap.values()) {
       result.newIssuesCreated += fileMap.size;
@@ -218,41 +208,6 @@ export class IncrementalReviewStrategy {
       // Don't throw - continue with other comments
     }
   }
-
-  /**
-   * Append new summary to existing review (creates follow-up comment)
-   */
-  private async appendReviewSummary(
-    prNumber: number,
-    _reviewId: number,
-    newSummary: string
-  ): Promise<void> {
-    try {
-      const timestamp = new Date().toISOString();
-      const dateStr = new Date(timestamp).toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'UTC',
-        timeZoneName: 'short'
-      });
-
-      // GitHub API doesn't support updating review bodies, so create a follow-up comment instead
-      const updateBody = `## 🔄 Review Updated: ${dateStr}\n\n${newSummary}`;
-
-      // Create PR-level comment with the update
-      await this.commentService.createComment(prNumber, updateBody);
-      
-      core.info(`✏️  Posted review update as follow-up comment`);
-    } catch (error) {
-      core.error(`Failed to post review update: ${error}`);
-      throw error;
-    }
-  }
-
-
 
   /**
    * Infer severity from comment body text

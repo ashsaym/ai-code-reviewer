@@ -66,6 +66,45 @@ export class ReviewEngine {
   }
 
   /**
+   * Create summary for incremental review with change stats
+   */
+  private createIncrementalSummary(
+    comments: ReviewComment[],
+    aiSummary: string,
+    incrementalResult: { issuesResolved: number; issuesUpdated: number; newIssuesCreated: number }
+  ): string {
+    const timestamp = new Date().toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'UTC',
+      timeZoneName: 'short'
+    });
+
+    let summary = `## 🔄 Code Review Updated - ${timestamp}\n\n`;
+    
+    // Add incremental stats
+    summary += `### 📊 Changes Since Last Review\n\n`;
+    if (incrementalResult.issuesResolved > 0) {
+      summary += `- ✅ **${incrementalResult.issuesResolved} issue(s) resolved** (code was fixed)\n`;
+    }
+    if (incrementalResult.issuesUpdated > 0) {
+      summary += `- 🔄 **${incrementalResult.issuesUpdated} issue(s) updated** (different problems on same lines)\n`;
+    }
+    if (incrementalResult.newIssuesCreated > 0) {
+      summary += `- 🆕 **${incrementalResult.newIssuesCreated} new issue(s) found**\n`;
+    }
+    summary += `\n`;
+    
+    // Add regular summary with current issue count
+    summary += ResponseParser.createReviewSummary(comments, aiSummary);
+    
+    return summary;
+  }
+
+  /**
    * Execute complete review workflow
    */
   async executeReview(
@@ -292,11 +331,6 @@ export class ReviewEngine {
     // Create single review with summary + all inline comments
     if (reviewComments.length > 0) {
       try {
-        const summary = ResponseParser.createReviewSummary(
-          validComments,
-          parseResult.data!.summary
-        );
-
         if (shouldUseIncremental) {
           // Incremental mode: update existing review and manage comment lifecycle
           core.info('🔄 Using incremental review mode');
@@ -307,7 +341,7 @@ export class ReviewEngine {
             pr.headSha,
             latestReviewId,
             validComments,
-            summary,
+            '',  // Don't pass summary yet, we'll create it below
             batch
           );
 
@@ -315,12 +349,19 @@ export class ReviewEngine {
           
           core.info(`✓ Incremental update: ${incrementalResult.issuesResolved} resolved, ${incrementalResult.issuesUpdated} updated, ${incrementalResult.newIssuesCreated} new`);
           
-          // Still need to post new/remaining comments
+          // Create incremental summary with stats
+          const incrementalSummary = this.createIncrementalSummary(
+            validComments,
+            parseResult.data!.summary,
+            incrementalResult
+          );
+          
+          // Post new/remaining comments with incremental summary
           if (reviewComments.length > 0) {
             await this.commentService.createReview(
               prNumber,
               pr.headSha,
-              summary,
+              incrementalSummary,
               'COMMENT',
               reviewComments
             );
@@ -330,6 +371,11 @@ export class ReviewEngine {
         } else {
           // First review: create new review
           core.info('📝 Creating new review');
+          
+          const summary = ResponseParser.createReviewSummary(
+            validComments,
+            parseResult.data!.summary
+          );
           
           await this.commentService.createReview(
             prNumber,
