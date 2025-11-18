@@ -129,6 +129,7 @@ export class IncrementalReviewStrategy {
             // Code changed, issue likely resolved
             await this.markCommentResolved(
               existingComment.commentId,
+              existingComment.body,
               true // isReviewComment
             );
             result.issuesResolved++;
@@ -194,12 +195,16 @@ export class IncrementalReviewStrategy {
     const updatedBody = `~~${oldBody}~~\n\n---\n**🔄 Updated: ${timestamp}**\n\n${newIssueBody}`;
 
     try {
-      const commentStorage = this.storage.getCommentStorage();
-      await commentStorage.updateComment(commentId, updatedBody, isReviewComment);
+      if (isReviewComment) {
+        await this.commentService.updateReviewComment(commentId, updatedBody);
+      } else {
+        const commentStorage = this.storage.getCommentStorage();
+        await commentStorage.updateComment(commentId, updatedBody, false);
+      }
       core.info(`✏️  Updated comment #${commentId} with new issue`);
     } catch (error) {
       core.error(`Failed to update comment #${commentId}: ${error}`);
-      throw error;
+      // Don't throw - continue with other comments
     }
   }
 
@@ -208,32 +213,24 @@ export class IncrementalReviewStrategy {
    */
   private async markCommentResolved(
     commentId: number,
+    commentBody: string,
     isReviewComment: boolean
   ): Promise<void> {
     try {
-      const commentStorage = this.storage.getCommentStorage();
       const resolvedPrefix = '✅ **[RESOLVED]**\n\n';
       
-      // Get current comment body
-      const comments = await commentStorage.getComments(0); // Get all
-      const comment = comments.find((c: CommentState) => c.commentId === commentId);
-      
-      if (!comment) {
-        core.warning(`Comment #${commentId} not found`);
-        return;
-      }
-
-      if (!comment.body.startsWith(resolvedPrefix)) {
-        await commentStorage.updateComment(
-          commentId,
-          resolvedPrefix + comment.body,
-          isReviewComment
-        );
+      if (!commentBody.startsWith(resolvedPrefix)) {
+        if (isReviewComment) {
+          await this.commentService.updateReviewComment(commentId, resolvedPrefix + commentBody);
+        } else {
+          const commentStorage = this.storage.getCommentStorage();
+          await commentStorage.updateComment(commentId, resolvedPrefix + commentBody, false);
+        }
         core.info(`✅ Marked comment #${commentId} as resolved`);
       }
     } catch (error) {
       core.error(`Failed to mark comment as resolved: ${error}`);
-      throw error;
+      // Don't throw - continue with other comments
     }
   }
 
