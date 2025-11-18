@@ -13,6 +13,7 @@ import { CommentService } from '../github/CommentService';
 import { ProviderFactory } from '../providers/ProviderFactory';
 import { ReviewEngine } from './ReviewEngine';
 import { SummaryService } from '../summary/SummaryService';
+import { SuggestionService } from '../suggestion/SuggestionService';
 import { readFileSync } from 'fs';
 
 export class ActionOrchestrator {
@@ -31,14 +32,21 @@ export class ActionOrchestrator {
         return null;
       }
 
-      const commentBody = event.comment.body?.trim() || '';
+      const commentBody = event.comment.body?.trim().toLowerCase() || '';
       
-      // Check for /summary command
+      // Check for commands (support both /command and just command)
       if (commentBody === '/summary' || commentBody.startsWith('/summary ')) {
         return 'summary';
       }
-
-      // Future: Add more commands here (/review, /suggest, etc.)
+      
+      if (commentBody === '/review' || commentBody.startsWith('/review ')) {
+        return 'review';
+      }
+      
+      if (commentBody === '/suggestion' || commentBody.startsWith('/suggestion ') ||
+          commentBody === '/suggestions' || commentBody.startsWith('/suggestions ')) {
+        return 'suggestion';
+      }
       
       return null;
     } catch (error) {
@@ -52,15 +60,25 @@ export class ActionOrchestrator {
    */
   static async execute(): Promise<void> {
     try {
-      // Check if this is a comment command
-      const command = this.getCommentCommand();
+      // Determine the mode: comment command takes precedence, then input, then default
+      const commentCommand = this.getCommentCommand();
+      const modeInput = core.getInput('mode')?.toLowerCase() || 'review';
+      const mode = commentCommand || modeInput;
 
-      if (command === 'summary') {
+      // Route to appropriate handler based on mode
+      if (mode === 'summary') {
         core.info('🤖 Code Sentinel AI - Generating PR Summary');
         await this.executeSummary();
         return;
       }
 
+      if (mode === 'suggestion') {
+        core.info('🤖 Code Sentinel AI - Generating Suggestions');
+        await this.executeSuggestion();
+        return;
+      }
+
+      // Default: review mode
       core.info('🤖 Code Sentinel AI - Starting review');
 
       // 1. Load and validate configuration
@@ -282,6 +300,112 @@ export class ActionOrchestrator {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       core.error(`❌ Summary generation failed: ${errorMessage}`);
+      
+      if (error instanceof Error && error.stack) {
+        core.debug(error.stack);
+      }
+
+      core.setFailed(errorMessage);
+    }
+  }
+
+  /**
+   * Execute suggestion command
+   */
+  private static async executeSuggestion(): Promise<void> {
+    try {
+      // 1. Load minimal configuration
+      const token = core.getInput('github-token') || process.env.GITHUB_TOKEN || '';
+      const repository = process.env.GITHUB_REPOSITORY || '';
+      
+      if (!token) {
+        throw new Error('github-token is required');
+      }
+
+      if (!repository) {
+        throw new Error('GITHUB_REPOSITORY environment variable is required');
+      }
+
+      // Parse repository owner/name
+      const [owner, repo] = repository.split('/');
+      if (!owner || !repo) {
+        throw new Error(`Invalid repository format: ${repository}`);
+      }
+
+      // Get PR number from event
+      const eventPath = process.env.GITHUB_EVENT_PATH;
+      if (!eventPath) {
+        throw new Error('GITHUB_EVENT_PATH not found');
+      }
+
+      const event = JSON.parse(readFileSync(eventPath, 'utf8'));
+      const prNumber = event.issue?.number || event.pull_request?.number;
+      
+      if (!prNumber) {
+        throw new Error('Could not determine PR number from event');
+      }
+
+      core.info(`💡 Generating suggestions for PR #${prNumber}`);
+
+      // 2. Initialize GitHub clients
+      const githubClient = new GitHubClient({
+        token,
+        owner,
+        repo,
+      });
+      
+      const octokit = githubClient.getOctokit();
+
+      const prService = new PullRequestService({
+        octokit,
+        owner,
+        repo,
+      });
+
+      const commentService = new CommentService({
+        octokit,
+        owner,
+        repo,
+      });
+
+      // 3. Initialize AI provider
+      const apiKey = core.getInput('api-key') || process.env.OPENAI_API_KEY || '';
+      if (!apiKey) {
+        throw new Error('api-key is required for suggestion generation');
+      }
+
+      const provider = core.getInput('provider', { required: false }) || 'openai';
+      const model = core.getInput('model', { required: false }) || 'gpt-5-mini';
+      const apiEndpoint = core.getInput('api-endpoint', { required: false });
+      const maxCompletionTokensMode = core.getBooleanInput('max-completion-tokens-mode', { required: false });
+
+      const aiProvider = ProviderFactory.create({
+        type: provider as 'openai' | 'openwebui',
+        model,
+        apiKey,
+        endpoint: apiEndpoint,
+        maxCompletionTokensMode,
+      });
+
+      const providerName = aiProvider.getProviderName();
+      core.info(`✓ Connected to ${providerName} (${model})`);
+
+      // 4. Generate suggestions
+      const suggestionService = new SuggestionService({
+        prService,
+        commentService,
+        aiProvider,
+        prNumber,
+      });
+
+      await suggestionService.generateSuggestions();
+
+      core.info('✅ Suggestions generated successfully');
+      core.setOutput('success', true);
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      core.error(`❌ Suggestion generation failed: ${errorMessage}`);
       
       if (error instanceof Error && error.stack) {
         core.debug(error.stack);

@@ -16,6 +16,11 @@ inputs:
     description: 'API key for AI provider (OpenAI or OpenWebUI)'
     required: true
   
+  mode:
+    description: 'Operation mode: review, summary, or suggestion (auto-detected from /review, /summary, /suggestion comments if not specified)'
+    required: false
+    default: 'review'
+  
   provider:
     description: 'AI provider: openai or openwebui'
     required: false

@@ -117150,6 +117150,161 @@ ${filesList}`;
 }
 
 /**
+ * Suggestion Service
+ *
+ * Generates improvement suggestions for PRs
+ */
+class SuggestionService {
+    prService;
+    commentService;
+    aiProvider;
+    prNumber;
+    // Marker to identify suggestion comments
+    static SUGGESTION_MARKER = '<!-- AI_SUGGESTION_COMMENT -->';
+    constructor(options) {
+        this.prService = options.prService;
+        this.commentService = options.commentService;
+        this.aiProvider = options.aiProvider;
+        this.prNumber = options.prNumber;
+    }
+    /**
+     * Generate and post PR suggestions
+     */
+    async generateSuggestions() {
+        try {
+            coreExports.info('💡 Generating PR suggestions...');
+            // Get PR info
+            const prInfo = await this.prService.getPullRequest(this.prNumber);
+            // Get file diffs
+            const files = await this.prService.getFiles(this.prNumber);
+            // Build suggestion prompt
+            const prompt = this.buildSuggestionPrompt(prInfo, files);
+            // Generate suggestions using AI
+            coreExports.info('🤖 Requesting suggestions from AI...');
+            const response = await this.aiProvider.sendMessage([
+                { role: 'user', content: prompt }
+            ], { responseFormat: 'text' });
+            // Format suggestions
+            const formattedSuggestions = this.formatSuggestions(response.content, prInfo);
+            // Delete old suggestion comments
+            await this.deleteOldSuggestions();
+            // Post new suggestions
+            await this.commentService.createIssueComment(this.prNumber, formattedSuggestions);
+            coreExports.info('✅ Suggestions generated and posted successfully');
+        }
+        catch (error) {
+            coreExports.error(`Failed to generate suggestions: ${error instanceof Error ? error.message : String(error)}`);
+            throw error;
+        }
+    }
+    /**
+     * Build prompt for AI suggestion generation
+     */
+    buildSuggestionPrompt(prInfo, files) {
+        // Format files section
+        const filesSection = this.formatFilesForPrompt(files);
+        return `You are an expert code reviewer tasked with providing constructive improvement suggestions for a pull request.
+
+Pull Request Information:
+- Title: ${prInfo.title}
+- Author: ${prInfo.author}
+- Branch: ${prInfo.headRef} → ${prInfo.baseRef}
+- Changes: +${prInfo.additions}/-${prInfo.deletions} lines across ${prInfo.changedFiles} files
+
+PR Description:
+${prInfo.body || 'No description provided'}
+
+Files Changed:
+${filesSection}
+
+Please provide actionable improvement suggestions for this pull request. Focus on:
+
+1. **Code Quality**: Suggest improvements for readability, maintainability, and best practices
+2. **Performance**: Identify potential performance improvements or optimizations
+3. **Security**: Highlight any security concerns or vulnerabilities
+4. **Testing**: Recommend additional test cases or test coverage improvements
+5. **Documentation**: Suggest areas that need better documentation or comments
+6. **Architecture**: Provide architectural suggestions if applicable
+
+Format your response as a structured list of suggestions. Each suggestion should:
+- Be specific and actionable
+- Include the file/area it applies to
+- Explain why the change would be beneficial
+- Provide an example if helpful
+
+Keep suggestions constructive and focused on improvements rather than criticism.`;
+    }
+    /**
+     * Format files for prompt
+     */
+    formatFilesForPrompt(files) {
+        if (files.length === 0) {
+            return 'No files changed';
+        }
+        return files.map((f, index) => {
+            const lines = [];
+            lines.push(`${index + 1}. **${f.filename}** (${f.status}, +${f.additions}/-${f.deletions})`);
+            if (f.patch) {
+                // Include a snippet of the diff
+                const patchLines = f.patch.split('\n').slice(0, 20);
+                lines.push('```diff');
+                lines.push(patchLines.join('\n'));
+                if (f.patch.split('\n').length > 20) {
+                    lines.push('... (truncated)');
+                }
+                lines.push('```');
+            }
+            return lines.join('\n');
+        }).join('\n\n');
+    }
+    /**
+     * Format the suggestions output
+     */
+    formatSuggestions(aiContent, prInfo) {
+        const parts = [];
+        // Add marker for identification
+        parts.push(SuggestionService.SUGGESTION_MARKER);
+        parts.push('');
+        // Add header
+        parts.push('## 💡 Improvement Suggestions');
+        parts.push('');
+        parts.push('Here are some suggestions to improve this pull request:');
+        parts.push('');
+        // Add AI-generated suggestions
+        parts.push(aiContent.trim());
+        parts.push('');
+        // Add footer
+        parts.push('---');
+        parts.push('');
+        parts.push(`_Suggestions generated by ${this.aiProvider.getProviderName()} • [View PR Files](${this.prService.getPRUrl(prInfo.number)}/files)_`);
+        return parts.join('\n');
+    }
+    /**
+     * Delete old suggestion comments
+     */
+    async deleteOldSuggestions() {
+        try {
+            coreExports.info('🗑️  Checking for old suggestion comments...');
+            const comments = await this.commentService.listIssueComments(this.prNumber);
+            const suggestionComments = comments.filter((comment) => comment.body?.includes(SuggestionService.SUGGESTION_MARKER));
+            if (suggestionComments.length > 0) {
+                coreExports.info(`Found ${suggestionComments.length} old suggestion comment(s), deleting...`);
+                for (const comment of suggestionComments) {
+                    await this.commentService.deleteIssueComment(comment.id);
+                    coreExports.info(`  ✓ Deleted comment #${comment.id}`);
+                }
+            }
+            else {
+                coreExports.info('No old suggestion comments found');
+            }
+        }
+        catch (error) {
+            coreExports.warning(`Failed to delete old suggestions: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+}
+
+/**
  * Action Orchestrator
  *
  * Main entry point - coordinates all components
@@ -117168,12 +117323,18 @@ class ActionOrchestrator {
             if (event.action !== 'created' || !event.comment) {
                 return null;
             }
-            const commentBody = event.comment.body?.trim() || '';
-            // Check for /summary command
+            const commentBody = event.comment.body?.trim().toLowerCase() || '';
+            // Check for commands (support both /command and just command)
             if (commentBody === '/summary' || commentBody.startsWith('/summary ')) {
                 return 'summary';
             }
-            // Future: Add more commands here (/review, /suggest, etc.)
+            if (commentBody === '/review' || commentBody.startsWith('/review ')) {
+                return 'review';
+            }
+            if (commentBody === '/suggestion' || commentBody.startsWith('/suggestion ') ||
+                commentBody === '/suggestions' || commentBody.startsWith('/suggestions ')) {
+                return 'suggestion';
+            }
             return null;
         }
         catch (error) {
@@ -117186,13 +117347,22 @@ class ActionOrchestrator {
      */
     static async execute() {
         try {
-            // Check if this is a comment command
-            const command = this.getCommentCommand();
-            if (command === 'summary') {
+            // Determine the mode: comment command takes precedence, then input, then default
+            const commentCommand = this.getCommentCommand();
+            const modeInput = coreExports.getInput('mode')?.toLowerCase() || 'review';
+            const mode = commentCommand || modeInput;
+            // Route to appropriate handler based on mode
+            if (mode === 'summary') {
                 coreExports.info('🤖 Code Sentinel AI - Generating PR Summary');
                 await this.executeSummary();
                 return;
             }
+            if (mode === 'suggestion') {
+                coreExports.info('🤖 Code Sentinel AI - Generating Suggestions');
+                await this.executeSuggestion();
+                return;
+            }
+            // Default: review mode
             coreExports.info('🤖 Code Sentinel AI - Starting review');
             // 1. Load and validate configuration
             const config = ConfigLoader.load();
@@ -117377,6 +117547,91 @@ class ActionOrchestrator {
         catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             coreExports.error(`❌ Summary generation failed: ${errorMessage}`);
+            if (error instanceof Error && error.stack) {
+                coreExports.debug(error.stack);
+            }
+            coreExports.setFailed(errorMessage);
+        }
+    }
+    /**
+     * Execute suggestion command
+     */
+    static async executeSuggestion() {
+        try {
+            // 1. Load minimal configuration
+            const token = coreExports.getInput('github-token') || process.env.GITHUB_TOKEN || '';
+            const repository = process.env.GITHUB_REPOSITORY || '';
+            if (!token) {
+                throw new Error('github-token is required');
+            }
+            if (!repository) {
+                throw new Error('GITHUB_REPOSITORY environment variable is required');
+            }
+            // Parse repository owner/name
+            const [owner, repo] = repository.split('/');
+            if (!owner || !repo) {
+                throw new Error(`Invalid repository format: ${repository}`);
+            }
+            // Get PR number from event
+            const eventPath = process.env.GITHUB_EVENT_PATH;
+            if (!eventPath) {
+                throw new Error('GITHUB_EVENT_PATH not found');
+            }
+            const event = JSON.parse(require$$1.readFileSync(eventPath, 'utf8'));
+            const prNumber = event.issue?.number || event.pull_request?.number;
+            if (!prNumber) {
+                throw new Error('Could not determine PR number from event');
+            }
+            coreExports.info(`💡 Generating suggestions for PR #${prNumber}`);
+            // 2. Initialize GitHub clients
+            const githubClient = new GitHubClient({
+                token,
+                owner,
+                repo,
+            });
+            const octokit = githubClient.getOctokit();
+            const prService = new PullRequestService({
+                octokit,
+                owner,
+                repo,
+            });
+            const commentService = new CommentService({
+                octokit,
+                owner,
+                repo,
+            });
+            // 3. Initialize AI provider
+            const apiKey = coreExports.getInput('api-key') || process.env.OPENAI_API_KEY || '';
+            if (!apiKey) {
+                throw new Error('api-key is required for suggestion generation');
+            }
+            const provider = coreExports.getInput('provider', { required: false }) || 'openai';
+            const model = coreExports.getInput('model', { required: false }) || 'gpt-5-mini';
+            const apiEndpoint = coreExports.getInput('api-endpoint', { required: false });
+            const maxCompletionTokensMode = coreExports.getBooleanInput('max-completion-tokens-mode', { required: false });
+            const aiProvider = ProviderFactory.create({
+                type: provider,
+                model,
+                apiKey,
+                endpoint: apiEndpoint,
+                maxCompletionTokensMode,
+            });
+            const providerName = aiProvider.getProviderName();
+            coreExports.info(`✓ Connected to ${providerName} (${model})`);
+            // 4. Generate suggestions
+            const suggestionService = new SuggestionService({
+                prService,
+                commentService,
+                aiProvider,
+                prNumber,
+            });
+            await suggestionService.generateSuggestions();
+            coreExports.info('✅ Suggestions generated successfully');
+            coreExports.setOutput('success', true);
+        }
+        catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            coreExports.error(`❌ Suggestion generation failed: ${errorMessage}`);
             if (error instanceof Error && error.stack) {
                 coreExports.debug(error.stack);
             }
