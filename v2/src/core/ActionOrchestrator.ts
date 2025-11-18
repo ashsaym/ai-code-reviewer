@@ -5,8 +5,6 @@
  */
 
 import * as core from '@actions/core';
-import * as github from '@actions/github';
-import { Octokit } from '@octokit/rest';
 import { ConfigLoader } from '../config/ConfigLoader';
 import { StorageManager } from '../storage/StorageManager';
 import { GitHubClient } from '../github/GitHubClient';
@@ -14,7 +12,6 @@ import { PullRequestService } from '../github/PullRequestService';
 import { CommentService } from '../github/CommentService';
 import { ProviderFactory } from '../providers/ProviderFactory';
 import { ReviewEngine } from './ReviewEngine';
-import { Logger } from '../utils/Logger';
 
 export class ActionOrchestrator {
   /**
@@ -43,16 +40,17 @@ export class ActionOrchestrator {
       }
 
       // 2. Initialize GitHub clients
-      const octokit = github.getOctokit(config.token);
       const githubClient = new GitHubClient({
         token: config.token,
         owner,
         repo,
       });
+      
+      const octokit = githubClient.getOctokit();
 
       // 3. Initialize storage
       const storageManager = new StorageManager({
-        octokit: octokit as unknown as Octokit,
+        octokit,
         owner,
         repo,
         cacheOptions: {
@@ -64,13 +62,13 @@ export class ActionOrchestrator {
 
       // 4. Initialize GitHub services
       const prService = new PullRequestService({
-        octokit: githubClient.getOctokit(),
+        octokit,
         owner,
         repo,
       });
 
       const commentService = new CommentService({
-        octokit: githubClient.getOctokit(),
+        octokit,
         owner,
         repo,
       });
