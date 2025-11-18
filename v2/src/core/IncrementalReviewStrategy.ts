@@ -173,37 +173,22 @@ export class IncrementalReviewStrategy {
   }
 
   /**
-   * Update existing comment with new issue text
+   * Delete existing comment (will be replaced with new issue)
    */
   private async updateExistingComment(
     commentId: number,
-    oldBody: string,
-    newComment: ReviewComment,
+    _oldBody: string,
+    _newComment: ReviewComment,
     isReviewComment: boolean
   ): Promise<void> {
-    const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    const severityBadge = this.getSeverityBadge(newComment.severity);
-    
-    // Format new issue body
-    let newIssueBody = `${severityBadge} **${newComment.severity.toUpperCase()}**\n\n${newComment.message}`;
-    
-    if (newComment.suggestion) {
-      newIssueBody += `\n\n**Suggested change:**\n\`\`\`suggestion\n${newComment.suggestion}\n\`\`\``;
-    }
-
-    // Append update to old comment
-    const updatedBody = `~~${oldBody}~~\n\n---\n**🔄 Updated: ${timestamp}**\n\n${newIssueBody}`;
-
+    // Instead of updating with nested suggestion blocks (which breaks GitHub),
+    // we'll delete the old comment and let a new one be created
     try {
-      if (isReviewComment) {
-        await this.commentService.updateReviewComment(commentId, updatedBody);
-      } else {
-        const commentStorage = this.storage.getCommentStorage();
-        await commentStorage.updateComment(commentId, updatedBody, false);
-      }
-      core.info(`✏️  Updated comment #${commentId} with new issue`);
+      const commentStorage = this.storage.getCommentStorage();
+      await commentStorage.deleteComment(commentId, isReviewComment);
+      core.info(`🗑️  Deleted outdated comment #${commentId} (will be replaced with new issue)`);
     } catch (error) {
-      core.error(`Failed to update comment #${commentId}: ${error}`);
+      core.error(`Failed to delete comment #${commentId}: ${error}`);
       // Don't throw - continue with other comments
     }
   }
@@ -267,17 +252,7 @@ export class IncrementalReviewStrategy {
     }
   }
 
-  /**
-   * Get severity badge emoji
-   */
-  private getSeverityBadge(severity: 'error' | 'warning' | 'info'): string {
-    const badges = {
-      error: '🔴',
-      warning: '🟡',
-      info: '🟢',
-    };
-    return badges[severity] || '🔵';
-  }
+
 
   /**
    * Infer severity from comment body text
