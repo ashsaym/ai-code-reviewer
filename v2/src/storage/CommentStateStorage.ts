@@ -143,6 +143,11 @@ export class CommentStateStorage {
     const comments: CommentState[] = [];
 
     try {
+      // Debug logging
+      core.debug(`Getting comments for PR #${prNumber}`);
+      core.debug(`Octokit: ${this.octokit ? 'defined' : 'undefined'}`);
+      core.debug(`Octokit.pulls: ${this.octokit?.pulls ? 'defined' : 'undefined'}`);
+      
       // Get review comments (inline)
       const reviewComments = await this.octokit.pulls.listReviewComments({
         owner: this.owner,
@@ -152,6 +157,8 @@ export class CommentStateStorage {
       });
 
       for (const comment of reviewComments.data) {
+        if (!comment.body) continue; // Skip comments without body
+        
         const metadata = this.decodeMetadata(comment.body);
         
         if (!metadata) {
@@ -186,6 +193,8 @@ export class CommentStateStorage {
       });
 
       for (const comment of issueComments.data) {
+        if (!comment.body) continue; // Skip comments without body
+        
         const metadata = this.decodeMetadata(comment.body);
         
         if (!metadata) {
@@ -304,7 +313,7 @@ export class CommentStateStorage {
           comment_id: commentId,
         });
 
-        if (!comment.data.body.startsWith(outdatedPrefix)) {
+        if (comment.data.body && !comment.data.body.startsWith(outdatedPrefix)) {
           await this.updateComment(commentId, outdatedPrefix + comment.data.body, false);
         }
       }

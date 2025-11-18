@@ -4,7 +4,8 @@
   "description": "Production-ready AI code sentinel with zero external dependencies",
   "main": "dist/index.js",
   "scripts": {
-    "build": "rollup -c",
+    "build": "rollup -c && npm run copy:templates",
+    "copy:templates": "mkdir -p dist/templates && cp src/prompts/templates/*.hbs dist/templates/",
     "build:watch": "rollup -c -w",
     "test": "jest",
     "test:watch": "jest --watch",
