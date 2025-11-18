@@ -25,6 +25,7 @@ export interface ActionConfig {
   maxFilesPerBatch: number;
   maxLinesPerFile: number;
   autoCleanOutdated: boolean;
+  incrementalMode: boolean;
   
   // Check runs
   enableCheckRuns: boolean;
@@ -85,6 +86,7 @@ export class ConfigLoader {
     const maxFilesPerBatch = this.getNumberInput('max-files-per-batch', 10);
     const maxLinesPerFile = this.getNumberInput('max-lines-per-file', 500);
     const autoCleanOutdated = this.getBooleanInput('auto-clean-outdated', true);
+    const incrementalMode = this.getBooleanInput('incremental-mode', true);
 
     // Check runs
     const enableCheckRuns = this.getBooleanInput('enable-check-runs', true);
@@ -113,6 +115,7 @@ export class ConfigLoader {
       maxFilesPerBatch,
       maxLinesPerFile,
       autoCleanOutdated,
+      incrementalMode,
       enableCheckRuns,
       checkName,
       customPromptPath,
@@ -216,6 +219,7 @@ export class ConfigLoader {
     core.info(`  Max Files/Batch: ${config.maxFilesPerBatch}`);
     core.info(`  Max Lines/File: ${config.maxLinesPerFile}`);
     core.info(`  Auto Clean Outdated: ${config.autoCleanOutdated}`);
+    core.info(`  Incremental Mode: ${config.incrementalMode}`);
     core.info(`  Check Runs: ${config.enableCheckRuns}`);
     core.info(`  Cache: ${config.cacheEnabled} (TTL: ${config.cacheTtlDays} days)`);
     core.info(`  Debug Mode: ${config.debugMode}`);

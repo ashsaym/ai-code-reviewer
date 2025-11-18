@@ -12,6 +12,7 @@ import { DiffParser } from '../github/DiffParser';
 import { BaseProvider, AIMessage } from '../providers/BaseProvider';
 import { IncrementalAnalyzer, FileAnalysis } from '../analysis/IncrementalAnalyzer';
 import { OutdatedCommentCleaner } from '../analysis/OutdatedCommentCleaner';
+import { IncrementalReviewStrategy } from './IncrementalReviewStrategy';
 import { PromptBuilder } from '../prompts/PromptBuilder';
 import { ResponseParser } from '../parsers/ResponseParser';
 import { Logger } from '../utils/Logger';
@@ -25,6 +26,7 @@ export interface ReviewEngineOptions {
   maxFilesPerBatch?: number;
   maxLinesPerFile?: number;
   autoCleanOutdated?: boolean;
+  incrementalMode?: boolean;
 }
 
 export interface ReviewResult {
@@ -49,6 +51,7 @@ export class ReviewEngine {
   private maxFilesPerBatch: number;
   private maxLinesPerFile: number;
   private autoCleanOutdated: boolean;
+  private incrementalMode: boolean;
 
   constructor(options: ReviewEngineOptions) {
     this.storage = options.storage;
@@ -58,6 +61,7 @@ export class ReviewEngine {
     this.maxFilesPerBatch = options.maxFilesPerBatch || 10;
     this.maxLinesPerFile = options.maxLinesPerFile || 500;
     this.autoCleanOutdated = options.autoCleanOutdated ?? true;
+    this.incrementalMode = options.incrementalMode ?? true;
   }
 
   /**
@@ -267,6 +271,17 @@ export class ReviewEngine {
       }
     }
 
+    // Check if we should use incremental mode
+    const incrementalStrategy = new IncrementalReviewStrategy(
+      this.commentService,
+      this.storage,
+      new IncrementalAnalyzer(this.storage, owner, repo, prNumber)
+    );
+
+    // Use incremental mode if configured and there's an existing review
+    const shouldUseIncremental = this.incrementalMode && 
+      await incrementalStrategy.shouldUseIncrementalMode(prNumber);
+
     // Create single review with summary + all inline comments
     if (reviewComments.length > 0) {
       try {
@@ -275,16 +290,39 @@ export class ReviewEngine {
           parseResult.data!.summary
         );
 
-        await this.commentService.createReview(
-          prNumber,
-          pr.headSha,
-          summary,
-          'COMMENT',
-          reviewComments
-        );
+        if (shouldUseIncremental) {
+          // Incremental mode: update existing review and manage comment lifecycle
+          core.info('🔄 Using incremental review mode');
+          
+          const latestReviewId = await incrementalStrategy.findLatestReview(prNumber);
+          const incrementalResult = await incrementalStrategy.processIncrementalUpdate(
+            prNumber,
+            pr.headSha,
+            latestReviewId,
+            validComments,
+            summary,
+            batch
+          );
 
-        result.commentsCreated = reviewComments.length;
-        core.info(`✓ Created review with ${reviewComments.length} inline comments`);
+          result.commentsCreated = incrementalResult.newIssuesCreated;
+          result.outdatedCleaned += incrementalResult.outdatedDeleted;
+          
+          core.info(`✓ Incremental update: ${incrementalResult.issuesResolved} resolved, ${incrementalResult.issuesUpdated} updated, ${incrementalResult.newIssuesCreated} new`);
+        } else {
+          // First review: create new review
+          core.info('📝 Creating new review');
+          
+          await this.commentService.createReview(
+            prNumber,
+            pr.headSha,
+            summary,
+            'COMMENT',
+            reviewComments
+          );
+
+          result.commentsCreated = reviewComments.length;
+          core.info(`✓ Created review with ${reviewComments.length} inline comments`);
+        }
 
       } catch (error) {
         const errorMsg = `Failed to create review: ${error}`;

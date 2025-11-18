@@ -378,4 +378,11 @@ export class StorageManager {
   ): CheckRunAnnotation {
     return CheckRunStorage.createAnnotation(filePath, line, severity, message, title);
   }
+
+  /**
+   * Get comment storage instance
+   */
+  getCommentStorage(): CommentStateStorage {
+    return this.commentStorage;
+  }
 }

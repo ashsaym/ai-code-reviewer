@@ -68,6 +68,11 @@ inputs:
     required: false
     default: 'true'
   
+  incremental-mode:
+    description: 'Enable incremental review mode (updates existing reviews instead of creating new ones)'
+    required: false
+    default: 'true'
+  
   enable-check-runs:
     description: 'Enable GitHub Check Runs for review history'
     required: false

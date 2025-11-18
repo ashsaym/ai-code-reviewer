@@ -246,4 +246,70 @@ export class CommentService {
     const fileComments = await this.getFileComments(prNumber, path);
     return fileComments.some(c => c.position === position);
   }
+
+  /**
+   * Get a specific review by ID
+   */
+  async getReview(prNumber: number, reviewId: number): Promise<{ id: number; body: string; state: string } | null> {
+    try {
+      const { data } = await this.octokit.pulls.getReview({
+        owner: this.owner,
+        repo: this.repo,
+        pull_number: prNumber,
+        review_id: reviewId,
+      });
+
+      return {
+        id: data.id,
+        body: data.body || '',
+        state: data.state,
+      };
+    } catch (error) {
+      core.error(`Failed to get review #${reviewId}: ${error instanceof Error ? error.message : String(error)}`);
+      return null;
+    }
+  }
+
+  /**
+   * Update review body (note: GitHub API doesn't support updating reviews directly,
+   * so we'll need to work around this by creating a new comment)
+   */
+  async updateReview(_reviewId: number, _body: string): Promise<void> {
+    core.warning('GitHub API does not support updating review bodies. Consider creating a new review instead.');
+    // This is a limitation of the GitHub API - review bodies cannot be updated
+    // We'll handle this by creating follow-up comments instead
+    throw new Error('Review body updates not supported by GitHub API');
+  }
+
+  /**
+   * List all reviews for a PR
+   */
+  async listReviews(prNumber: number): Promise<Array<{
+    id: number;
+    user: { login: string } | null;
+    body: string | null;
+    state: string;
+    submitted_at?: string;
+  }>> {
+    try {
+      const { data } = await this.octokit.pulls.listReviews({
+        owner: this.owner,
+        repo: this.repo,
+        pull_number: prNumber,
+        per_page: 100,
+      });
+
+      return data.map(r => ({
+        id: r.id,
+        user: r.user,
+        body: r.body,
+        state: r.state,
+        submitted_at: r.submitted_at,
+        // Note: Reviews don't have created_at in the API response
+      }));
+    } catch (error) {
+      core.error(`Failed to list reviews: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
+  }
 }
