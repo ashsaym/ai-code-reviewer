@@ -1,0 +1,184 @@
+# Example: AI Code Review with Anthropic Claude
+#
+# This workflow demonstrates how to set up automated AI code reviews using Anthropic's Claude models.
+# It runs on every pull request and provides detailed code review with inline comments.
+#
+# Prerequisites:
+# 1. Add your Anthropic API key as a repository secret named CLAUDE_API_KEY or ANTHROPIC_API_KEY
+#    - Get your API key from: https://console.anthropic.com/
+# 2. Ensure the workflow has proper permissions (see below)
+#
+# Supported Models:
+# - claude-3-5-sonnet-20241022 (recommended, best balance)
+# - claude-3-opus (most capable, higher cost)
+# - claude-3-sonnet (good balance)
+# - claude-3-haiku (fastest, lower cost)
+
+name: AI Review (Claude)
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+# Workflow-level concurrency: cancel in-progress runs when new commits are pushed
+concurrency:
+  group: ai-review-claude-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read        # Read repository contents
+  pull-requests: write  # Post comments and reviews on PRs
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: AI Code Review with Claude
+        uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
+        with:
+          # Required: Pull request number
+          pr-number: ${{ github.event.pull_request.number }}
+          
+          # Provider configuration
+          ai-provider: claude
+          claude-model: claude-3-5-sonnet-20241022
+          
+          # Task type: review, summary, suggestions, or description
+          # - review: Detailed code review with inline comments (default)
+          # - summary: Executive summary of changes
+          # - suggestions: Actionable improvement suggestions
+          # - description: Auto-generate/update PR description
+          task: review
+          
+          # Control what gets analyzed
+          max-files: 60              # Maximum number of files to review
+          max-diff-chars: 18000      # Max diff characters per file
+          max-output-tokens: 16000   # Max tokens in AI response
+          
+          # Enable inline review comments on specific lines
+          inline-review: "true"
+          
+          # Custom name for the AI reviewer in comments
+          reviewer-name: "AI Code Reviewer Bot"
+          
+          # Optional: Add custom instructions for the AI
+          # additional-context: |
+          #   Prioritize:
+          #   - Code maintainability
+          #   - Testing coverage
+          #   - Documentation quality
+          #   - API design patterns
+        
+        env:
+          # Required: GitHub token (automatically provided)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+          # Required: Anthropic API key
+          # You can use either CLAUDE_API_KEY or ANTHROPIC_API_KEY
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          # ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+# Configuration Tips:
+#
+# 1. Model Selection:
+#    - For best results: claude-3-5-sonnet-20241022 (latest, recommended)
+#    - For complex analysis: claude-3-opus (most capable)
+#    - For quick reviews: claude-3-haiku (fastest, cost-effective)
+#    - For balance: claude-3-sonnet
+#
+# 2. Context Windows:
+#    - Claude 3.5 Sonnet: 200K tokens context window
+#    - Claude 3 Opus: 200K tokens context window
+#    - Claude 3 Sonnet: 200K tokens context window
+#    - Claude 3 Haiku: 200K tokens context window
+#    - All support up to 4096 output tokens, set max-output-tokens accordingly
+#
+# 3. Claude's Strengths:
+#    - Excellent at following complex instructions
+#    - Strong code understanding and reasoning
+#    - Good at maintaining context across long diffs
+#    - Detailed explanations and suggestions
+#
+# 4. Inline Comments:
+#    - Set inline-review: "true" to get GitHub-style inline comments
+#    - Set inline-review: "false" for single summary comment
+#
+# 5. Custom Instructions:
+#    - Use additional-context to add repository-specific guidance
+#    - Or add .github/review-instructions.md file to your repo
+#    - Claude excels at following detailed instructions
+#
+# 6. Multiple Tasks:
+#    - Run different tasks in parallel using matrix strategy:
+#      strategy:
+#        matrix:
+#          task: [review, summary, suggestions]
+#    - Then use: task: ${{ matrix.task }}
+#
+# 7. Repository Guidance Files:
+#    The action automatically loads these files if present:
+#    - .github/review-instructions.md - Team review guidelines
+#    - .github/review-rulesets.md - Compliance rules
+#    - .github/review-ignorelist.txt - Patterns to exclude
+#    - .github/prompts/review.md - Custom prompt template
+#    - .github/prompts/summary.md - Custom summary template
+#    - .github/prompts/suggestions.md - Custom suggestions template
+#
+# 8. Rate Limits:
+#    - Anthropic has different rate limits per tier
+#    - Free tier: Lower limits, consider using for smaller repos
+#    - Paid tiers: Higher limits, suitable for production use
+#
+# 9. Cost Optimization:
+#    - Use claude-3-haiku for routine reviews (most cost-effective)
+#    - Use claude-3-5-sonnet for important PRs (best balance)
+#    - Use claude-3-opus for critical/security reviews (most thorough)
+#    - Set appropriate max-files and max-diff-chars to control costs
+#
+# Troubleshooting:
+# - If you get API errors, verify your API key is valid and active
+# - If reviews are incomplete, increase max-output-tokens (Claude supports up to 4096)
+# - If too many files, decrease max-files or use review-ignorelist.txt
+# - For rate limits, add concurrency controls or reduce frequency
+# - Check Anthropic status page if experiencing issues: https://status.anthropic.com/
+#
+# Advanced Configuration Examples:
+#
+# Example 1: Matrix strategy for multiple tasks
+# jobs:
+#   ai-review:
+#     runs-on: ubuntu-latest
+#     strategy:
+#       matrix:
+#         task: [review, summary, suggestions]
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
+#         with:
+#           task: ${{ matrix.task }}
+#           pr-number: ${{ github.event.pull_request.number }}
+#           ai-provider: claude
+#           claude-model: claude-3-5-sonnet-20241022
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+#
+# Example 2: Conditional review based on PR labels
+# jobs:
+#   ai-review:
+#     if: contains(github.event.pull_request.labels.*.name, 'needs-review')
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
+#         with:
+#           pr-number: ${{ github.event.pull_request.number }}
+#           ai-provider: claude
+#           claude-model: claude-3-opus  # Use most capable model for labeled PRs
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
