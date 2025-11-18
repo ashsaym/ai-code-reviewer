@@ -412,6 +412,59 @@ export class CommentService {
   }
 
   /**
+   * Dismiss old PR reviews by Code Sentinel AI
+   */
+  async dismissOldReviews(prNumber: number): Promise<number> {
+    try {
+      core.info('🔄 Dismissing old Code Sentinel AI reviews...');
+      
+      const reviews = await this.listReviews(prNumber);
+      
+      // Find Code Sentinel AI reviews (exclude the most recent one)
+      const ourReviews = reviews.filter(r => 
+        r.user?.login === 'github-actions[bot]' && 
+        r.body?.includes('Code Sentinel AI')
+      );
+      
+      if (ourReviews.length <= 1) {
+        core.info('No old reviews to dismiss (keeping latest)');
+        return 0;
+      }
+      
+      // Sort by date, keep the newest, dismiss the rest
+      ourReviews.sort((a, b) => 
+        new Date(b.submitted_at || 0).getTime() - 
+        new Date(a.submitted_at || 0).getTime()
+      );
+      
+      const oldReviews = ourReviews.slice(1); // Skip the newest one
+      let dismissed = 0;
+      
+      for (const review of oldReviews) {
+        try {
+          await this.octokit.pulls.dismissReview({
+            owner: this.owner,
+            repo: this.repo,
+            pull_number: prNumber,
+            review_id: review.id,
+            message: 'Outdated - superseded by newer review',
+          });
+          dismissed++;
+          core.info(`✅ Dismissed old review #${review.id}`);
+        } catch (error) {
+          core.warning(`Failed to dismiss review #${review.id}: ${error}`);
+        }
+      }
+      
+      core.info(`✅ Dismissed ${dismissed} old reviews`);
+      return dismissed;
+    } catch (error) {
+      core.warning(`Failed to dismiss old reviews: ${error}`);
+      return 0;
+    }
+  }
+
+  /**
    * Resolve all Code Sentinel AI review threads
    */
   async resolveAllOurThreads(prNumber: number): Promise<number> {

@@ -16,6 +16,8 @@ export interface IncrementalReviewResult {
   commentsDeleted: number;
   threadsResolved: number;
   newIssuesCreated: number;
+  reviewsDismissed: number;
+  oldIssues: Array<{ path: string; line: number; message: string; severity: string }>; // Track old issues before deletion
   outdatedDeleted: number; // Keep for backwards compatibility
   issuesResolved: number; // Keep for backwards compatibility
   issuesUpdated: number; // Keep for backwards compatibility
@@ -48,6 +50,8 @@ export class IncrementalReviewStrategy {
       commentsDeleted: 0,
       threadsResolved: 0,
       newIssuesCreated: newComments.length,
+      reviewsDismissed: 0,
+      oldIssues: [],
       outdatedDeleted: 0, // All deleted comments are "outdated"
       issuesResolved: 0, // All deleted comments are "resolved" too
       issuesUpdated: 0, // No updates, only delete and recreate
@@ -73,6 +77,14 @@ export class IncrementalReviewStrategy {
 
     core.info(`📊 Found ${ourComments.length} Code Sentinel AI comments to clean up`);
 
+    // Track old issues before deletion for summary
+    for (const comment of ourComments) {
+      const issue = this.extractIssueFromComment(comment);
+      if (issue) {
+        result.oldIssues.push(issue);
+      }
+    }
+
     // Delete ALL old Code Sentinel AI comments
     // New comments will be created fresh
     for (const comment of ourComments) {
@@ -87,10 +99,15 @@ export class IncrementalReviewStrategy {
 
     // Resolve ALL review threads created by Code Sentinel AI
     result.threadsResolved = await this.commentService.resolveAllOurThreads(prNumber);
+    
+    // Dismiss old PR reviews
+    result.reviewsDismissed = await this.commentService.dismissOldReviews(prNumber);
 
     core.info(`✅ Incremental cleanup complete:`);
     core.info(`   - Old comments deleted: ${result.commentsDeleted}`);
     core.info(`   - Threads resolved: ${result.threadsResolved}`);
+    core.info(`   - Old reviews dismissed: ${result.reviewsDismissed}`);
+    core.info(`   - Old issues resolved: ${result.oldIssues.length}`);
     core.info(`   - New issues to create: ${result.newIssuesCreated}`);
 
     return result;
@@ -99,6 +116,37 @@ export class IncrementalReviewStrategy {
 
 
 
+
+  /**
+   * Extract issue information from comment body
+   */
+  private extractIssueFromComment(comment: { path: string; line: number | null; body: string }): { path: string; line: number; message: string; severity: string } | null {
+    try {
+      // Extract severity
+      let severity = 'info';
+      if (comment.body.includes('🔴') || comment.body.toLowerCase().includes('error')) {
+        severity = 'error';
+      } else if (comment.body.includes('🟡') || comment.body.toLowerCase().includes('warning')) {
+        severity = 'warning';
+      }
+      
+      // Extract first line as message (up to 100 chars)
+      const lines = comment.body.split('\n');
+      let message = lines[0].replace(/[🔴🟡ℹ️✅]/g, '').replace(/\*\*/g, '').trim();
+      if (message.length > 100) {
+        message = message.substring(0, 97) + '...';
+      }
+      
+      return {
+        path: comment.path,
+        line: comment.line || 0,
+        message,
+        severity
+      };
+    } catch (error) {
+      return null;
+    }
+  }
 
   /**
    * Find the most recent review by Code Sentinel AI
