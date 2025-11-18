@@ -228,7 +228,9 @@ export class ReviewEngine {
     // Deduplicate and validate
     const validComments = ResponseParser.deduplicateComments(comments);
 
-    // Create inline review comments on specific lines (like v1)
+    // Collect review comments with positions (like v1 - single review with summary + inline comments)
+    const reviewComments: Array<{ path: string; position: number; body: string }> = [];
+
     for (const comment of validComments) {
       try {
         const file = allFiles.find(f => f.filename === comment.path);
@@ -252,25 +254,43 @@ export class ReviewEngine {
 
         const body = ResponseParser.formatForGitHub(comment);
 
-        await this.commentService.createReviewComment(
-          prNumber,
-          pr.headSha,
-          file.filename,
+        reviewComments.push({
+          path: file.filename,
           position,
-          body
-        );
-
-        result.commentsCreated++;
+          body,
+        });
 
       } catch (error) {
-        const errorMsg = `Failed to create comment: ${error}`;
+        const errorMsg = `Failed to process comment: ${error}`;
         result.errors.push(errorMsg);
         core.warning(errorMsg);
       }
     }
 
-    if (result.commentsCreated > 0) {
-      core.info(`✓ Created ${result.commentsCreated} inline review comments`);
+    // Create single review with summary + all inline comments
+    if (reviewComments.length > 0) {
+      try {
+        const summary = ResponseParser.createReviewSummary(
+          validComments,
+          parseResult.data!.summary
+        );
+
+        await this.commentService.createReview(
+          prNumber,
+          pr.headSha,
+          summary,
+          'COMMENT',
+          reviewComments
+        );
+
+        result.commentsCreated = reviewComments.length;
+        core.info(`✓ Created review with ${reviewComments.length} inline comments`);
+
+      } catch (error) {
+        const errorMsg = `Failed to create review: ${error}`;
+        result.errors.push(errorMsg);
+        core.error(errorMsg);
+      }
     }
 
     result.filesReviewed += batch.length;
