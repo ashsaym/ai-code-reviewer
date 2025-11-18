@@ -405,7 +405,8 @@ export class ReviewEngine {
           
           const summary = ResponseParser.createReviewSummary(
             validComments,
-            parseResult.data!.summary
+            parseResult.data!.summary,
+            this.aiProvider.getModel()
           );
           
           await this.commentService.createReview(

@@ -1,7 +1,7 @@
 /**
  * Suggestion Service
  * 
- * Generates improvement suggestions for PRs
+ * Generates improvement suggestions as inline code review comments
  */
 
 import * as core from '@actions/core';
@@ -33,7 +33,7 @@ export class SuggestionService {
   }
 
   /**
-   * Generate and post PR suggestions
+   * Generate and post PR suggestions as inline review comments
    */
   async generateSuggestions(): Promise<void> {
     try {
@@ -48,22 +48,33 @@ export class SuggestionService {
       // Build suggestion prompt
       const prompt = this.buildSuggestionPrompt(prInfo, files);
 
-      // Generate suggestions using AI
+      // Generate suggestions using AI (request JSON format for structured suggestions)
       core.info('🤖 Requesting suggestions from AI...');
       const response = await this.aiProvider.sendMessage([
         { role: 'user', content: prompt }
-      ], { responseFormat: 'text' });
+      ], { responseFormat: 'json' });
 
-      // Format suggestions
-      const formattedSuggestions = this.formatSuggestions(response.content, prInfo);
+      // Parse JSON response
+      const suggestions = this.parseSuggestions(response.content, files);
 
-      // Delete old suggestion comments
-      await this.deleteOldSuggestions();
+      if (suggestions.length === 0) {
+        core.info('No inline suggestions generated, posting general comment instead');
+        await this.postGeneralSuggestions(prInfo, response.content);
+        return;
+      }
 
-      // Post new suggestions
-      await this.commentService.createIssueComment(this.prNumber, formattedSuggestions);
+      // Post inline review with suggestions
+      const reviewBody = this.buildReviewBody(suggestions.length);
+      
+      await this.commentService.createReview(
+        this.prNumber,
+        prInfo.headSha,
+        reviewBody,
+        'COMMENT',
+        suggestions
+      );
 
-      core.info('✅ Suggestions generated and posted successfully');
+      core.info(`✅ Posted ${suggestions.length} inline suggestions successfully`);
     } catch (error) {
       core.error(`Failed to generate suggestions: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
@@ -71,13 +82,13 @@ export class SuggestionService {
   }
 
   /**
-   * Build prompt for AI suggestion generation
+   * Build prompt for AI suggestion generation (requests JSON format)
    */
   private buildSuggestionPrompt(prInfo: PRInfo, files: Array<any>): string {
     // Format files section
     const filesSection = this.formatFilesForPrompt(files);
 
-    return `You are an expert code reviewer tasked with providing constructive improvement suggestions for a pull request.
+    return `You are an expert code reviewer providing improvement suggestions for a pull request.
 
 Pull Request Information:
 - Title: ${prInfo.title}
@@ -91,22 +102,35 @@ ${prInfo.body || 'No description provided'}
 Files Changed:
 ${filesSection}
 
-Please provide actionable improvement suggestions for this pull request. Focus on:
+Please analyze the code changes and provide inline suggestions for improvements. Focus on:
+- Code quality, readability, and maintainability
+- Performance optimizations
+- Security concerns
+- Best practices and design patterns
+- Testing and documentation improvements
 
-1. **Code Quality**: Suggest improvements for readability, maintainability, and best practices
-2. **Performance**: Identify potential performance improvements or optimizations
-3. **Security**: Highlight any security concerns or vulnerabilities
-4. **Testing**: Recommend additional test cases or test coverage improvements
-5. **Documentation**: Suggest areas that need better documentation or comments
-6. **Architecture**: Provide architectural suggestions if applicable
+**IMPORTANT: You must respond with valid JSON in the following format:**
 
-Format your response as a structured list of suggestions. Each suggestion should:
-- Be specific and actionable
-- Include the file/area it applies to
-- Explain why the change would be beneficial
-- Provide an example if helpful
+{
+  "suggestions": [
+    {
+      "path": "path/to/file.js",
+      "line": 42,
+      "suggestion": "Consider using const instead of let for variables that aren't reassigned",
+      "category": "code-quality",
+      "priority": "low"
+    }
+  ]
+}
 
-Keep suggestions constructive and focused on improvements rather than criticism.`;
+Each suggestion must include:
+- path: The file path (must match exactly from the files list above)
+- line: The line number where the suggestion applies (must be a changed line)
+- suggestion: Clear, actionable improvement suggestion
+- category: One of: code-quality, performance, security, testing, documentation, architecture
+- priority: One of: low, medium, high
+
+Provide 5-10 specific inline suggestions. Be constructive and specific. Focus on the most impactful improvements.`;
   }
 
   /**
@@ -137,58 +161,113 @@ Keep suggestions constructive and focused on improvements rather than criticism.
   }
 
   /**
-   * Format the suggestions output
+   * Parse AI JSON response into inline suggestion comments
    */
-  private formatSuggestions(aiContent: string, prInfo: PRInfo): string {
-    const parts: string[] = [];
+  private parseSuggestions(
+    jsonContent: string,
+    files: Array<any>
+  ): Array<{ path: string; position: number; body: string }> {
+    try {
+      const parsed = JSON.parse(jsonContent);
+      const suggestions: Array<{ path: string; position: number; body: string }> = [];
 
-    // Add marker for identification
-    parts.push(SuggestionService.SUGGESTION_MARKER);
-    parts.push('');
+      if (!parsed.suggestions || !Array.isArray(parsed.suggestions)) {
+        core.warning('AI response missing suggestions array');
+        return [];
+      }
 
-    // Add header
-    parts.push('## 💡 Improvement Suggestions');
-    parts.push('');
-    parts.push('Here are some suggestions to improve this pull request:');
-    parts.push('');
+      for (const sug of parsed.suggestions) {
+        const file = files.find(f => f.filename === sug.path);
+        if (!file || !file.patch) {
+          core.warning(`File ${sug.path} not found or has no patch`);
+          continue;
+        }
 
-    // Add AI-generated suggestions
-    parts.push(aiContent.trim());
-    parts.push('');
+        // Calculate position from line number
+        const position = this.calculatePosition(file.patch, sug.line);
+        if (position === null) {
+          core.warning(`Could not calculate position for line ${sug.line} in ${sug.path}`);
+          continue;
+        }
 
-    // Add footer
-    parts.push('---');
-    parts.push('');
-    parts.push(`_Suggestions generated by ${this.aiProvider.getProviderName()} • [View PR Files](${this.prService.getPRUrl(prInfo.number)}/files)_`);
+        // Format suggestion body
+        const emoji = sug.priority === 'high' ? '🔴' : sug.priority === 'medium' ? '🟡' : '🟢';
+        const body = `${emoji} **Suggestion** (\`${sug.category}\` • \`${sug.priority}\` priority)\n\n${sug.suggestion}`;
 
-    return parts.join('\n');
+        suggestions.push({ path: sug.path, position, body });
+      }
+
+      return suggestions;
+    } catch (error) {
+      core.error(`Failed to parse suggestions JSON: ${error instanceof Error ? error.message : String(error)}`);
+      return [];
+    }
   }
 
   /**
-   * Delete old suggestion comments
+   * Calculate diff position from line number
    */
-  private async deleteOldSuggestions(): Promise<void> {
-    try {
-      core.info('🗑️  Checking for old suggestion comments...');
-      
-      const comments = await this.commentService.listIssueComments(this.prNumber);
-      
-      const suggestionComments = comments.filter((comment: { body: string }) => 
-        comment.body?.includes(SuggestionService.SUGGESTION_MARKER)
-      );
+  private calculatePosition(patch: string, targetLine: number): number | null {
+    const lines = patch.split('\n');
+    let currentLine = 0;
+    let position = 0;
 
-      if (suggestionComments.length > 0) {
-        core.info(`Found ${suggestionComments.length} old suggestion comment(s), deleting...`);
-        
-        for (const comment of suggestionComments) {
-          await this.commentService.deleteIssueComment(comment.id);
-          core.info(`  ✓ Deleted comment #${comment.id}`);
+    for (const line of lines) {
+      position++;
+      
+      // Parse diff header to get starting line
+      if (line.startsWith('@@')) {
+        const match = line.match(/@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+        if (match) {
+          currentLine = parseInt(match[1], 10) - 1;
         }
-      } else {
-        core.info('No old suggestion comments found');
+        continue;
       }
-    } catch (error) {
-      core.warning(`Failed to delete old suggestions: ${error instanceof Error ? error.message : String(error)}`);
+
+      // Track line numbers
+      if (line.startsWith('+')) {
+        currentLine++;
+        if (currentLine === targetLine) {
+          return position;
+        }
+      } else if (!line.startsWith('-')) {
+        currentLine++;
+        if (currentLine === targetLine) {
+          return position;
+        }
+      }
     }
+
+    return null;
+  }
+
+  /**
+   * Build review body for suggestions
+   */
+  private buildReviewBody(count: number): string {
+    const version = require('../../package.json').version;
+    return `## 💡 Improvement Suggestions
+
+Found ${count} suggestions to improve this pull request. See inline comments below.
+
+_Generated by Code Sentinel AI v${version} (${this.aiProvider.getModel()})_`;
+  }
+
+  /**
+   * Post general suggestions as a comment (fallback)
+   */
+  private async postGeneralSuggestions(prInfo: PRInfo, content: string): Promise<void> {
+    const version = require('../../package.json').version;
+    const body = `${SuggestionService.SUGGESTION_MARKER}
+
+## 💡 Improvement Suggestions
+
+${content}
+
+---
+
+_Generated by Code Sentinel AI v${version} (${this.aiProvider.getModel()}) • [View PR Files](${this.prService.getPRUrl(prInfo.number)}/files)_`;
+
+    await this.commentService.createIssueComment(this.prNumber, body);
   }
 }
