@@ -1,54 +1,267 @@
-# AI Code Reviewer
+# 🛡️ Code Sentinel AI
 
-[![Test Status](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/test.yml/badge.svg)](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/test.yml)
-[![CodeQL](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/codeql.yml/badge.svg)](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/codeql.yml)
-[![Security Scan](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/security-scan.yml/badge.svg)](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/security-scan.yml)
-[![codecov](https://codecov.io/gh/ashsaym/ai-code-reviewer/branch/main/graph/badge.svg)](https://codecov.io/gh/ashsaym/ai-code-reviewer)
+[![Test Status](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/test.yml/badge.svg?branch=v2-rewrite)](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub Discussions](https://img.shields.io/github/discussions/ashsaym/ai-code-reviewer)](https://github.com/ashsaym/ai-code-reviewer/discussions)
 [![GitHub contributors](https://img.shields.io/github/contributors/ashsaym/ai-code-reviewer)](https://github.com/ashsaym/ai-code-reviewer/graphs/contributors)
 
-A powerful multi-provider GitHub Action that brings AI-powered code reviews to your pull requests. Supports ChatGPT (OpenAI), Claude (Anthropic), and self-hosted models (Open WebUI compatible).
+**Production-ready AI code sentinel with zero external dependencies - OpenAI GPT-5-mini default**
 
-> 💬 [Join our discussions](https://github.com/ashsaym/ai-code-reviewer/discussions) | 🗺️ [View roadmap](ROADMAP.md) | 🤝 [Contribute](CONTRIBUTING.md)
+A next-generation GitHub Action that brings intelligent, incremental code reviews to your pull requests. Built with TypeScript, featuring GitHub-native caching, and zero external services required.
+
+> 🚧 **Status:** Phase 1 - Foundation (30% complete) | **Branch:** `v2-rewrite`  
+> 💬 [Join discussions](https://github.com/ashsaym/ai-code-reviewer/discussions) | 📖 [Read docs](docs/) | 🤝 [Contribute](v1/CONTRIBUTING.md)
 
 ## 🚀 Quick Start
 
+### V2 (In Development - v2-rewrite branch)
+
 ```yaml
-name: AI Code Review
+name: Code Sentinel AI
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, synchronize]
 
 jobs:
   review:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
     steps:
-      - name: AI Code Review
-        uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
+      - name: Code Sentinel AI Review
+        uses: ashsaym/ai-code-reviewer/v2@v2-rewrite
         with:
-          pr-number: ${{ github.event.pull_request.number }}
-          task: review
-          reviewer-name: "AI Code Reviewer Bot"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
 ```
 
-## ✨ Features
+### V1 (Stable - Production Ready)
 
-- **🤖 Multi-Provider Support**: Use ChatGPT, Claude, or self-hosted models
-- **📝 Three Analysis Modes**: Code review, summary, or suggestions
-- **💬 Inline Comments**: GitHub-style line-by-line review comments
-- **🔄 Smart Fallbacks**: Automatically tries next provider if one fails
-- **📊 Repository Guidance**: Load custom instructions from `.github/` files
-- **🔒 Security First**: Minimal permissions, comprehensive scanning
-- **✅ Well Tested**: 78%+ code coverage with Jest
+See [v1/README-v1.md](v1/README-v1.md) for full v1 documentation.
 
-## 📦 Installation & Usage
+```yaml
+- uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
+  with:
+    pr-number: ${{ github.event.pull_request.number }}
+    task: review
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
+```
 
-### Using ChatGPT (OpenAI)
+## ✨ What's New in V2?
+
+| Feature | V1 | V2 |
+|---------|----|----|
+| **Language** | JavaScript | TypeScript 5.3 |
+| **Storage** | None | GitHub Cache + PR Comments |
+| **Incremental Reviews** | ❌ | ✅ GitHub-native caching |
+| **Outdated Comment Cleanup** | ❌ | ✅ Automatic detection |
+| **State Tracking** | ❌ | ✅ Per-file, per-line |
+| **Check Runs** | ❌ | ✅ Review history |
+| **Token Tracking** | ❌ | ✅ GPT-4 Tokenizer |
+| **Response Parser** | Basic | ✅ Schema validation (Zod) |
+| **Error Handling** | Basic | ✅ Retry + circuit breaker |
+| **Dependencies** | Redis/DB needed | ✅ Zero external services |
+| **Test Coverage** | 78% | 🎯 85%+ target |
+| **Providers** | ChatGPT, Claude, Self-hosted | OpenAI (default), OpenWebUI |
+| **Default Model** | gpt-5-mini | gpt-5-mini |
+| **Repo Prompts** | ❌ | ✅ Handlebars templates |
+
+**V2 Core Features:**
+- 🚀 **Zero External Dependencies**: Uses only GitHub APIs (Cache, Comments, Check Runs)
+- 🔄 **Incremental Analysis**: Reviews only changed lines across commits
+- 🧹 **Smart Comment Cleanup**: Auto-resolves outdated inline comments
+- 📊 **Token Economics**: Tracks costs per review with GPT-4 tokenizer
+- 🎯 **Schema Validation**: Zod-based validation for all configs
+- 🔁 **Resilient Retries**: Exponential backoff with circuit breaker
+- 📝 **Handlebars Prompts**: Repository-specific prompt templates
+- ⚙️ **Modular Architecture**: Pluggable providers, storage, and parsers
+
+## � Documentation
+
+### 📖 Core Documentation
+- **[Architecture Guide](docs/ARCHITECTURE.md)** - Complete technical design, diagrams, and decision rationale
+- **[Implementation Plan](docs/IMPLEMENTATION_PLAN.md)** - 4-week development roadmap with milestones
+- **[Migration Guide](docs/MIGRATION_PLAN.md)** - Step-by-step v1 → v2 upgrade instructions
+- **[Progress Tracker](docs/TRACKER.md)** - Real-time implementation status and task tracking
+
+### 🎯 Quick Links
+- **[V1 Documentation](v1/README-v1.md)** - Full v1 usage guide (stable, production-ready)
+- **[V1 Code](v1/next-gen-ai-reviewer/)** - Legacy JavaScript implementation
+- **[Contributing Guide](v1/CONTRIBUTING.md)** - How to contribute
+- **[Security Policy](v1/SECURITY.md)** - Vulnerability reporting
+- **[Roadmap](v1/ROADMAP.md)** - Future plans and vision
+
+### 🏗️ Repository Structure
+
+```
+ai-code-reviewer/
+├── README.md                  # This file (overview)
+├── v1/                        # Legacy v1 implementation
+│   ├── next-gen-ai-reviewer/  # JavaScript codebase
+│   ├── README-v1.md           # V1 full documentation
+│   ├── CONTRIBUTING.md        # Contribution guide
+│   ├── ROADMAP.md             # Project vision
+│   └── SECURITY.md            # Security policy
+├── v2/                        # New TypeScript implementation (v2-rewrite)
+│   ├── src/                   # Source code
+│   │   ├── core/              # ActionOrchestrator, ReviewEngine
+│   │   ├── storage/           # GitHub Cache, Comment, Check Run storage
+│   │   ├── github/            # GitHub API client
+│   │   ├── providers/         # OpenAI, OpenWebUI
+│   │   ├── prompts/           # Handlebars templates
+│   │   ├── analysis/          # Incremental analyzer, comment cleaner
+│   │   ├── parsers/           # Response parser, formatter
+│   │   └── utils/             # Logger, retry, token counter
+│   ├── tests/                 # Test suites (unit, integration, e2e)
+│   ├── action.yml             # GitHub Action metadata
+│   ├── package.json           # Dependencies
+│   ├── tsconfig.json          # TypeScript config
+│   └── README.md              # V2 documentation
+└── docs/                      # Central documentation hub
+    ├── ARCHITECTURE.md        # Technical design
+    ├── IMPLEMENTATION_PLAN.md # Development roadmap
+    ├── MIGRATION_PLAN.md      # Upgrade guide
+    └── TRACKER.md             # Progress tracking
+```
+
+## 🚧 Development Status
+
+**Current Phase:** Foundation (Week 1) - 30% Complete
+
+| Phase | Status | Target Date |
+|-------|--------|-------------|
+| Phase 0: Planning & Documentation | ✅ Complete | Dec 6, 2025 |
+| Phase 1: Foundation (Storage, GitHub, Base Provider) | 🚧 In Progress | Dec 13, 2025 |
+| Phase 2: Intelligence (Prompts, Incremental, Parser) | ⏳ Pending | Dec 20, 2025 |
+| Phase 3: Polish (Tests, Docs, CI/CD) | ⏳ Pending | Dec 27, 2025 |
+| Phase 4: Launch (Test Repo, v2.0.0 Release) | ⏳ Pending | Jan 3, 2026 |
+
+**Week 1 Progress:**
+- ✅ Repository reorganized (v1 → v1/, docs → docs/)
+- ✅ Branding updated to "Code Sentinel AI"
+- ✅ TypeScript project initialized
+- ✅ Build system configured (Rollup, Jest, ESLint)
+- ✅ Action metadata defined (action.yml)
+- ⏳ Storage layer implementation
+- ⏳ GitHub client implementation
+- ⏳ OpenAI provider implementation
+
+See [docs/TRACKER.md](docs/TRACKER.md) for detailed progress tracking.
+
+## 🎯 V2 Configuration (Preview)
+
+### Inputs
+
+| Input | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `github-token` | ✅ | - | GitHub token for API access |
+| `openai-api-key` | ✅ | - | OpenAI API key |
+| `openai-model` | ❌ | `gpt-5-mini` | OpenAI model (gpt-5-mini, gpt-4o, gpt-4-turbo) |
+| `openwebui-endpoint` | ❌ | - | OpenWebUI base URL for self-hosted models |
+| `openwebui-api-key` | ❌ | - | OpenWebUI API key |
+| `openwebui-model` | ❌ | `mistral-small` | OpenWebUI model identifier |
+| `max-files` | ❌ | `50` | Maximum files to analyze per PR |
+| `max-tokens` | ❌ | `16000` | Maximum tokens per API request |
+| `cache-ttl-days` | ❌ | `7` | GitHub Actions cache retention (1-7 days) |
+| `enable-check-runs` | ❌ | `true` | Create check runs for review history |
+
+### Repository Prompts (Handlebars Templates)
+
+Place custom prompt templates in `.github/prompts/`:
+
+**`.github/prompts/review.hbs`**
+```handlebars
+You are reviewing code for {{repository}}.
+
+PR Title: {{pr_title}}
+Branch: {{branch}}
+
+{{#if custom_rules}}
+Custom Rules:
+{{custom_rules}}
+{{/if}}
+
+Files Changed: {{file_count}}
+{{#each files}}
+- {{this.filename}} (+{{this.additions}} -{{this.deletions}})
+{{/each}}
+
+Provide inline review comments in JSON format.
+```
+
+**Variables Available:**
+- `repository`, `pr_number`, `pr_title`, `pr_body`, `branch`
+- `author`, `file_count`, `additions`, `deletions`
+- `files[]` - Array of changed files with metadata
+- `custom_rules`, `custom_context` - User-defined variables
+
+### V1 Configuration
+
+For V1 configuration options, see [v1/README-v1.md](v1/README-v1.md).
+
+## � Getting Started with V2
+
+### Prerequisites
+- Node.js 20+ (for development)
+- GitHub repository with Actions enabled
+- OpenAI API key or OpenWebUI instance
+
+### Installation
+
+1. **Add workflow file** (`.github/workflows/code-sentinel.yml`):
+
+```yaml
+name: Code Sentinel AI
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+    steps:
+      - name: Code Sentinel AI Review
+        uses: ashsaym/ai-code-reviewer/v2@v2-rewrite
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          openai-model: gpt-5-mini
+```
+
+2. **Add OpenAI API key** to repository secrets:
+   - Go to Settings → Secrets and variables → Actions
+   - Add secret: `OPENAI_API_KEY` = `sk-proj-xxxxx`
+
+3. **Create a PR** and watch Code Sentinel AI review your code!
+
+### Advanced: Self-Hosted with OpenWebUI
+
+```yaml
+- uses: ashsaym/ai-code-reviewer/v2@v2-rewrite
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    openwebui-endpoint: ${{ secrets.OPENWEBUI_URL }}
+    openwebui-api-key: ${{ secrets.OPENWEBUI_API_KEY }}
+    openwebui-model: mistral-small
+```
+
+## 📝 V1 Workflow Examples
+
+For complete V1 workflow examples (ChatGPT, Claude, Self-hosted, slash commands), see [v1/README-v1.md](v1/README-v1.md).
+
+### Example 1: V1 Basic Review with ChatGPT
+
+Create `.github/workflows/ai-review-chatgpt.yml`:
 
 ```yaml
 - uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
@@ -57,779 +270,78 @@ jobs:
     task: review
     ai-provider: chatgpt
     chatgpt-model: gpt-5-mini
-    reviewer-name: "AI Code Reviewer Bot"
   env:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
 ```
 
-**Environment Variables:**
-- `CHATGPT_API_KEY` or `OPENAI_API_KEY` (required) - Your OpenAI API key
-
-**Configuration:**
-- `chatgpt-model` (default: `gpt-5-mini`) - Model to use (gpt-4o, gpt-5-mini, gpt-4-turbo, etc.)
-- `max-completion-tokens-mode` (default: `auto`) - Set to `true` for newer models (gpt-4o, o1), `false` for older ones, or `auto` to detect automatically
-
-### Using Claude (Anthropic)
-
-```yaml
-- uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
-  with:
-    pr-number: ${{ github.event.pull_request.number }}
-    task: review
-    ai-provider: claude
-    claude-model: claude-3-5-sonnet-20241022
-    reviewer-name: "AI Code Reviewer Bot"
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
-```
-
-**Environment Variables:**
-- `CLAUDE_API_KEY` or `ANTHROPIC_API_KEY` (required) - Your Anthropic API key
-
-**Configuration:**
-- `claude-model` (default: `claude-3-5-sonnet-20241022`) - Model to use (claude-3-5-sonnet, claude-3-opus, etc.)
-
-### Using Self-Hosted / Open WebUI
-
-```yaml
-- uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
-  with:
-    pr-number: ${{ github.event.pull_request.number }}
-    task: review
-    ai-provider: self-hosted
-    self-hosted-endpoint: ${{ secrets.OPENWEBUI_URL }}/api/v1/chat/completions
-    self-hosted-model: mistral-small
-    self-hosted-token: ${{ secrets.OPENWEBUI_API_KEY }}
-    reviewer-name: "AI Code Reviewer Bot"
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-```
-
-**Environment Variables:**
-- `SELF_HOSTED_API_KEY`, `OPENWEBUI_API_KEY`, or `SELF_HOSTED_TOKEN` (optional) - API key for authentication
-
-**Configuration:**
-- `self-hosted-endpoint` (required) - Full URL to OpenAI-compatible endpoint
-- `self-hosted-model` (default: `local-model`) - Model identifier
-- `self-hosted-token` (optional) - Authentication token
-- `self-hosted-token-header` (default: `Authorization`) - Header name for token
-
-### Multi-Provider with Fallback
-
-```yaml
-- uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
-  with:
-    pr-number: ${{ github.event.pull_request.number }}
-    task: review
-    ai-provider: chatgpt,claude,self-hosted  # Try in order
-    reviewer-name: "AI Code Reviewer Bot"
-    chatgpt-model: gpt-5-mini
-    claude-model: claude-3-5-sonnet-20241022
-    self-hosted-endpoint: ${{ secrets.OPENWEBUI_URL }}/api/v1/chat/completions
-    self-hosted-model: mistral-small
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
-    CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
-    OPENWEBUI_API_KEY: ${{ secrets.OPENWEBUI_API_KEY }}
-```
-
-## 🎯 Task Modes
-
-### Code Review (`review`)
-Provides detailed code review with inline comments, best practices, and potential issues.
-
-```yaml
-with:
-  task: review
-```
-
-### Summary (`summary`)
-Generates an executive summary of the PR including intent, impact, and risks.
-
-```yaml
-with:
-  task: summary
-```
-
-### Suggestions (`suggestions`)
-Offers actionable improvement suggestions for the codebase.
-
-```yaml
-with:
-  task: suggestions
-  # Alias: task: suggest
-```
-
-### PR Description (`description`)
-Generates a comprehensive PR description based on the changes and updates it automatically. Perfect for auto-documenting your PRs.
-
-```yaml
-with:
-  task: description
-```
-
-**Slash Command:** Use `/description` as a PR comment to trigger this task interactively.
-
-## 💬 Slash Commands
-
-Enable interactive AI analysis by commenting on your PRs:
-
-### `/review`
-Performs a comprehensive code review with inline comments, identifying issues and providing suggestions.
-
-### `/summary`
-Generates an executive summary of the PR changes.
-
-### `/suggestion`
-Provides actionable improvement suggestions.
-
-### `/description`
-Analyzes all changes in the PR and automatically updates the PR description with a comprehensive summary including:
-- Clear description of what changed
-- Type of change (bug fix, feature, etc.)
-- List of changes made
-- Testing notes
-
-To enable slash commands, add the `.github/workflows/ai-review-on-command.yml` workflow to your repository.
-
-## ⚙️ Configuration Options
-
-### All Inputs
-
-| Input | Default | Description |
-|-------|---------|-------------|
-| `pr-number` | Auto-detected | Pull request number to review |
-| `repository` | `github.repository` | Repository in format `owner/repo` |
-| `task` | `review` | Analysis type: `review`, `summary`, `suggestions`, or `description` |
-| `ai-provider` | `chatgpt,claude,self-hosted` | Provider priority list |
-| `chatgpt-model` | `gpt-5-mini` | OpenAI model to use |
-| `claude-model` | `claude-3-5-sonnet-20241022` | Anthropic model to use |
-| `self-hosted-endpoint` | - | Self-hosted API endpoint URL |
-| `self-hosted-model` | `local-model` | Self-hosted model identifier |
-| `self-hosted-token` | - | Self-hosted API token |
-| `self-hosted-token-header` | `Authorization` | Token header name |
-| `max-files` | `40` | Maximum files to include |
-| `max-diff-chars` | `12000` | Max diff characters per file |
-| `max-output-tokens` | `16000` | Max response tokens |
-| `additional-context` | - | Extra instructions for AI |
-| `inline-review` | `true` | Enable inline review comments |
-| `reviewer-name` | `next-gen-ai-reviewer` | Custom name for the AI reviewer in comments |
-| `max-completion-tokens-mode` | `auto` | ChatGPT token parameter mode |
-
-### Environment Variables (All Optional)
-
-You can set these as repository secrets or environment variables:
-
-**GitHub:**
-- `GITHUB_TOKEN` (required) - Automatically provided by Actions
-
-**ChatGPT/OpenAI:**
-- `CHATGPT_API_KEY` or `OPENAI_API_KEY`
-
-**Claude/Anthropic:**
-- `CLAUDE_API_KEY` or `ANTHROPIC_API_KEY`
-
-**Self-Hosted/Open WebUI:**
-- `SELF_HOSTED_API_KEY`
-- `OPENWEBUI_API_KEY`
-- `SELF_HOSTED_TOKEN`
-
-**Configuration Overrides:**
-- `AI_PROVIDER` - Override default provider list
-- `MAX_FILES` - Override max files
-- `MAX_DIFF_CHARS` - Override max diff chars
-- `MAX_OUTPUT_TOKENS` - Override max tokens
-- `ADDITIONAL_CONTEXT` - Override additional context
-- `REVIEWER_NAME` - Override reviewer name
-- `PR_NUMBER` - Override PR number
-
-## 📂 Repository Guidance Files
-
-Drop these files in `.github/` to customize AI behavior:
-
-| File | Purpose |
-|------|---------|
-| `.github/review-instructions.md` | Team-specific review guidelines |
-| `.github/review-rulesets.md` | Strict policies and compliance rules |
-| `.github/review-ignorelist.txt` | File patterns to exclude (one per line) |
-| `.github/prompts/review.md` | Custom prompt template for reviews |
-| `.github/prompts/summary.md` | Custom prompt template for summaries |
-| `.github/prompts/suggestions.md` | Custom prompt template for suggestions |
-
-The action automatically loads these files without requiring repository checkout.
-
-## 💬 PR Comment Commands
-
-Trigger reviews on-demand by commenting on any PR:
-
-- `/review` - Full code review
-- `/summary` - Executive summary  
-- `/suggestion` - Improvement suggestions
-
-**Setup:** Add `.github/workflows/ai-review-on-command.yml` from the examples folder.
-
-## 📊 Coverage & Security Reports
-
-### Test Coverage
-
-[![codecov](https://codecov.io/gh/ashsaym/ai-code-reviewer/branch/main/graph/badge.svg)](https://codecov.io/gh/ashsaym/ai-code-reviewer)
-
-View detailed coverage reports at [Codecov](https://codecov.io/gh/ashsaym/ai-code-reviewer)
-
-Current coverage: **78%+** across:
-- Lines: 78%
-- Functions: 79%
-- Branches: 67%
-- Statements: 78%
-
-### Security Scanning
-
-This project uses multiple security tools:
-
-**🔍 CodeQL Analysis**
-- Runs on every push and PR
-- Detects security vulnerabilities and code quality issues
-- View results: [Security tab](https://github.com/ashsaym/ai-code-reviewer/security/code-scanning)
-
-**🛡️ Trivy Scanning**
-- Scans for vulnerabilities in dependencies
-- Checks Docker configurations
-- Runs daily and on pull requests
-
-**🔐 Gitleaks**
-- Prevents secret leakage in commits
-- Scans for API keys, passwords, tokens
-- Blocks commits containing secrets
-
-**📦 Dependency Review**
-- Reviews new dependencies in PRs
-- Identifies known vulnerabilities
-- Checks license compatibility
-
-View all security findings in the [Security tab](https://github.com/ashsaym/ai-code-reviewer/security).
-
-## 🧪 Development
-
-### Running Tests
-
-```bash
-cd next-gen-ai-reviewer
-npm install
-npm test                 # Run all tests with coverage
-npm run test:unit        # Run only unit tests
-npm run test:integration # Run only integration tests
-npm run test:watch       # Watch mode
-```
-
-### Linting
-
-```bash
-npm run lint            # Check code quality
-npm run lint:fix        # Auto-fix issues
-```
-
-## 📝 Complete Workflow Examples
-
-### Example 1: Automatic Review with ChatGPT (OpenAI)
-
-Create `.github/workflows/ai-review-chatgpt.yml`:
-
-```yaml
-name: AI Review (ChatGPT)
-
-on:
-  pull_request:
-    types: [opened, reopened, synchronize]
-
-permissions:
-  contents: read
-  pull-requests: write
-
-jobs:
-  ai-review:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: AI Code Review with ChatGPT
-        uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
-        with:
-          # Required
-          pr-number: ${{ github.event.pull_request.number }}
-          
-          # Provider configuration
-          ai-provider: chatgpt
-          chatgpt-model: gpt-5-mini
-          
-          # Task configuration
-          task: review
-          
-          # Optional: Control what gets analyzed
-          max-files: 60
-          max-diff-chars: 18000
-          max-output-tokens: 16000
-          
-          # Optional: ChatGPT-specific settings
-          max-completion-tokens-mode: auto  # or 'true' for gpt-4o/o1, 'false' for older models
-          
-          # Optional: Enable inline comments
-          inline-review: "true"
-          
-          # Optional: Custom reviewer name
-          reviewer-name: "AI Code Reviewer Bot"
-          
-          # Optional: Add custom instructions
-          additional-context: |
-            Focus on:
-            - Security vulnerabilities
-            - Performance issues
-            - Best practices violations
-            - Proper error handling
-        
-        env:
-          # Required secrets
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}  # or OPENAI_API_KEY
-```
-
-**Required GitHub Secrets:**
-- `CHATGPT_API_KEY` (or `OPENAI_API_KEY`) - Get from https://platform.openai.com/api-keys
-
-### Example 2: Automatic Review with Claude (Anthropic)
-
-Create `.github/workflows/ai-review-claude.yml`:
-
-```yaml
-name: AI Review (Claude)
-
-on:
-  pull_request:
-    types: [opened, reopened, synchronize]
-
-permissions:
-  contents: read
-  pull-requests: write
-
-jobs:
-  ai-review:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: AI Code Review with Claude
-        uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
-        with:
-          # Required
-          pr-number: ${{ github.event.pull_request.number }}
-          
-          # Provider configuration
-          ai-provider: claude
-          claude-model: claude-3-5-sonnet-20241022
-          
-          # Task configuration
-          task: review
-          
-          # Optional: Control what gets analyzed
-          max-files: 60
-          max-diff-chars: 18000
-          max-output-tokens: 16000
-          
-          # Optional: Enable inline comments
-          inline-review: "true"
-          
-          # Optional: Custom reviewer name
-          reviewer-name: "AI Code Reviewer Bot"
-          
-          # Optional: Add custom instructions
-          additional-context: |
-            Prioritize:
-            - Code maintainability
-            - Testing coverage
-            - Documentation quality
-            - API design patterns
-        
-        env:
-          # Required secrets
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}  # or ANTHROPIC_API_KEY
-```
-
-**Required GitHub Secrets:**
-- `CLAUDE_API_KEY` (or `ANTHROPIC_API_KEY`) - Get from https://console.anthropic.com/
-
-### Example 3: Automatic Review with Self-Hosted / Open WebUI
-
-Create `.github/workflows/ai-review-selfhosted.yml`:
-
-```yaml
-name: AI Review (Self-Hosted)
-
-on:
-  pull_request:
-    types: [opened, reopened, synchronize]
-
-permissions:
-  contents: read
-  pull-requests: write
-
-jobs:
-  ai-review:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: AI Code Review with Self-Hosted Model
-        uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
-        with:
-          # Required
-          pr-number: ${{ github.event.pull_request.number }}
-          
-          # Provider configuration
-          ai-provider: self-hosted
-          self-hosted-endpoint: ${{ secrets.OPENWEBUI_URL }}/api/v1/chat/completions
-          self-hosted-model: mistral-small  # or llama3, codellama, etc.
-          
-          # Optional: Authentication
-          self-hosted-token: ${{ secrets.OPENWEBUI_API_KEY }}
-          self-hosted-token-header: Authorization  # Default, uses Bearer token
-          
-          # Task configuration
-          task: review
-          
-          # Optional: Control what gets analyzed
-          max-files: 60
-          max-diff-chars: 18000
-          max-output-tokens: 8000  # Adjust based on your model's capacity
-          
-          # Optional: Enable inline comments
-          inline-review: "true"
-          
-          # Optional: Custom reviewer name
-          reviewer-name: "AI Code Reviewer Bot"
-          
-          # Optional: Add custom instructions
-          additional-context: |
-            Review focus areas:
-            - Code style consistency
-            - Potential bugs
-            - Logic errors
-            - Resource leaks
-        
-        env:
-          # Required secrets
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-          # Optional: Alternative ways to pass self-hosted credentials
-          # OPENWEBUI_API_KEY: ${{ secrets.OPENWEBUI_API_KEY }}
-          # SELF_HOSTED_API_KEY: ${{ secrets.SELF_HOSTED_API_KEY }}
-```
-
-**Required GitHub Secrets:**
-- `OPENWEBUI_URL` - Your Open WebUI or OpenAI-compatible endpoint (e.g., `https://your-server.com`)
-- `OPENWEBUI_API_KEY` - Your API key (optional, if authentication is required)
-
-**Supported Self-Hosted Platforms:**
-- Open WebUI
-- LocalAI
-- Ollama with OpenAI compatibility
-- LM Studio
-- text-generation-webui
-- Any OpenAI-compatible API
-
-### Example 4: Manual Review via PR Comments
-
-Create `.github/workflows/ai-review-on-command.yml`:
-
-```yaml
-name: AI Review on Command
-
-on:
-  issue_comment:
-    types: [created]
-
-permissions:
-  contents: read
-  pull-requests: write
-  issues: write
-
-jobs:
-  handle-command:
-    # Only run on PR comments with commands
-    if: |
-      github.event.issue.pull_request &&
-      (
-        startsWith(github.event.comment.body, '/review') ||
-        startsWith(github.event.comment.body, '/suggestion') ||
-        startsWith(github.event.comment.body, '/summary')
-      )
-    
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout PR code
-        uses: actions/checkout@v4
-        with:
-          ref: refs/pull/${{ github.event.issue.number }}/head
-
-      - name: Parse command
-        id: parse
-        env:
-          COMMENT_BODY: ${{ github.event.comment.body }}
-        run: |
-          if [[ "$COMMENT_BODY" =~ ^/review ]]; then
-            echo "task=review" >> "$GITHUB_OUTPUT"
-          elif [[ "$COMMENT_BODY" =~ ^/suggestion ]]; then
-            echo "task=suggestions" >> "$GITHUB_OUTPUT"
-          elif [[ "$COMMENT_BODY" =~ ^/summary ]]; then
-            echo "task=summary" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: React to command (eyes emoji)
-        uses: actions/github-script@v8
-        with:
-          script: |
-            await github.rest.reactions.createForIssueComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: context.payload.comment.id,
-              content: 'eyes'
-            });
-
-      - name: Run AI Review
-        uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
-        with:
-          # Required
-          pr-number: ${{ github.event.issue.number }}
-          task: ${{ steps.parse.outputs.task }}
-          
-          # Optional: Custom reviewer name
-          reviewer-name: "AI Code Reviewer Bot"
-          
-          # Provider configuration - tries in order
-          ai-provider: chatgpt,claude,self-hosted
-          
-          # ChatGPT configuration
-          chatgpt-model: gpt-5-mini
-          max-completion-tokens-mode: auto
-          
-          # Claude configuration
-          claude-model: claude-3-5-sonnet-20241022
-          
-          # Self-hosted configuration (optional)
-          self-hosted-endpoint: ${{ secrets.OPENWEBUI_URL }}/api/v1/chat/completions
-          self-hosted-model: mistral-small
-          self-hosted-token: ${{ secrets.OPENWEBUI_API_KEY }}
-          
-          # Review settings
-          max-files: 60
-          max-diff-chars: 18000
-          max-output-tokens: 16000
-          inline-review: "true"
-          
-          # Track who requested it
-          additional-context: "Requested by @${{ github.event.comment.user.login }} via command"
-        
-        env:
-          # Required
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-          # Provide all available API keys - action uses first available
-          CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          OPENWEBUI_API_KEY: ${{ secrets.OPENWEBUI_API_KEY }}
-          SELF_HOSTED_API_KEY: ${{ secrets.SELF_HOSTED_API_KEY }}
-
-      - name: Mark success (thumbs up)
-        if: success()
-        uses: actions/github-script@v8
-        with:
-          script: |
-            await github.rest.reactions.createForIssueComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: context.payload.comment.id,
-              content: '+1'
-            });
-
-      - name: Mark failure (thumbs down)
-        if: failure()
-        uses: actions/github-script@v8
-        with:
-          script: |
-            await github.rest.reactions.createForIssueComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: context.payload.comment.id,
-              content: '-1'
-            });
-            
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: '❌ AI review failed. Please check the workflow logs for details.'
-            });
-```
-
-**How to use:**
-1. Comment `/review` on any PR to trigger a full code review
-2. Comment `/suggestion` to get improvement suggestions
-3. Comment `/summary` to get an executive summary
-
-**Required GitHub Secrets:**
-- `GITHUB_TOKEN` (automatically provided)
-- At least one of: `CHATGPT_API_KEY`, `CLAUDE_API_KEY`, or `OPENWEBUI_API_KEY`
-
-### Multi-Provider Fallback Example
-
-```yaml
-name: AI Review (Multi-Provider)
-
-on:
-  pull_request:
-    types: [opened, reopened, synchronize]
-
-permissions:
-  contents: read
-  pull-requests: write
-
-jobs:
-  ai-review:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: AI Code Review with Fallback
-        uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
-        with:
-          pr-number: ${{ github.event.pull_request.number }}
-          task: review
-          
-          # Try providers in order: ChatGPT → Claude → Self-hosted
-          ai-provider: chatgpt,claude,self-hosted
-          
-          chatgpt-model: gpt-5-mini
-          claude-model: claude-3-5-sonnet-20241022
-          self-hosted-endpoint: ${{ secrets.OPENWEBUI_URL }}/api/v1/chat/completions
-          self-hosted-model: mistral-small
-          
-          max-output-tokens: 16000
-          inline-review: "true"
-          reviewer-name: "AI Code Reviewer Bot"
-        
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Action will try each provider until one succeeds
-          CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
-          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
-          OPENWEBUI_API_KEY: ${{ secrets.OPENWEBUI_API_KEY }}
-```
-
-### Matrix Strategy for All Tasks
-
-```yaml
-name: AI Review Matrix
-
-on:
-  pull_request:
-    types: [opened, reopened, synchronize]
-
-permissions:
-  contents: read
-  pull-requests: write
-
-jobs:
-  ai-review:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        task: [review, summary, suggestions]
-    
-    steps:
-      - name: Run AI ${{ matrix.task }}
-        uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
-        with:
-          pr-number: ${{ github.event.pull_request.number }}
-          task: ${{ matrix.task }}
-          ai-provider: chatgpt
-          chatgpt-model: gpt-5-mini
-          reviewer-name: "AI Code Reviewer Bot"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CHATGPT_API_KEY: ${{ secrets.CHATGPT_API_KEY }}
-```
-
-## 🔑 Setting Up GitHub Secrets
-
-1. Go to your repository → **Settings** → **Secrets and variables** → **Actions**
-2. Click **New repository secret**
-3. Add the following secrets based on your provider:
-
-**For ChatGPT:**
-```
-Name: CHATGPT_API_KEY
-Value: sk-proj-xxxxxxxxxxxxx
-```
-
-**For Claude:**
-```
-Name: CLAUDE_API_KEY
-Value: sk-ant-xxxxxxxxxxxxx
-```
-
-**For Self-Hosted:**
-```
-Name: OPENWEBUI_URL
-Value: https://your-server.com
-
-Name: OPENWEBUI_API_KEY
-Value: your-api-key
-```
+**More V1 Examples:**
+- Claude (Anthropic) integration
+- Self-hosted / OpenWebUI setup
+- Multi-provider fallback
+- Slash commands (`/review`, `/summary`, `/suggestion`)
+- Matrix strategy for all tasks
+
+See full examples in [v1/README-v1.md](v1/README-v1.md).
 
 ## 🤝 Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+We welcome contributions to both v1 and v2!
 
-### Project Structure
+**For V2 Development:**
+- Branch: `v2-rewrite`
+- Language: TypeScript 5.3
+- Focus: Storage layer, incremental analysis, GitHub-native APIs
+- See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for roadmap
 
-```
-ai-code-reviewer/
-├── next-gen-ai-reviewer/       # Main action
-│   ├── src/
-│   │   ├── main.js            # Entry point
-│   │   ├── github.js          # GitHub API interactions
-│   │   ├── promptBuilder.js   # Prompt generation
-│   │   ├── reviewFormatter.js # Comment formatting
-│   │   ├── guidanceLoader.js  # Load .github/ files
-│   │   └── providers/         # AI provider implementations
-│   │       ├── chatgpt.js
-│   │       ├── claude.js
-│   │       └── selfHosted.js
-│   ├── tests/                 # Test suite
-│   ├── examples/              # Example configurations
-│   ├── action.yml             # Action metadata
-│   └── package.json
-├── .github/workflows/         # CI/CD pipelines
-└── README.md                  # This file
+**For V1 Enhancements:**
+- Branch: `main`
+- Language: JavaScript
+- Focus: Bug fixes, provider improvements, documentation
+- See [v1/CONTRIBUTING.md](v1/CONTRIBUTING.md) for guidelines
+
+**Quick Start:**
+```bash
+# V2 Development
+git clone https://github.com/ashsaym/ai-code-reviewer.git
+cd ai-code-reviewer
+git checkout v2-rewrite
+cd v2
+npm install
+npm test
+
+# V1 Development
+git checkout main
+cd v1/next-gen-ai-reviewer
+npm install
+npm test
 ```
 
 ## 🔐 Security
 
-- Minimal required permissions
-- Secrets never logged or exposed
-- Comprehensive vulnerability scanning
-- Regular dependency updates
+- **Minimal Permissions**: Only requires `contents: read`, `pull-requests: write`, `checks: write`
+- **Secret Protection**: Secrets never logged or exposed in comments
+- **Vulnerability Scanning**: CodeQL, Trivy, Gitleaks, Dependency Review
+- **Regular Updates**: Automated dependency updates via Dependabot
 
-Report security issues to: [Security Policy](SECURITY.md)
+Report security issues: [v1/SECURITY.md](v1/SECURITY.md)
 
 ## 📄 License
 
-[MIT License](LICENSE)
+[MIT License](v1/LICENSE) - See [v1/LICENSE](v1/LICENSE) for details
 
 ## 🙏 Acknowledgments
 
-Built with:
+**V2 Built With:**
+- [TypeScript](https://www.typescriptlang.org/) - Type-safe language
+- [OpenAI API](https://platform.openai.com/) - GPT models
+- [GitHub Actions Cache](https://docs.github.com/actions/using-workflows/caching-dependencies) - Zero-cost storage
+- [Handlebars](https://handlebarsjs.com/) - Template engine
+- [Zod](https://zod.dev/) - Schema validation
+- [Rollup](https://rollupjs.org/) - Bundler
+- [Jest](https://jestjs.io/) - Testing framework
+
+**V1 Built With:**
 - [OpenAI API](https://platform.openai.com/)
 - [Anthropic Claude API](https://www.anthropic.com/)
 - [GitHub Actions](https://github.com/features/actions)
@@ -838,21 +350,23 @@ Built with:
 ## 🤝 Community & Support
 
 ### Get Help
-- 💬 [GitHub Discussions](https://github.com/ashsaym/ai-code-reviewer/discussions) - Ask questions and share ideas
-- 🐛 [Report Issues](https://github.com/ashsaym/ai-code-reviewer/issues) - Found a bug? Let us know
-- 📖 [Documentation](https://github.com/ashsaym/ai-code-reviewer/tree/main/next-gen-ai-reviewer) - Read the docs
+- 💬 [GitHub Discussions](https://github.com/ashsaym/ai-code-reviewer/discussions) - Ask questions, share ideas
+- 🐛 [Report Issues](https://github.com/ashsaym/ai-code-reviewer/issues) - Found a bug?
+- 📖 [Documentation](docs/) - Read the docs
+- 🔍 [V1 Docs](v1/README-v1.md) - Legacy documentation
 
 ### Contribute
-- 🗺️ [Roadmap](ROADMAP.md) - See what's planned
-- 🎯 [Good First Issues](https://github.com/ashsaym/ai-code-reviewer/labels/good-first-issue) - Perfect for new contributors
-- 🤝 [Contributing Guide](CONTRIBUTING.md) - Learn how to contribute
-- 🎨 [Community Projects](COMMUNITY_PROJECTS.md) - Join ongoing initiatives
+- 🗺️ [Roadmap](v1/ROADMAP.md) - See what's planned
+- 📋 [Progress Tracker](docs/TRACKER.md) - V2 development status
+- 🎯 [Good First Issues](https://github.com/ashsaym/ai-code-reviewer/labels/good-first-issue) - New contributors welcome
+- 🤝 [Contributing Guide](v1/CONTRIBUTING.md) - How to contribute
+- 💝 [Contributors](v1/CONTRIBUTORS.md) - Meet our contributors
 
 ### Connect
-- ⭐ [Star the repo](https://github.com/ashsaym/ai-code-reviewer) - Show your support
+- ⭐ [Star the repo](https://github.com/ashsaym/ai-code-reviewer) - Show support
 - 🐦 Share on social media - Help us grow
-- 💝 [Contributors](CONTRIBUTORS.md) - Meet our amazing contributors
+- 💬 Join discussions - Share feedback on v2 architecture
 
 ---
 
-**Made with ❤️ by the community**
+**Code Sentinel AI** - Made with ❤️ by the community | v2-rewrite in progress 🚧

@@ -1,7 +1,7 @@
 {
-  "name": "ai-code-reviewer-v2",
+  "name": "code-sentinel-ai",
   "version": "2.0.0",
-  "description": "Production-ready AI code reviewer with zero external dependencies",
+  "description": "Production-ready AI code sentinel with zero external dependencies",
   "main": "dist/index.js",
   "scripts": {
     "build": "rollup -c",

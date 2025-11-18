@@ -1,5 +1,5 @@
-name: 'AI Code Reviewer v2'
-description: 'Production-ready AI code reviewer with zero external dependencies - OpenAI GPT-5-mini default'
+name: 'Code Sentinel AI'
+description: 'Production-ready AI code sentinel with zero external dependencies - OpenAI GPT-5-mini default'
 author: 'ashsaym'
 
 branding:
@@ -84,7 +84,7 @@ inputs:
   reviewer-name:
     description: 'Custom name for the AI reviewer'
     required: false
-    default: 'AI Code Reviewer'
+    default: 'Code Sentinel AI'
 
 runs:
   using: 'node20'

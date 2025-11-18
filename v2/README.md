@@ -1,13 +1,13 @@
-# 🤖 AI Code Reviewer v2
+# 🛡️ Code Sentinel AI
 
-**Production-ready AI code reviewer with zero external dependencies**
+**Production-ready AI code sentinel with zero external dependencies**
 
 [![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/ashsaym/ai-code-reviewer)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Test Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)](./coverage)
 
-> Intelligent, incremental code reviews powered by OpenAI GPT-5-mini. Automatically reviews pull requests, tracks state, and cleans up outdated comments—all without any external services.
+> Intelligent, incremental code reviews powered by OpenAI GPT-5-mini. Your vigilant code guardian that automatically reviews pull requests, tracks state, and cleans up outdated comments—all without any external services.
 
 ---
 
@@ -30,17 +30,17 @@
 
 ### 1. Add Workflow
 
-Create `.github/workflows/ai-review.yml`:
+Create `.github/workflows/code-sentinel.yml`:
 
 ```yaml
-name: AI Code Review
+name: Code Sentinel AI Review
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 jobs:
-  review:
+  sentinel-review:
     runs-on: ubuntu-latest
     permissions:
       contents: read
