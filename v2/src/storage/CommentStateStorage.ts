@@ -31,6 +31,10 @@ export class CommentStateStorage {
     this.octokit = options.octokit;
     this.owner = options.owner;
     this.repo = options.repo;
+    
+    // Debug logging
+    core.info(`CommentStateStorage initialized: owner=${this.owner}, repo=${this.repo}`);
+    core.info(`Octokit type: ${typeof this.octokit}, has pulls: ${!!this.octokit?.pulls}`);
   }
 
   /**

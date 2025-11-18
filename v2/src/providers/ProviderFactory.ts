@@ -78,7 +78,7 @@ export class ProviderFactory {
         type: 'openai',
         apiKey: openaiKey,
         model,
-        maxTokens: parseInt(process.env.MAX_TOKENS || '16000', 10),
+        maxTokens: parseInt(process.env.MAX_TOKENS || '4000', 10),
         temperature: parseFloat(process.env.TEMPERATURE || '0.3'),
         baseURL: process.env.OPENAI_BASE_URL,
         organizationId: process.env.OPENAI_ORG_ID,
