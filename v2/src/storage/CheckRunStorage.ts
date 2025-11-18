@@ -322,7 +322,7 @@ export class CheckRunStorage {
         output: {
           title: data.output?.title || '',
           summary: data.output?.summary || '',
-          text: data.output?.text,
+          text: data.output?.text || undefined,
         },
         externalUrl: data.external_id || undefined,
       };
@@ -356,7 +356,7 @@ export class CheckRunStorage {
         output: {
           title: data.output?.title || '',
           summary: data.output?.summary || '',
-          text: data.output?.text,
+          text: data.output?.text || undefined,
         },
         externalUrl: data.external_id || undefined,
       }));

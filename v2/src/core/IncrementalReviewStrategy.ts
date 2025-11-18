@@ -210,6 +210,8 @@ export class IncrementalReviewStrategy {
       
       // Extract first line as message (up to 100 chars)
       const lines = comment.body.split('\n');
+      // Remove emojis and formatting
+      // eslint-disable-next-line no-misleading-character-class
       let message = lines[0].replace(/[🔴🟡ℹ️✅]/g, '').replace(/\*\*/g, '').trim();
       if (message.length > 100) {
         message = message.substring(0, 97) + '...';
@@ -241,6 +243,8 @@ export class IncrementalReviewStrategy {
       
       // Extract first line as message (up to 100 chars)
       const lines = comment.body.split('\n');
+      // Remove emojis and formatting
+      // eslint-disable-next-line no-misleading-character-class
       let message = lines[0].replace(/[🔴🟡ℹ️✅]/g, '').replace(/\*\*/g, '').trim();
       if (message.length > 100) {
         message = message.substring(0, 97) + '...';

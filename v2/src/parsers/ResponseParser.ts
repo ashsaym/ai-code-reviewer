@@ -230,8 +230,7 @@ export class ResponseParser {
    */
   static createDetailedSummary(
     comments: ReviewComment[],
-    aiSummary?: string,
-    files?: Array<{ filename: string }>
+    aiSummary?: string
   ): string {
     const errorCount = comments.filter(c => c.severity === 'error').length;
     const warningCount = comments.filter(c => c.severity === 'warning').length;

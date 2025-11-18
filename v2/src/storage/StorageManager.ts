@@ -8,8 +8,8 @@
 import * as core from '@actions/core';
 import { Octokit } from '@octokit/rest';
 import { GitHubCacheStorage, GitHubCacheStorageOptions } from './GitHubCacheStorage';
-import { CommentStateStorage, CommentStateStorageOptions } from './CommentStateStorage';
-import { CheckRunStorage, CheckRunStorageOptions } from './CheckRunStorage';
+import { CommentStateStorage } from './CommentStateStorage';
+import { CheckRunStorage } from './CheckRunStorage';
 import { PRCache, FileAnalysisCache, CommentState, ReviewSession, CheckRunAnnotation } from './models';
 
 export interface StorageManagerOptions {

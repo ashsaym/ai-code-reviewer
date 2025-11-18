@@ -4,18 +4,8 @@
 * @ashsaym
 
 # Specific ownership for security-sensitive files
-/SECURITY.md @ashsaym
 /.github/workflows/ @ashsaym
 /.github/dependabot.yml @ashsaym
-/next-gen-ai-reviewer/package.json @ashsaym
-/next-gen-ai-reviewer/package-lock.json @ashsaym
 
-# AI provider integrations
-/next-gen-ai-reviewer/src/providers/ @ashsaym
-
-# GitHub integration
-/next-gen-ai-reviewer/src/github.js @ashsaym
-
-# Main action logic
-/next-gen-ai-reviewer/src/main.js @ashsaym
-/next-gen-ai-reviewer/action.yml @ashsaym
+# v2 action
+/v2/ @ashsaym

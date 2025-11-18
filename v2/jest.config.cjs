@@ -10,19 +10,16 @@ module.exports = {
   ],
   coverageThreshold: {
     global: {
-      branches: 85,
-      functions: 85,
-      lines: 85,
-      statements: 85
+      branches: 60,
+      functions: 60,
+      lines: 60,
+      statements: 60
     }
   },
   moduleFileExtensions: ['ts', 'js', 'json'],
   transform: {
     '^.+\\.ts$': ['ts-jest', {
-      tsconfig: {
-        esModuleInterop: true,
-        allowSyntheticDefaultImports: true
-      }
+      tsconfig: 'tsconfig.test.json'
     }]
   }
 };

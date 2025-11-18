@@ -32,22 +32,22 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: 'next-gen-ai-reviewer/package-lock.json'
+          cache-dependency-path: 'v2/package-lock.json'
 
       - name: Install dependencies
         run: |
-          cd next-gen-ai-reviewer
+          cd v2
           npm ci
 
       - name: Run npm audit
         run: |
-          cd next-gen-ai-reviewer
+          cd v2
           npm audit --audit-level=moderate
 
       - name: Run npm audit (JSON)
         if: always()
         run: |
-          cd next-gen-ai-reviewer
+          cd v2
           npm audit --json > npm-audit.json || true
 
       - name: Upload audit results
@@ -55,7 +55,7 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: npm-audit-results
-          path: next-gen-ai-reviewer/npm-audit.json
+          path: v2/npm-audit.json
           retention-days: 30
 
   codeql-analysis:

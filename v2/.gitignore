@@ -1,19 +1,15 @@
 # Dependencies
 node_modules/
-package-lock.json
 yarn.lock
-
-# Build output
-dist/
-build/
-*.js.map
 
 # TypeScript
 *.tsbuildinfo
 
-# Testing
-coverage/
+# Testing artifacts (keep coverage/ and dist/ for CI)
 .nyc_output/
+
+# NOTE: dist/ and coverage/ are intentionally NOT ignored
+# They are built by CI/CD and committed to the repository
 
 # IDE
 .vscode/

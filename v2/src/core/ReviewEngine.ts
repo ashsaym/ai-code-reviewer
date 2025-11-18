@@ -49,7 +49,6 @@ export class ReviewEngine {
   private commentService: CommentService;
   private aiProvider: BaseProvider;
   private maxFilesPerBatch: number;
-  private maxLinesPerFile: number;
   private autoCleanOutdated: boolean;
   private incrementalMode: boolean;
   private incrementalProcessedThisRun: boolean = false;
@@ -60,7 +59,6 @@ export class ReviewEngine {
     this.commentService = options.commentService;
     this.aiProvider = options.aiProvider;
     this.maxFilesPerBatch = options.maxFilesPerBatch || 10;
-    this.maxLinesPerFile = options.maxLinesPerFile || 500;
     this.autoCleanOutdated = options.autoCleanOutdated ?? true;
     this.incrementalMode = options.incrementalMode ?? true;
   }
@@ -69,9 +67,8 @@ export class ReviewEngine {
    * Create summary for incremental review with change stats
    */
   private createIncrementalSummary(
-    comments: Array<{ path: string; position: number; body: string }>,
     aiSummary: string,
-    incrementalResult: { commentsDeleted: number; threadsResolved: number; newIssuesCreated: number; reviewsDismissed: number; oldIssues: Array<{ path: string; line: number; message: string; severity: string }> }
+    incrementalResult: { commentsDeleted: number; threadsResolved: number; newIssuesCreated: number; reviewsDismissed: number; oldIssues: Array<{ path: string; line: number; message: string; severity: string }>; issuesResolved: Array<{ path: string; line: number; message: string; severity: string }>; issuesUpdated: Array<{ path: string; line: number; oldMessage: string; newMessage: string; severity: string }>; issuesNew: Array<{ path: string; line: number; message: string; severity: string }> }
   ): string {
     const timestamp = new Date().toLocaleString('en-US', {
       year: 'numeric',
@@ -95,7 +92,7 @@ export class ReviewEngine {
       
       if (incrementalResult.issuesResolved.length > 0) {
         summary += `✅ **${incrementalResult.issuesResolved.length} issue(s) resolved** (code was fixed)\n`;
-        incrementalResult.issuesResolved.slice(0, 5).forEach(issue => {
+        incrementalResult.issuesResolved.slice(0, 5).forEach((issue: { path: string; line: number; message: string; severity: string }) => {
           const severityIcon = issue.severity === 'error' ? '🔴' : issue.severity === 'warning' ? '🟡' : 'ℹ️';
           summary += `  - \`${issue.path}:${issue.line}\` - ${severityIcon} ${issue.severity.toUpperCase()}\n`;
         });
@@ -107,7 +104,7 @@ export class ReviewEngine {
       
       if (incrementalResult.issuesUpdated.length > 0) {
         summary += `🔄 **${incrementalResult.issuesUpdated.length} issue(s) updated** (different problems on same lines)\n`;
-        incrementalResult.issuesUpdated.slice(0, 5).forEach(issue => {
+        incrementalResult.issuesUpdated.slice(0, 5).forEach((issue: { path: string; line: number; oldMessage: string; newMessage: string; severity: string }) => {
           const severityIcon = issue.severity === 'error' ? '🔴' : issue.severity === 'warning' ? '🟡' : 'ℹ️';
           summary += `  - \`${issue.path}:${issue.line}\` - ${severityIcon} ${issue.severity.toUpperCase()}\n`;
         });
@@ -119,7 +116,7 @@ export class ReviewEngine {
       
       if (incrementalResult.issuesNew.length > 0) {
         summary += `🆕 **${incrementalResult.issuesNew.length} new issue(s) found**\n`;
-        incrementalResult.issuesNew.slice(0, 5).forEach(issue => {
+        incrementalResult.issuesNew.slice(0, 5).forEach((issue: { path: string; line: number; message: string; severity: string }) => {
           const severityIcon = issue.severity === 'error' ? '🔴' : issue.severity === 'warning' ? '🟡' : 'ℹ️';
           summary += `  - \`${issue.path}:${issue.line}\` - ${severityIcon} ${issue.severity.toUpperCase()}\n`;
         });
@@ -152,7 +149,6 @@ export class ReviewEngine {
     repo: string,
     prNumber: number
   ): Promise<ReviewResult> {
-    const sessionId = `review-${Date.now()}`;
     Logger.setContext('ReviewEngine');
 
     Logger.info('🚀 Starting code review workflow');
@@ -217,7 +213,6 @@ export class ReviewEngine {
             pr,
             batch,
             files,
-            sessionId,
             result
           );
         } catch (error) {
@@ -252,7 +247,6 @@ export class ReviewEngine {
     pr: any,
     batch: FileAnalysis[],
     allFiles: PRFile[],
-    sessionId: string,
     result: ReviewResult
   ): Promise<void> {
     // Build prompt context
@@ -389,7 +383,6 @@ export class ReviewEngine {
           
           // Create incremental summary with stats
           const incrementalSummary = this.createIncrementalSummary(
-            reviewComments,
             parseResult.data?.summary || '',
             incrementalResult
           );

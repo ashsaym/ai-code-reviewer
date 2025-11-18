@@ -1,10 +1,11 @@
 /**
  * Configuration Loader
  * 
- * Loads and validates action configuration
+ * Loads and validates configuration from GitHub Actions inputs and environment
  */
 
 import * as core from '@actions/core';
+import { readFileSync } from 'fs';
 
 export interface ActionConfig {
   // GitHub context
@@ -55,8 +56,7 @@ export class ConfigLoader {
     const eventPath = this.getEnv('GITHUB_EVENT_PATH');
     if (eventPath) {
       try {
-        const fs = require('fs');
-        const event = JSON.parse(fs.readFileSync(eventPath, 'utf8'));
+        const event = JSON.parse(readFileSync(eventPath, 'utf8'));
         prNumber = event.pull_request?.number || event.issue?.number || 0;
       } catch (error) {
         core.warning(`Failed to read GitHub event: ${error}`);

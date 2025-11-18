@@ -102,8 +102,9 @@ export class PullRequestService {
       const files: PRFile[] = [];
       let page = 1;
       const perPage = 100;
+      let hasMore = true;
 
-      while (true) {
+      while (hasMore) {
         const { data } = await this.octokit.pulls.listFiles({
           owner: this.owner,
           repo: this.repo,
@@ -132,8 +133,11 @@ export class PullRequestService {
         
         files.push(...pageFiles);
 
-        if (data.length < perPage) break;
-        page++;
+        if (data.length < perPage) {
+          hasMore = false;
+        } else {
+          page++;
+        }
       }
 
       core.info(`Found ${files.length} changed files in PR #${prNumber}`);

@@ -28,8 +28,8 @@ export interface FileAnalysis {
 export class IncrementalAnalyzer {
   constructor(
     private storage: StorageManager,
-    private _owner: string,
-    private _repo: string,
+    _owner: string,
+    _repo: string,
     private prNumber: number
   ) {}
 

@@ -58,7 +58,7 @@ body:
       description: Please share your workflow YAML (sanitize any secrets!)
       render: yaml
       placeholder: |
-        - uses: ashsaym/ai-code-reviewer/next-gen-ai-reviewer@v1.0.0
+        - uses: ashsaym/ai-code-reviewer/v2@v2.0.0
           with:
             task: review
     validations:

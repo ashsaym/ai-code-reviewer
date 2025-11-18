@@ -28,22 +28,14 @@ jobs:
         with:
           ref: v2-rewrite
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: v2/package-lock.json
-      
-      - name: Install dependencies
+      # No need to build - dist/ is committed by CI
+      - name: Verify dist exists
         run: |
-          cd v2
-          npm ci
-      
-      - name: Build action
-        run: |
-          cd v2
-          npm run build
+          if [ ! -f "v2/dist/index.js" ]; then
+            echo "❌ dist/index.js not found. Please ensure CI has run and committed the build."
+            exit 1
+          fi
+          echo "✅ dist/index.js found"
       
       - name: Run Code Sentinel AI
         uses: ./v2
@@ -51,8 +43,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           api-key: ${{ secrets.OPENAI_API_KEY }}
           provider: 'openai'
-          model: 'gpt-3.5-turbo'  # Using 3.5 for testing (cheaper)
-          max-files-per-batch: 5
+          model: 'gpt-5-mini'
+          max-files-per-batch: 50
           auto-clean-outdated: true
           enable-check-runs: true
           debug-mode: true

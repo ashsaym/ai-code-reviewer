@@ -10,7 +10,8 @@ import { throttling } from '@octokit/plugin-throttling';
 import { retry } from '@octokit/plugin-retry';
 
 // Extend Octokit with plugins
-const OctokitWithPlugins = Octokit.plugin(throttling, retry);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const OctokitWithPlugins = Octokit.plugin(throttling as any, retry);
 
 export interface GitHubClientOptions {
   /** GitHub token */
