@@ -1,7 +1,6 @@
 {
   "name": "code-sentinel-ai",
   "version": "2.0.0",
-  "type": "module",
   "description": "Production-ready AI code sentinel with zero external dependencies",
   "main": "dist/index.js",
   "scripts": {
