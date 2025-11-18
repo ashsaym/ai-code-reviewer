@@ -83250,6 +83250,44 @@ class PullRequestService {
             largestFiles,
         };
     }
+    /**
+     * Get files changed in a specific commit
+     */
+    async getCommitFiles(sha) {
+        try {
+            const { data } = await this.octokit.repos.getCommit({
+                owner: this.owner,
+                repo: this.repo,
+                ref: sha,
+            });
+            return (data.files || []).map(f => ({
+                filename: f.filename,
+                sha: f.sha,
+                status: f.status,
+                additions: f.additions,
+                deletions: f.deletions,
+                changes: f.changes,
+                patch: f.patch,
+                previousFilename: f.previous_filename,
+            }));
+        }
+        catch (error) {
+            coreExports.error(`Failed to get commit files for ${sha}: ${error instanceof Error ? error.message : String(error)}`);
+            throw error;
+        }
+    }
+    /**
+     * Get URL for a file at a specific commit
+     */
+    getFileUrl(sha, filename) {
+        return `https://github.com/${this.owner}/${this.repo}/blob/${sha}/${filename}`;
+    }
+    /**
+     * Get URL for a pull request
+     */
+    getPRUrl(prNumber) {
+        return `https://github.com/${this.owner}/${this.repo}/pull/${prNumber}`;
+    }
 }
 
 /**
@@ -83736,6 +83774,47 @@ class CommentService {
         }
         catch (error) {
             return 0;
+        }
+    }
+    /**
+     * List all issue comments (PR-level comments) on a PR
+     */
+    async listIssueComments(prNumber) {
+        try {
+            const { data } = await this.octokit.issues.listComments({
+                owner: this.owner,
+                repo: this.repo,
+                issue_number: prNumber,
+                per_page: 100,
+            });
+            return data.map(c => ({
+                id: c.id,
+                body: c.body || '',
+                user: c.user?.login || 'unknown',
+                createdAt: c.created_at,
+                updatedAt: c.updated_at,
+            }));
+        }
+        catch (error) {
+            coreExports.error(`Failed to list issue comments: ${error instanceof Error ? error.message : String(error)}`);
+            throw error;
+        }
+    }
+    /**
+     * Delete an issue comment (PR-level comment)
+     */
+    async deleteIssueComment(commentId) {
+        try {
+            await this.octokit.issues.deleteComment({
+                owner: this.owner,
+                repo: this.repo,
+                comment_id: commentId,
+            });
+            coreExports.info(`✅ Deleted issue comment #${commentId}`);
+        }
+        catch (error) {
+            coreExports.error(`Failed to delete issue comment: ${error instanceof Error ? error.message : String(error)}`);
+            throw error;
         }
     }
 }
@@ -116855,16 +116934,261 @@ class ReviewEngine {
 }
 
 /**
+ * Summary Service
+ *
+ * Generates comprehensive PR summaries with commit-based analysis
+ */
+class SummaryService {
+    prService;
+    commentService;
+    aiProvider;
+    prNumber;
+    // Marker to identify summary comments
+    static SUMMARY_MARKER = '<!-- AI_SUMMARY_COMMENT -->';
+    constructor(options) {
+        this.prService = options.prService;
+        this.commentService = options.commentService;
+        this.aiProvider = options.aiProvider;
+        this.prNumber = options.prNumber;
+    }
+    /**
+     * Generate and post PR summary
+     */
+    async generateSummary() {
+        try {
+            coreExports.info('📝 Generating PR summary...');
+            // Get PR info
+            const prInfo = await this.prService.getPullRequest(this.prNumber);
+            // Get commits
+            const commits = await this.prService.getCommits(this.prNumber);
+            // Get commit details with files
+            const commitDetails = await this.getCommitDetails(commits);
+            // Build summary prompt
+            const prompt = this.buildSummaryPrompt(prInfo, commitDetails);
+            // Generate summary using AI
+            coreExports.info('🤖 Requesting summary from AI...');
+            const response = await this.aiProvider.sendMessage([
+                { role: 'user', content: prompt }
+            ]);
+            // Format summary with commit analysis
+            const formattedSummary = this.formatSummary(response.content, prInfo, commitDetails);
+            // Delete old summary comments
+            await this.deleteOldSummaries();
+            // Post new summary
+            await this.commentService.createIssueComment(this.prNumber, formattedSummary);
+            coreExports.info('✅ Summary generated and posted successfully');
+        }
+        catch (error) {
+            coreExports.error(`Failed to generate summary: ${error instanceof Error ? error.message : String(error)}`);
+            throw error;
+        }
+    }
+    /**
+     * Get detailed commit information including files changed per commit
+     */
+    async getCommitDetails(commits) {
+        const commitDetails = [];
+        for (const commit of commits) {
+            try {
+                const files = await this.prService.getCommitFiles(commit.sha);
+                commitDetails.push({
+                    ...commit,
+                    files: files.map(f => ({
+                        filename: f.filename,
+                        status: f.status,
+                        additions: f.additions,
+                        deletions: f.deletions,
+                        changes: f.changes,
+                    })),
+                });
+            }
+            catch (error) {
+                coreExports.warning(`Failed to get files for commit ${commit.sha.substring(0, 7)}: ${error}`);
+                commitDetails.push({
+                    ...commit,
+                    files: [],
+                });
+            }
+        }
+        return commitDetails;
+    }
+    /**
+     * Build prompt for AI summary generation
+     */
+    buildSummaryPrompt(prInfo, commits) {
+        // Format commits section
+        const commitsSection = this.formatCommitsForPrompt(commits);
+        // Format files section
+        const filesSection = this.formatFilesForPrompt(prInfo.files);
+        // Build prompt directly (we'll create template later if needed)
+        return `You are an AI assistant tasked with generating a comprehensive pull request summary.
+
+Pull Request Information:
+- Title: ${prInfo.title}
+- Author: ${prInfo.author}
+- Branch: ${prInfo.headRef} → ${prInfo.baseRef}
+- Changes: +${prInfo.additions}/-${prInfo.deletions} lines across ${prInfo.changedFiles} files
+- Number of commits: ${commits.length}
+
+PR Description:
+${prInfo.body || 'No description provided'}
+
+Commits in this PR:
+${commitsSection}
+
+Files Changed:
+${filesSection}
+
+Please generate a comprehensive summary of this pull request that includes:
+1. **Overview**: What is the main purpose of this PR? What problem does it solve?
+2. **Key Changes**: What are the most significant changes made?
+3. **Impact**: What areas of the codebase are affected? Any potential risks?
+4. **Technical Details**: Brief technical explanation of the implementation
+
+Keep the summary concise but informative. Use bullet points where appropriate. Focus on providing value to reviewers and stakeholders.`;
+    }
+    /**
+     * Format commits for prompt
+     */
+    formatCommitsForPrompt(commits) {
+        if (commits.length === 0) {
+            return 'No commits yet';
+        }
+        return commits.map((commit, index) => {
+            const filesList = commit.files.length > 0
+                ? commit.files.map(f => `    - ${f.filename} (${f.status}, +${f.additions}/-${f.deletions})`).join('\n')
+                : '    (no files)';
+            return `${index + 1}. ${commit.sha.substring(0, 7)} - ${commit.message.split('\n')[0]}
+   Author: ${commit.author}
+   Files:
+${filesList}`;
+        }).join('\n\n');
+    }
+    /**
+     * Format files for prompt
+     */
+    formatFilesForPrompt(files) {
+        if (files.length === 0) {
+            return 'No files changed';
+        }
+        return files.map((f, index) => `${index + 1}. ${f.filename} (${f.status}, +${f.additions}/-${f.deletions})`).join('\n');
+    }
+    /**
+     * Format the final summary with commit analysis
+     */
+    formatSummary(aiContent, prInfo, commits) {
+        const parts = [];
+        // Add marker for identification
+        parts.push(SummaryService.SUMMARY_MARKER);
+        parts.push('');
+        // Add header
+        parts.push('## 📊 Pull Request Summary');
+        parts.push('');
+        // Add AI-generated summary
+        parts.push(aiContent.trim());
+        parts.push('');
+        // Add commit-based analysis
+        parts.push('---');
+        parts.push('');
+        parts.push('### 📝 Commit Analysis');
+        parts.push('');
+        if (commits.length === 0) {
+            parts.push('_No commits yet in this pull request._');
+        }
+        else {
+            for (const commit of commits) {
+                parts.push(`#### ${commit.sha.substring(0, 7)} - ${commit.message.split('\n')[0]}`);
+                parts.push('');
+                parts.push(`**Author:** ${commit.author} | **Date:** ${new Date(commit.date).toLocaleString()}`);
+                parts.push('');
+                if (commit.files.length === 0) {
+                    parts.push('_No files changed in this commit._');
+                }
+                else {
+                    parts.push('**Files changed:**');
+                    for (const file of commit.files) {
+                        const fileUrl = this.prService.getFileUrl(commit.sha, file.filename);
+                        parts.push(`- [\`${file.filename}\`](${fileUrl}) (${file.status}, +${file.additions}/-${file.deletions} lines)`);
+                    }
+                }
+                parts.push('');
+            }
+        }
+        // Add footer
+        parts.push('---');
+        parts.push('');
+        parts.push(`_Summary generated by ${this.aiProvider.getProviderName()} • [View PR Files](${this.prService.getPRUrl(prInfo.number)}/files)_`);
+        return parts.join('\n');
+    }
+    /**
+     * Delete old summary comments
+     */
+    async deleteOldSummaries() {
+        try {
+            coreExports.info('🗑️  Checking for old summary comments...');
+            const comments = await this.commentService.listIssueComments(this.prNumber);
+            const summaryComments = comments.filter((comment) => comment.body?.includes(SummaryService.SUMMARY_MARKER));
+            if (summaryComments.length > 0) {
+                coreExports.info(`Found ${summaryComments.length} old summary comment(s), deleting...`);
+                for (const comment of summaryComments) {
+                    await this.commentService.deleteIssueComment(comment.id);
+                    coreExports.info(`  ✓ Deleted comment #${comment.id}`);
+                }
+            }
+            else {
+                coreExports.info('No old summary comments found');
+            }
+        }
+        catch (error) {
+            coreExports.warning(`Failed to delete old summaries: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+}
+
+/**
  * Action Orchestrator
  *
  * Main entry point - coordinates all components
  */
 class ActionOrchestrator {
     /**
+     * Check if action was triggered by a comment command
+     */
+    static getCommentCommand() {
+        const eventPath = process.env.GITHUB_EVENT_PATH;
+        if (!eventPath)
+            return null;
+        try {
+            const event = JSON.parse(require$$1.readFileSync(eventPath, 'utf8'));
+            // Check if this is an issue_comment event
+            if (event.action !== 'created' || !event.comment) {
+                return null;
+            }
+            const commentBody = event.comment.body?.trim() || '';
+            // Check for /summary command
+            if (commentBody === '/summary' || commentBody.startsWith('/summary ')) {
+                return 'summary';
+            }
+            // Future: Add more commands here (/review, /suggest, etc.)
+            return null;
+        }
+        catch (error) {
+            coreExports.debug(`Failed to parse GitHub event for comment command: ${error}`);
+            return null;
+        }
+    }
+    /**
      * Execute the action
      */
     static async execute() {
         try {
+            // Check if this is a comment command
+            const command = this.getCommentCommand();
+            if (command === 'summary') {
+                coreExports.info('🤖 Code Sentinel AI - Generating PR Summary');
+                await this.executeSummary();
+                return;
+            }
             coreExports.info('🤖 Code Sentinel AI - Starting review');
             // 1. Load and validate configuration
             const config = ConfigLoader.load();
@@ -116964,6 +117288,91 @@ class ActionOrchestrator {
         catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             coreExports.error(`❌ Action failed: ${errorMessage}`);
+            if (error instanceof Error && error.stack) {
+                coreExports.debug(error.stack);
+            }
+            coreExports.setFailed(errorMessage);
+        }
+    }
+    /**
+     * Execute summary command
+     */
+    static async executeSummary() {
+        try {
+            // 1. Load minimal configuration
+            const token = coreExports.getInput('github-token') || process.env.GITHUB_TOKEN || '';
+            const repository = process.env.GITHUB_REPOSITORY || '';
+            if (!token) {
+                throw new Error('github-token is required');
+            }
+            if (!repository) {
+                throw new Error('GITHUB_REPOSITORY environment variable is required');
+            }
+            // Parse repository owner/name
+            const [owner, repo] = repository.split('/');
+            if (!owner || !repo) {
+                throw new Error(`Invalid repository format: ${repository}`);
+            }
+            // Get PR number from event
+            const eventPath = process.env.GITHUB_EVENT_PATH;
+            if (!eventPath) {
+                throw new Error('GITHUB_EVENT_PATH not found');
+            }
+            const event = JSON.parse(require$$1.readFileSync(eventPath, 'utf8'));
+            const prNumber = event.issue?.number || event.pull_request?.number;
+            if (!prNumber) {
+                throw new Error('Could not determine PR number from event');
+            }
+            coreExports.info(`📊 Generating summary for PR #${prNumber}`);
+            // 2. Initialize GitHub clients
+            const githubClient = new GitHubClient({
+                token,
+                owner,
+                repo,
+            });
+            const octokit = githubClient.getOctokit();
+            const prService = new PullRequestService({
+                octokit,
+                owner,
+                repo,
+            });
+            const commentService = new CommentService({
+                octokit,
+                owner,
+                repo,
+            });
+            // 3. Initialize AI provider
+            const apiKey = coreExports.getInput('api-key') || process.env.OPENAI_API_KEY || '';
+            if (!apiKey) {
+                throw new Error('api-key is required for summary generation');
+            }
+            const provider = coreExports.getInput('provider', { required: false }) || 'openai';
+            const model = coreExports.getInput('model', { required: false }) || 'gpt-5-mini';
+            const apiEndpoint = coreExports.getInput('api-endpoint', { required: false });
+            const maxCompletionTokensMode = coreExports.getBooleanInput('max-completion-tokens-mode', { required: false });
+            const aiProvider = ProviderFactory.create({
+                type: provider,
+                model,
+                apiKey,
+                endpoint: apiEndpoint,
+                maxCompletionTokensMode,
+            });
+            const providerName = aiProvider.getProviderName();
+            coreExports.info(`✓ Connected to ${providerName} (${model})`);
+            // 4. Generate summary
+            const summaryService = new SummaryService({
+                prService,
+                commentService,
+                aiProvider,
+                prNumber,
+            });
+            await summaryService.generateSummary();
+            coreExports.info('✅ Summary generated successfully');
+            coreExports.setOutput('success', true);
+        }
+        catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            coreExports.error(`❌ Summary generation failed: ${errorMessage}`);
             if (error instanceof Error && error.stack) {
                 coreExports.debug(error.stack);
             }

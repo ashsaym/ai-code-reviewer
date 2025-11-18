@@ -23,10 +23,10 @@ jobs:
     name: AI Code Review
     
     steps:
-      - name: Checkout v2 branch
+      - name: Checkout PR branch
         uses: actions/checkout@v5
         with:
-          ref: v2-rewrite
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
       
       # No need to build - dist/ is committed by CI
       - name: Verify dist exists

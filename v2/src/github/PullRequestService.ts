@@ -384,4 +384,45 @@ export class PullRequestService {
       largestFiles,
     };
   }
+
+  /**
+   * Get files changed in a specific commit
+   */
+  async getCommitFiles(sha: string): Promise<PRFile[]> {
+    try {
+      const { data } = await this.octokit.repos.getCommit({
+        owner: this.owner,
+        repo: this.repo,
+        ref: sha,
+      });
+
+      return (data.files || []).map(f => ({
+        filename: f.filename,
+        sha: f.sha,
+        status: f.status as PRFile['status'],
+        additions: f.additions,
+        deletions: f.deletions,
+        changes: f.changes,
+        patch: f.patch,
+        previousFilename: f.previous_filename,
+      }));
+    } catch (error) {
+      core.error(`Failed to get commit files for ${sha}: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get URL for a file at a specific commit
+   */
+  getFileUrl(sha: string, filename: string): string {
+    return `https://github.com/${this.owner}/${this.repo}/blob/${sha}/${filename}`;
+  }
+
+  /**
+   * Get URL for a pull request
+   */
+  getPRUrl(prNumber: number): string {
+    return `https://github.com/${this.owner}/${this.repo}/pull/${prNumber}`;
+  }
 }
