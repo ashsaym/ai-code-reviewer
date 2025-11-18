@@ -49,11 +49,11 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: next-gen-ai-reviewer/package-lock.json
+          cache-dependency-path: v2/package-lock.json
 
-      - name: Install dependencies (next-gen-ai-reviewer)
+      - name: Install dependencies (v2)
         run: npm ci
-        working-directory: next-gen-ai-reviewer
+        working-directory: v2
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
@@ -75,7 +75,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
-          scan-ref: 'next-gen-ai-reviewer'
+          scan-ref: 'v2'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH,MEDIUM'

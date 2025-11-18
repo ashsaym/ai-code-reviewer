@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+yarn.lock
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing artifacts (keep coverage/ and dist/ for CI)
+.nyc_output/
+
+# NOTE: dist/ and coverage/ are intentionally NOT ignored
+# They are built by CI/CD and committed to the repository
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Temporary
+tmp/
+temp/

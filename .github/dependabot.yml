@@ -1,8 +1,8 @@
 version: 2
 updates:
-  # Enable version updates for npm
+  # Enable version updates for npm (v2)
   - package-ecosystem: "npm"
-    directory: "/next-gen-ai-reviewer"
+    directory: "/v2"
     schedule:
       interval: "weekly"
       day: "monday"

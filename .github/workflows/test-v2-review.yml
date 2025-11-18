@@ -1,0 +1,50 @@
+name: 'Test Code Sentinel AI'
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  
+  # Allow manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      pr-number:
+        description: 'PR number to review'
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  code-review:
+    runs-on: ubuntu-latest
+    name: AI Code Review
+    
+    steps:
+      - name: Checkout v2 branch
+        uses: actions/checkout@v4
+        with:
+          ref: v2-rewrite
+      
+      # No need to build - dist/ is committed by CI
+      - name: Verify dist exists
+        run: |
+          if [ ! -f "v2/dist/index.js" ]; then
+            echo "❌ dist/index.js not found. Please ensure CI has run and committed the build."
+            exit 1
+          fi
+          echo "✅ dist/index.js found"
+      
+      - name: Run Code Sentinel AI
+        uses: ./v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          api-key: ${{ secrets.OPENAI_API_KEY }}
+          provider: 'openai'
+          model: 'gpt-5-mini'
+          max-files-per-batch: 50
+          auto-clean-outdated: true
+          enable-check-runs: true
+          debug-mode: true

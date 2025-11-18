@@ -1,6 +1,0 @@
-# Ignore generated artifacts and vendored assets
-node_modules/**
-dist/**
-**/*.lock
-**/*.log
-screenshots/**
