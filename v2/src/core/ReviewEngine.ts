@@ -8,7 +8,7 @@ import * as core from '@actions/core';
 import { StorageManager } from '../storage/StorageManager';
 import { PullRequestService, PRFile } from '../github/PullRequestService';
 import { CommentService } from '../github/CommentService';
-
+import { DiffParser } from '../github/DiffParser';
 import { BaseProvider, AIMessage } from '../providers/BaseProvider';
 import { IncrementalAnalyzer, FileAnalysis } from '../analysis/IncrementalAnalyzer';
 import { OutdatedCommentCleaner } from '../analysis/OutdatedCommentCleaner';
@@ -228,28 +228,49 @@ export class ReviewEngine {
     // Deduplicate and validate
     const validComments = ResponseParser.deduplicateComments(comments);
 
-    // Create single summary comment with all reviews
-    if (validComments.length > 0) {
+    // Create inline review comments on specific lines (like v1)
+    for (const comment of validComments) {
       try {
-        const summaryBody = ResponseParser.createDetailedSummary(
-          validComments,
-          parseResult.data!.summary,
-          allFiles
-        );
+        const file = allFiles.find(f => f.filename === comment.path);
+        if (!file || !file.patch) {
+          core.warning(`⚠️ File not found or no patch: ${comment.path}`);
+          continue;
+        }
 
-        await this.commentService.createComment(
+        // Parse diff to get position (use parsePatch for GitHub API diffs)
+        const parsedDiff = DiffParser.parsePatch(file.filename, file.patch);
+        if (parsedDiff.hunks.length === 0) {
+          core.warning(`⚠️ Could not parse diff for: ${comment.path}`);
+          continue;
+        }
+
+        const position = DiffParser.getPositionForLine(parsedDiff, comment.line);
+        if (!position) {
+          core.warning(`⚠️ Line ${comment.line} not in diff for: ${comment.path}`);
+          continue;
+        }
+
+        const body = ResponseParser.formatForGitHub(comment);
+
+        await this.commentService.createReviewComment(
           prNumber,
-          summaryBody
+          pr.headSha,
+          file.filename,
+          position,
+          body
         );
 
-        result.commentsCreated = 1;
-        core.info(`✓ Created review summary with ${validComments.length} findings`);
+        result.commentsCreated++;
 
       } catch (error) {
-        const errorMsg = `Failed to create review summary: ${error}`;
+        const errorMsg = `Failed to create comment: ${error}`;
         result.errors.push(errorMsg);
         core.warning(errorMsg);
       }
+    }
+
+    if (result.commentsCreated > 0) {
+      core.info(`✓ Created ${result.commentsCreated} inline review comments`);
     }
 
     result.filesReviewed += batch.length;

@@ -150,14 +150,14 @@ export class ResponseParser {
   }
 
   /**
-   * Format comment for GitHub
+   * Format comment for GitHub with inline diff suggestions
    */
   static formatForGitHub(comment: ReviewComment): string {
     const icon = this.getSeverityIcon(comment.severity);
-    let message = `${icon} **${comment.severity.toUpperCase()}**: ${comment.message}`;
+    let message = `${icon} **${comment.severity.toUpperCase()}**\n\n${comment.message}`;
 
     if (comment.suggestion) {
-      message += `\n\n**Suggestion:**\n${comment.suggestion}`;
+      message += `\n\n**Suggested change:**\n\`\`\`suggestion\n${comment.suggestion.trim()}\n\`\`\``;
     }
 
     return message;
