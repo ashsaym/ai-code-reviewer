@@ -47,7 +47,19 @@ export class ConfigLoader {
     // GitHub context
     const token = this.getRequiredInput('github-token');
     const repository = this.getEnv('GITHUB_REPOSITORY') || '';
-    const prNumber = parseInt(this.getEnv('GITHUB_EVENT_NUMBER') || '0', 10);
+    
+    // Get PR number from GitHub event
+    let prNumber = 0;
+    const eventPath = this.getEnv('GITHUB_EVENT_PATH');
+    if (eventPath) {
+      try {
+        const fs = require('fs');
+        const event = JSON.parse(fs.readFileSync(eventPath, 'utf8'));
+        prNumber = event.pull_request?.number || event.issue?.number || 0;
+      } catch (error) {
+        core.warning(`Failed to read GitHub event: ${error}`);
+      }
+    }
 
     // AI Provider
     const provider = this.getInput('provider', 'openai') as 'openai' | 'openwebui';
