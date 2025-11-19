@@ -4,31 +4,23 @@
 
 import { OpenAIProvider } from '../../../src/providers/OpenAIProvider';
 import { AIMessage } from '../../../src/providers/BaseProvider';
-import OpenAI from 'openai';
+import axios from 'axios';
 
-jest.mock('openai');
+jest.mock('axios');
+const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe('OpenAIProvider', () => {
   let provider: OpenAIProvider;
-  let mockCreate: jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Setup mock
-    const MockedOpenAI = OpenAI as jest.MockedClass<typeof OpenAI>;
-    const mockInstance = new MockedOpenAI() as any;
-    mockCreate = mockInstance.chat.completions.create as jest.Mock;
-
     provider = new OpenAIProvider({
       apiKey: 'test-key',
-      model: 'gpt-5-mini',
+      model: 'gpt-4o-mini',
       maxTokens: 16000,
       temperature: 0.3,
     });
-
-    // Override the OpenAI client in the provider
-    (provider as any).client = mockInstance;
   });
 
   describe('sendMessage', () => {
@@ -38,19 +30,21 @@ describe('OpenAIProvider', () => {
         { role: 'user', content: 'Hello' },
       ];
 
-      mockCreate.mockResolvedValue({
-        choices: [
-          {
-            message: { content: 'Hi there!' },
-            finish_reason: 'stop',
+      mockedAxios.post.mockResolvedValue({
+        data: {
+          choices: [
+            {
+              message: { content: 'Hi there!' },
+              finish_reason: 'stop',
+            },
+          ],
+          usage: {
+            prompt_tokens: 10,
+            completion_tokens: 5,
+            total_tokens: 15,
           },
-        ],
-        usage: {
-          prompt_tokens: 10,
-          completion_tokens: 5,
-          total_tokens: 15,
+          model: 'gpt-4o-mini',
         },
-        model: 'gpt-5-mini',
       });
 
       const response = await provider.sendMessage(messages);
@@ -65,15 +59,17 @@ describe('OpenAIProvider', () => {
         { role: 'user', content: 'Return JSON' },
       ];
 
-      mockCreate.mockResolvedValue({
-        choices: [
-          {
-            message: { content: '{"key": "value"}' },
-            finish_reason: 'stop',
-          },
-        ],
-        usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
-        model: 'gpt-5-mini',
+      mockedAxios.post.mockResolvedValue({
+        data: {
+          choices: [
+            {
+              message: { content: '{"key": "value"}' },
+              finish_reason: 'stop',
+            },
+          ],
+          usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+          model: 'gpt-4o-mini',
+        },
       });
 
       const response = await provider.sendMessage(messages, { responseFormat: 'json' });
@@ -86,7 +82,7 @@ describe('OpenAIProvider', () => {
         { role: 'user', content: 'Hello' },
       ];
 
-      mockCreate.mockRejectedValue(new Error('API Error'));
+      mockedAxios.post.mockRejectedValue(new Error('API Error'));
 
       await expect(provider.sendMessage(messages)).rejects.toThrow('API Error');
     });
@@ -97,8 +93,8 @@ describe('OpenAIProvider', () => {
       ];
 
       const rateLimitError = new Error('Rate limit exceeded');
-      (rateLimitError as any).status = 429;
-      mockCreate.mockRejectedValue(rateLimitError);
+      (rateLimitError as any).response = { status: 429 };
+      mockedAxios.post.mockRejectedValue(rateLimitError);
 
       await expect(provider.sendMessage(messages)).rejects.toThrow();
     });
@@ -108,15 +104,17 @@ describe('OpenAIProvider', () => {
         { role: 'user', content: 'Long response' },
       ];
 
-      mockCreate.mockResolvedValue({
-        choices: [
-          {
-            message: { content: 'Truncated...' },
-            finish_reason: 'length',
-          },
-        ],
-        usage: { prompt_tokens: 10, completion_tokens: 16000, total_tokens: 16010 },
-        model: 'gpt-5-mini',
+      mockedAxios.post.mockResolvedValue({
+        data: {
+          choices: [
+            {
+              message: { content: 'Truncated...' },
+              finish_reason: 'length',
+            },
+          ],
+          usage: { prompt_tokens: 10, completion_tokens: 16000, total_tokens: 16010 },
+          model: 'gpt-4o-mini',
+        },
       });
 
       const response = await provider.sendMessage(messages);
@@ -133,7 +131,7 @@ describe('OpenAIProvider', () => {
 
   describe('getModel', () => {
     it('should return model name', () => {
-      expect(provider.getModel()).toBe('gpt-5-mini');
+      expect(provider.getModel()).toBe('gpt-4o-mini');
     });
   });
 });

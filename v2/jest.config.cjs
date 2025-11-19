@@ -3,6 +3,7 @@ module.exports = {
   testEnvironment: 'node',
   roots: ['<rootDir>/tests'],
   testMatch: ['**/*.test.ts'],
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
@@ -23,9 +24,11 @@ module.exports = {
     }]
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(@octokit|bottleneck)/)'
+    'node_modules/(?!(@octokit|bottleneck|axios)/)'
   ],
   moduleNameMapper: {
-    '^openai$': '<rootDir>/tests/mocks/openai.mock.ts'
+    '^openai$': '<rootDir>/tests/mocks/openai.mock.ts',
+    '^@octokit/plugin-throttling$': '<rootDir>/tests/mocks/octokit-plugin-throttling.mock.ts',
+    '^@octokit/plugin-retry$': '<rootDir>/tests/mocks/octokit-plugin-retry.mock.ts'
   }
 };

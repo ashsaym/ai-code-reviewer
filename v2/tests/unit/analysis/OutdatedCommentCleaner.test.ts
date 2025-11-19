@@ -19,32 +19,37 @@ describe('OutdatedCommentCleaner', () => {
 
   describe('checkAndMarkOutdated', () => {
     it('should mark outdated comments successfully', async () => {
-      mockStorage.markOutdatedComments = jest.fn().mockResolvedValue({
-        markedCount: 5,
-        errors: [],
-      });
+      mockStorage.getPRComments = jest.fn().mockResolvedValue([
+        { commentId: 1, line: 10 },
+        { commentId: 2, line: 20 },
+        { commentId: 3, line: 30 },
+        { commentId: 4, line: 40 },
+        { commentId: 5, line: 50 },
+      ]);
+      mockStorage.cleanOutdatedComments = jest.fn().mockResolvedValue(5);
 
       const result = await cleaner.checkAndMarkOutdated('new-sha');
 
       expect(result.markedOutdated).toBe(5);
       expect(result.errors).toHaveLength(0);
-      expect(mockStorage.markOutdatedComments).toHaveBeenCalledWith(123, 'new-sha');
+      expect(mockStorage.cleanOutdatedComments).toHaveBeenCalledWith(123, 'new-sha');
     });
 
     it('should handle errors during marking', async () => {
-      mockStorage.markOutdatedComments = jest.fn().mockResolvedValue({
-        markedCount: 2,
-        errors: ['Error 1', 'Error 2'],
-      });
+      mockStorage.getPRComments = jest.fn().mockResolvedValue([
+        { commentId: 1, line: 10 },
+        { commentId: 2, line: 20 },
+      ]);
+      mockStorage.cleanOutdatedComments = jest.fn().mockResolvedValue(2);
 
       const result = await cleaner.checkAndMarkOutdated('new-sha');
 
       expect(result.markedOutdated).toBe(2);
-      expect(result.errors).toHaveLength(2);
+      expect(result.totalComments).toBe(2);
     });
 
     it('should handle storage exceptions', async () => {
-      mockStorage.markOutdatedComments = jest.fn().mockRejectedValue(new Error('Storage error'));
+      mockStorage.getPRComments = jest.fn().mockRejectedValue(new Error('Storage error'));
 
       const result = await cleaner.checkAndMarkOutdated('new-sha');
 
