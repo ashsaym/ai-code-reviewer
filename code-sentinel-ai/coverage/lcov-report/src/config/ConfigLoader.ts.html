@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">79.26% </span>
+                <span class="strong">78.57% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>65/82</span>
+                <span class='fraction'>66/84</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">70.83% </span>
+                <span class="strong">70% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>34/48</span>
+                <span class='fraction'>35/50</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">76.71% </span>
+                <span class="strong">76% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>56/73</span>
+                <span class='fraction'>57/75</span>
             </div>
         
             
@@ -291,7 +291,11 @@
 <a name='L226'></a><a href='#L226'>226</a>
 <a name='L227'></a><a href='#L227'>227</a>
 <a name='L228'></a><a href='#L228'>228</a>
-<a name='L229'></a><a href='#L229'>229</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L229'></a><a href='#L229'>229</a>
+<a name='L230'></a><a href='#L230'>230</a>
+<a name='L231'></a><a href='#L231'>231</a>
+<a name='L232'></a><a href='#L232'>232</a>
+<a name='L233'></a><a href='#L233'>233</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -335,12 +339,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -421,6 +427,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">8x</span>
@@ -457,7 +464,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">42x</span>
+<span class="cline-any cline-yes">49x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -505,6 +512,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -531,6 +539,7 @@ import { readFileSync } from 'fs';
 export interface ActionConfig {
   // GitHub context
   token: string;
+  githubHost: string;
   repository: string;
   prNumber: number;
   
@@ -570,6 +579,7 @@ export class ConfigLoader {
   static load(): ActionConfig {
     // GitHub context
     const token = this.getRequiredInput('github-token');
+    const githubHost = this.getInput('github-host', 'https://api.github.com') || <span class="branch-1 cbranch-no" title="branch not covered" >'https://api.github.com';</span>
     const repository = this.getEnv('GITHUB_REPOSITORY') || <span class="branch-1 cbranch-no" title="branch not covered" >'';</span>
     
     // Get PR number from GitHub event
@@ -622,6 +632,7 @@ export class ConfigLoader {
 &nbsp;
     return {
       token,
+      githubHost,
       repository,
       prNumber,
       provider,
@@ -734,6 +745,7 @@ export class ConfigLoader {
    */
 <span class="fstat-no" title="function not covered" >  static </span>print(config: ActionConfig): void {
 <span class="cstat-no" title="statement not covered" >    core.info('📋 Configuration:');</span>
+<span class="cstat-no" title="statement not covered" >    core.info(`  GitHub Host: ${config.githubHost}`);</span>
 <span class="cstat-no" title="statement not covered" >    core.info(`  Repository: ${config.repository}`);</span>
 <span class="cstat-no" title="statement not covered" >    core.info(`  PR Number: ${config.prNumber}`);</span>
 <span class="cstat-no" title="statement not covered" >    core.info(`  Provider: ${config.provider}`);</span>
@@ -754,7 +766,7 @@ export class ConfigLoader {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-19T05:18:08.603Z
+                at 2025-11-19T17:47:32.258Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

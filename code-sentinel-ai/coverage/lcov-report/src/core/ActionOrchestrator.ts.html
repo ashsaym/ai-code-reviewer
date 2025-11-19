@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">87.55% </span>
+                <span class="strong">87.72% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>190/217</span>
+                <span class='fraction'>193/220</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">66.02% </span>
+                <span class="strong">67.28% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>103/156</span>
+                <span class='fraction'>109/162</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">87.44% </span>
+                <span class="strong">87.61% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>188/215</span>
+                <span class='fraction'>191/218</span>
             </div>
         
             
@@ -590,7 +590,14 @@
 <a name='L525'></a><a href='#L525'>525</a>
 <a name='L526'></a><a href='#L526'>526</a>
 <a name='L527'></a><a href='#L527'>527</a>
-<a name='L528'></a><a href='#L528'>528</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L528'></a><a href='#L528'>528</a>
+<a name='L529'></a><a href='#L529'>529</a>
+<a name='L530'></a><a href='#L530'>530</a>
+<a name='L531'></a><a href='#L531'>531</a>
+<a name='L532'></a><a href='#L532'>532</a>
+<a name='L533'></a><a href='#L533'>533</a>
+<a name='L534'></a><a href='#L534'>534</a>
+<a name='L535'></a><a href='#L535'>535</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -709,6 +716,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -846,6 +854,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -952,6 +962,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1058,6 +1070,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1232,6 +1246,7 @@ export class ActionOrchestrator {
       // 2. Initialize GitHub clients
       const githubClient = new GitHubClient({
         token: config.token,
+        baseUrl: config.githubHost,
         owner,
         repo,
       });
@@ -1372,8 +1387,10 @@ export class ActionOrchestrator {
       core.info(`📊 Generating summary for PR #${prNumber}`);
 &nbsp;
       // 2. Initialize GitHub clients
+      const githubHost = core.getInput('github-host') || 'https://api.github.com';
       const githubClient = new GitHubClient({
         token,
+        baseUrl: githubHost,
         owner,
         repo,
       });
@@ -1478,8 +1495,10 @@ export class ActionOrchestrator {
       core.info(`💡 Generating suggestions for PR #${prNumber}`);
 &nbsp;
       // 2. Initialize GitHub clients
+      const githubHost = core.getInput('github-host') || 'https://api.github.com';
       const githubClient = new GitHubClient({
         token,
+        baseUrl: githubHost,
         owner,
         repo,
       });
@@ -1584,8 +1603,10 @@ export class ActionOrchestrator {
       core.info(`📝 Generating description for PR #${prNumber}`);
 &nbsp;
       // 2. Initialize GitHub clients
+      const githubHost = core.getInput('github-host') || 'https://api.github.com';
       const githubClient = new GitHubClient({
         token,
+        baseUrl: githubHost,
         owner,
         repo,
       });
@@ -1651,7 +1672,7 @@ export class ActionOrchestrator {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-19T05:18:08.603Z
+                at 2025-11-19T17:47:32.258Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
