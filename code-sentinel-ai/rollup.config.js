@@ -34,6 +34,10 @@ export default {
     if (warning.code === 'CIRCULAR_DEPENDENCY' && warning.message.includes('@actions/core')) {
       return;
     }
+    // Suppress 'this' rewriting warnings from protobuf dependencies
+    if (warning.code === 'THIS_IS_UNDEFINED') {
+      return;
+    }
     warn(warning);
   }
 };

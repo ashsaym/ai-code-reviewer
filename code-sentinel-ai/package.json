@@ -2,6 +2,7 @@
   "name": "code-sentinel-ai",
   "version": "2.0.0",
   "description": "Production-ready AI code sentinel with zero external dependencies",
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "rollup -c && npm run copy:templates",
