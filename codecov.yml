@@ -6,7 +6,7 @@ codecov:
 coverage:
   precision: 2
   round: down
-  range: "70...100"
+  range: "60...100"
   
   status:
     project:
@@ -25,15 +25,14 @@ coverage:
 flags:
   v2:
     paths:
-      - v2/src/
+      - code-sentinel-ai/**
     carryforward: true
 
 # Ignore patterns
 ignore:
-  - "v1/**"
-  - "v2/tests/**"
-  - "v2/dist/**"
-  - "v2/coverage/**"
+  - "code-sentinel-ai/tests/**"
+  - "code-sentinel-ai/dist/**"
+  - "code-sentinel-ai/coverage/**"
   - "**/node_modules/**"
   - "**/*.test.ts"
   - "**/*.spec.ts"
