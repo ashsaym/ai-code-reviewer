@@ -81,17 +81,29 @@ export class DescriptionService {
     commits: Array<CommitInfo>,
     files: Array<any>
   ): string {
-    // Format commits section
-    const commitsSection = commits.map((c, idx) => 
-      `${idx + 1}. ${c.message} (${c.author})`
+    // Format commits section - keep it concise
+    const commitsSection = commits.slice(0, 10).map((c, idx) => 
+      `${idx + 1}. ${c.message}`
     ).join('\n');
+    
+    const commitSummary = commits.length > 10 
+      ? `${commitsSection}\n... and ${commits.length - 10} more commits`
+      : commitsSection;
 
-    // Format files section
-    const filesSection = files.map(f => 
-      `- **${f.filename}** (${f.status}, +${f.additions}/-${f.deletions})`
-    ).join('\n');
+    // Format files section - group by type
+    const filesByType: Record<string, typeof files> = {};
+    files.forEach(f => {
+      const ext = f.filename.split('.').pop() || 'other';
+      if (!filesByType[ext]) filesByType[ext] = [];
+      filesByType[ext].push(f);
+    });
 
-    return `You are an expert technical writer creating a comprehensive pull request description.
+    const filesSection = Object.entries(filesByType).map(([ext, fileList]) => {
+      const fileNames = fileList.map(f => `${f.filename} (${f.status})`).join(', ');
+      return `- **${ext}**: ${fileNames}`;
+    }).join('\n');
+
+    return `You are a technical writer creating a concise, impactful pull request description.
 
 Pull Request Information:
 - Title: ${prInfo.title}
@@ -103,38 +115,42 @@ Current Description:
 ${prInfo.body || 'No description provided'}
 
 Commits (${commits.length}):
-${commitsSection}
+${commitSummary}
 
 Files Changed (${files.length}):
 ${filesSection}
 
-Please create a well-structured, professional PR description that includes:
+Create a focused, professional PR description using this structure:
 
-## 📋 Summary
-A clear, concise overview of what this PR accomplishes (2-3 sentences).
+## Description
+2-4 sentences explaining what this PR does and why. Focus on business value and technical context.
 
-## 🎯 Purpose
-The main goal and motivation behind these changes.
+## Type of Change
+Mark with [x] the applicable types:
+- [ ] Bug fix (non-breaking change fixing an issue)
+- [ ] New feature (non-breaking change adding functionality)
+- [ ] Breaking change (fix or feature causing existing functionality to break)
+- [ ] Refactoring (code change that neither fixes a bug nor adds a feature)
+- [ ] Documentation update
+- [ ] Performance improvement
+- [ ] Test coverage improvement
 
-## 🔧 Changes
-Key changes made in this PR:
-- List major changes as bullet points
-- Be specific and technical where appropriate
-- Group related changes together
+## Changes Made
+List 3-7 key changes as concise bullet points. Focus on:
+- What was changed (specific files/functions if important)
+- Why it was needed
+- Impact on the system
 
-## 📝 Commit Overview
-Brief summary of the commit history and development approach.
+## Testing
+1-2 sentences about what was tested or needs testing. Be specific about test types (unit, integration, manual).
 
-## ⚠️ Breaking Changes
-List any breaking changes, or state "None" if there are no breaking changes.
+## Additional Notes
+ONLY include if there are:
+- Breaking changes that need migration steps
+- Important dependencies or environment changes
+- Known limitations or follow-up work needed
 
-## 🧪 Testing
-Describe what testing was done or should be done (if information is available from commits/changes).
-
-## 📚 Additional Notes
-Any other relevant information, dependencies, or considerations.
-
-Keep the tone professional and technical. Focus on what was changed and why, not how to use it. Make it easy for reviewers to understand the scope and impact of the changes.`;
+Keep it concise - aim for clarity over completeness. No conversational phrases like "If you want, I can..." or "Let me know if...". Just state facts.`;
   }
 
   /**
