@@ -125,7 +125,7 @@ describe('OpenAIProvider', () => {
 
   describe('getProviderName', () => {
     it('should return provider name', () => {
-      expect(provider.getProviderName()).toBe('OpenAI');
+      expect(provider.getProviderName()).toBe('openai');
     });
   });
 
