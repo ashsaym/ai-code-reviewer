@@ -1,10 +1,20 @@
 # 🤖 Code Sentinel AI
 
 [![CI/CD](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/code-sentinel-ai-ci.yml/badge.svg)](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/code-sentinel-ai-ci.yml)
-[![codecov](https://codecov.io/gh/ashsaym/ai-code-reviewer/branch/main/graph/badge.svg)](https://codecov.io/gh/ashsaym/ai-code-reviewer)
+[![codecov](https://codecov.io/gh/ashsaym/ai-code-reviewer/branch/main/graph/badge.svg?token=YOUR_CODECOV_TOKEN)](https://codecov.io/gh/ashsaym/ai-code-reviewer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub release](https://img.shields.io/github/v/release/ashsaym/ai-code-reviewer)](https://github.com/ashsaym/ai-code-reviewer/releases)
+[![GitHub issues](https://img.shields.io/github/issues/ashsaym/ai-code-reviewer)](https://github.com/ashsaym/ai-code-reviewer/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/ashsaym/ai-code-reviewer)](https://github.com/ashsaym/ai-code-reviewer/pulls)
+[![GitHub stars](https://img.shields.io/github/stars/ashsaym/ai-code-reviewer?style=social)](https://github.com/ashsaym/ai-code-reviewer/stargazers)
+
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-green.svg)](https://nodejs.org/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/ashsaym/ai-code-reviewer/pulls)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/ashsaym/ai-code-reviewer/graphs/commit-activity)
+[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
+[![Security Scan](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/security-scan.yml/badge.svg)](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/security-scan.yml)
+[![CodeQL](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/codeql.yml/badge.svg)](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/codeql.yml)
 
 > **Production-ready AI code reviewer** with zero external dependencies. Intelligent, incremental, and GitHub-native.
 
