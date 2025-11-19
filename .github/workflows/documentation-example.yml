@@ -1,0 +1,154 @@
+# Example: Generate Comprehensive Documentation
+# 
+# This workflow demonstrates how to use Code Sentinel AI to generate
+# comprehensive documentation for your repository.
+#
+# To use this workflow:
+# 1. Copy this file to .github/workflows/documentation.yml
+# 2. Add OPENAI_API_KEY to your repository secrets
+# 3. Adjust configuration options as needed
+# 4. Trigger manually or on push to main
+
+name: Generate Documentation
+
+on:
+  # Manual trigger - recommended for testing
+  workflow_dispatch:
+    inputs:
+      depth:
+        description: 'Documentation depth'
+        required: false
+        default: 'comprehensive'
+        type: choice
+        options:
+          - minimal
+          - standard
+          - detailed
+          - comprehensive
+      
+      include_files:
+        description: 'Include individual file documentation'
+        required: false
+        default: true
+        type: boolean
+  
+  # Automatic trigger on push to main
+  # Uncomment to enable
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'src/**'
+  #     - 'lib/**'
+
+jobs:
+  generate-documentation:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better analysis
+      
+      - name: Generate Comprehensive Documentation
+        uses: ashsaym/ai-code-reviewer/code-sentinel-ai@main
+        with:
+          # Core settings
+          mode: documentation
+          api-key: ${{ secrets.OPENAI_API_KEY }}
+          
+          # AI Model configuration
+          # gpt-4o-mini: Fast and cost-effective (recommended)
+          # gpt-4o: Higher quality for complex projects
+          model: gpt-4o-mini
+          max-tokens: 16000
+          timeout: 300000  # 5 minutes
+          
+          # Documentation depth
+          # minimal: Quick overview
+          # standard: Balanced documentation
+          # detailed: Deep dive with file docs
+          # comprehensive: Maximum detail with architecture, security, testing
+          doc-depth: ${{ github.event.inputs.depth || 'comprehensive' }}
+          
+          # Documentation scope
+          doc-module-batch-size: 3  # Process 3 modules in parallel
+          doc-max-modules: 0  # 0 = all modules (set to limit scope/cost)
+          doc-include-files: ${{ github.event.inputs.include_files || true }}
+          
+          # Output configuration
+          doc-output-format: markdown
+          doc-include-diagrams: true
+          doc-include-examples: true
+          doc-include-dependencies: true
+          
+          # File patterns (optional - defaults to all files)
+          # Customize to focus on specific directories
+          # doc-include-patterns: 'src/**/*,lib/**/*,docs/**/*'
+          # doc-exclude-patterns: '**/*.test.ts,**/*.spec.ts'
+          
+          # Output location
+          documentation-output-dir: ./docs-generated
+          documentation-formats: markdown,html
+      
+      - name: Upload Documentation as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: ./docs-generated
+          retention-days: 90
+      
+      - name: Display Summary
+        run: |
+          echo "## 📚 Documentation Generated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Documentation has been generated successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f ./docs-generated/README.md ]; then
+            WORD_COUNT=$(wc -w < ./docs-generated/README.md)
+            echo "- 📄 Word count: $WORD_COUNT" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ -d ./docs-generated/sections ]; then
+            SECTION_COUNT=$(ls -1 ./docs-generated/sections | wc -l)
+            echo "- 📑 Sections: $SECTION_COUNT" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download the artifact to view the complete documentation." >> $GITHUB_STEP_SUMMARY
+      
+      # Optional: Commit documentation back to repository
+      # Uncomment to enable
+      # - name: Commit Documentation
+      #   run: |
+      #     git config --local user.email "action@github.com"
+      #     git config --local user.name "GitHub Action"
+      #     git add docs-generated/
+      #     git commit -m "docs: Update generated documentation [skip ci]" || echo "No changes to commit"
+      #     git push
+      
+      # Optional: Deploy to GitHub Pages
+      # Uncomment and configure GitHub Pages in repository settings
+      # - name: Deploy to GitHub Pages
+      #   uses: peaceiris/actions-gh-pages@v3
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      #     publish_dir: ./docs-generated
+      #     destination_dir: docs
+
+# Cost Estimation (with gpt-4o-mini):
+# - Small project (~10 files): $0.01 - $0.05
+# - Medium project (~50 files): $0.10 - $0.30
+# - Large project (~200 files): $0.50 - $2.00
+# - Very large project (~500+ files): $2.00 - $10.00
+#
+# Use doc-max-modules to limit scope and cost for testing.
+
+# Troubleshooting:
+# - No files found: Check workspace path and file patterns
+# - API errors: Verify OPENAI_API_KEY secret is set
+# - Timeout: Increase timeout or reduce scope with doc-max-modules
+# - Poor quality: Try gpt-4o model or increase doc-depth
+#
+# See DOCUMENTATION_USAGE.md for detailed configuration guide.
