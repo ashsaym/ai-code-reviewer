@@ -17,7 +17,7 @@ inputs:
     required: true
   
   mode:
-    description: 'Operation mode: review, summary, or suggestion (auto-detected from /review, /summary, /suggestion comments if not specified)'
+    description: 'Operation mode: review, summary, suggestion, or description (auto-detected from /review, /summary, /suggestion, /description comments if not specified)'
     required: false
     default: 'review'
   

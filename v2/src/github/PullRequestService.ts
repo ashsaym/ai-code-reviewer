@@ -413,6 +413,25 @@ export class PullRequestService {
   }
 
   /**
+   * Update pull request details (title, body, etc.)
+   */
+  async updatePullRequest(prNumber: number, updates: { title?: string; body?: string; state?: 'open' | 'closed' }): Promise<void> {
+    try {
+      await this.octokit.pulls.update({
+        owner: this.owner,
+        repo: this.repo,
+        pull_number: prNumber,
+        ...updates,
+      });
+
+      core.info(`✅ Updated PR #${prNumber}`);
+    } catch (error) {
+      core.error(`Failed to update PR #${prNumber}: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
+  }
+
+  /**
    * Get URL for a file at a specific commit
    */
   getFileUrl(sha: string, filename: string): string {

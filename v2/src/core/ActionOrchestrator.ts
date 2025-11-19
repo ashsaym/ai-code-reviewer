@@ -14,6 +14,7 @@ import { ProviderFactory } from '../providers/ProviderFactory';
 import { ReviewEngine } from './ReviewEngine';
 import { SummaryService } from '../summary/SummaryService';
 import { SuggestionService } from '../suggestion/SuggestionService';
+import { DescriptionService } from '../description/DescriptionService';
 import { readFileSync } from 'fs';
 
 export class ActionOrchestrator {
@@ -48,6 +49,10 @@ export class ActionOrchestrator {
         return 'suggestion';
       }
       
+      if (commentBody === '/description' || commentBody.startsWith('/description ')) {
+        return 'description';
+      }
+      
       return null;
     } catch (error) {
       core.debug(`Failed to parse GitHub event for comment command: ${error}`);
@@ -75,6 +80,12 @@ export class ActionOrchestrator {
       if (mode === 'suggestion') {
         core.info('🤖 Code Sentinel AI - Generating Suggestions');
         await this.executeSuggestion();
+        return;
+      }
+
+      if (mode === 'description') {
+        core.info('🤖 Code Sentinel AI - Generating Description');
+        await this.executeDescription();
         return;
       }
 
@@ -406,6 +417,105 @@ export class ActionOrchestrator {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       core.error(`❌ Suggestion generation failed: ${errorMessage}`);
+      
+      if (error instanceof Error && error.stack) {
+        core.debug(error.stack);
+      }
+
+      core.setFailed(errorMessage);
+    }
+  }
+
+  /**
+   * Execute description generation
+   */
+  private static async executeDescription(): Promise<void> {
+    try {
+      // 1. Load minimal configuration
+      const token = core.getInput('github-token') || process.env.GITHUB_TOKEN || '';
+      const repository = process.env.GITHUB_REPOSITORY || '';
+      
+      if (!token) {
+        throw new Error('github-token is required');
+      }
+
+      if (!repository) {
+        throw new Error('GITHUB_REPOSITORY environment variable is required');
+      }
+
+      // Parse repository owner/name
+      const [owner, repo] = repository.split('/');
+      if (!owner || !repo) {
+        throw new Error(`Invalid repository format: ${repository}`);
+      }
+
+      // Get PR number from event
+      const eventPath = process.env.GITHUB_EVENT_PATH;
+      if (!eventPath) {
+        throw new Error('GITHUB_EVENT_PATH not found');
+      }
+
+      const event = JSON.parse(readFileSync(eventPath, 'utf8'));
+      const prNumber = event.issue?.number || event.pull_request?.number;
+      
+      if (!prNumber) {
+        throw new Error('Could not determine PR number from event');
+      }
+
+      core.info(`📝 Generating description for PR #${prNumber}`);
+
+      // 2. Initialize GitHub clients
+      const githubClient = new GitHubClient({
+        token,
+        owner,
+        repo,
+      });
+      
+      const octokit = githubClient.getOctokit();
+
+      const prService = new PullRequestService({
+        octokit,
+        owner,
+        repo,
+      });
+
+      // 3. Initialize AI provider
+      const apiKey = core.getInput('api-key') || process.env.OPENAI_API_KEY || '';
+      if (!apiKey) {
+        throw new Error('api-key is required for description generation');
+      }
+
+      const provider = core.getInput('provider', { required: false }) || 'openai';
+      const model = core.getInput('model', { required: false }) || 'gpt-5-mini';
+      const apiEndpoint = core.getInput('api-endpoint', { required: false });
+      const maxCompletionTokensMode = core.getBooleanInput('max-completion-tokens-mode', { required: false });
+
+      const aiProvider = ProviderFactory.create({
+        type: provider as 'openai' | 'openwebui',
+        model,
+        apiKey,
+        endpoint: apiEndpoint,
+        maxCompletionTokensMode,
+      });
+
+      const providerName = aiProvider.getProviderName();
+      core.info(`✓ Connected to ${providerName} (${model})`);
+
+      // 4. Generate description
+      const descriptionService = new DescriptionService({
+        prService,
+        aiProvider,
+        prNumber,
+      });
+
+      await descriptionService.generateDescription();
+
+      core.info('✅ Description generated successfully');
+      core.setOutput('success', true);
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      core.error(`❌ Description generation failed: ${errorMessage}`);
       
       if (error instanceof Error && error.stack) {
         core.debug(error.stack);
