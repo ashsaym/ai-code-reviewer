@@ -47,8 +47,15 @@ export class OpenAIProvider extends BaseProvider {
         requestBody.response_format = { type: 'json_object' };
       }
 
-      // Use max_completion_tokens for newer models if enabled, otherwise max_tokens
-      if (this.maxCompletionTokensMode) {
+      // Automatically determine which token parameter to use based on model
+      // Models that require max_completion_tokens (newer models as of Nov 2024)
+      const requiresMaxCompletionTokens = this.model.startsWith('gpt-5') || 
+                                          this.model.startsWith('gpt-4o-mini') ||
+                                          this.model.startsWith('o1') ||
+                                          this.model.startsWith('o3');
+      
+      // Use max_completion_tokens for newer models or if explicitly enabled, otherwise max_tokens
+      if (this.maxCompletionTokensMode || requiresMaxCompletionTokens) {
         requestBody.max_completion_tokens = this.maxTokens;
       } else {
         requestBody.max_tokens = this.maxTokens;
