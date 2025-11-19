@@ -67,9 +67,7 @@ export class ConfigLoader {
     const provider = this.getInput('provider', 'openai') as 'openai' | 'openwebui';
     const model = this.getInput('model', 'gpt-5-mini') || 'gpt-5-mini';
     const apiKey = this.getRequiredInput('api-key');
-    const apiEndpoint = this.getInput('api-endpoint', 
-      provider === 'openwebui' ? 'http://localhost:8080' : undefined
-    );
+    const apiEndpoint = this.getInput('api-endpoint');
     const maxCompletionTokensMode = this.getBooleanInput('max-completion-tokens-mode', false);
 
     // Review settings
@@ -136,6 +134,9 @@ export class ConfigLoader {
     if (!config.repository) errors.push('Repository is required');
     if (!config.prNumber || config.prNumber <= 0) errors.push('Valid PR number is required');
     if (!config.apiKey) errors.push('API key is required');
+    if (config.provider === 'openwebui' && !config.apiEndpoint) {
+      errors.push('api-endpoint is required for OpenWebUI provider');
+    }
     if (config.maxFilesPerBatch <= 0) errors.push('max-files-per-batch must be > 0');
     if (config.maxLinesPerFile <= 0) errors.push('max-lines-per-file must be > 0');
     if (config.cacheTtlDays < 1 || config.cacheTtlDays > 7) {

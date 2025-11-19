@@ -17,7 +17,13 @@ export class OpenWebUIProvider extends BaseProvider {
 
   constructor(options: OpenWebUIProviderOptions) {
     super(options);
-    this.endpoint = options.endpoint;
+    // Ensure endpoint has the correct path
+    let endpoint = options.endpoint.replace(/\/$/, ''); // Remove trailing slash
+    if (!endpoint.endsWith('/chat/completions')) {
+      // Add the standard OpenAI-compatible path
+      endpoint = `${endpoint}/v1/chat/completions`;
+    }
+    this.endpoint = endpoint;
   }
 
   /**
@@ -26,6 +32,7 @@ export class OpenWebUIProvider extends BaseProvider {
   async sendMessage(messages: AIMessage[], _options?: SendMessageOptions): Promise<AIResponse> {
     try {
       core.debug(`Sending ${messages.length} messages to OpenWebUI (${this.model})`);
+      core.debug(`OpenWebUI endpoint: ${this.endpoint}`);
 
       const response = await axios.post(
         this.endpoint,
@@ -49,23 +56,33 @@ export class OpenWebUIProvider extends BaseProvider {
         }
       );
 
-      const choice = response.data.choices[0];
-      const usage = response.data.usage || {
+      // Handle both OpenAI-compatible and OpenWebUI response formats
+      const data = response.data;
+      const choice = data.choices?.[0];
+      
+      if (!choice) {
+        throw new Error('No response choices returned from OpenWebUI');
+      }
+
+      const usage = data.usage || {
         prompt_tokens: 0,
         completion_tokens: 0,
         total_tokens: 0,
       };
 
+      // Extract content from various possible formats
+      const content = choice.message?.content || choice.text || choice.delta?.content || '';
+
       const result: AIResponse = {
-        content: choice.message?.content || choice.text || '',
+        content,
         finishReason: choice.finish_reason === 'stop' ? 'stop' : 
                       choice.finish_reason === 'length' ? 'length' : 'stop',
         usage: {
-          promptTokens: usage.prompt_tokens,
-          completionTokens: usage.completion_tokens,
-          totalTokens: usage.total_tokens,
+          promptTokens: usage.prompt_tokens || 0,
+          completionTokens: usage.completion_tokens || 0,
+          totalTokens: usage.total_tokens || 0,
         },
-        model: response.data.model || this.model,
+        model: data.model || this.model,
       };
 
       core.info(`✅ OpenWebUI response: ${usage.total_tokens} tokens`);

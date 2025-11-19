@@ -8,14 +8,21 @@
 
 > **Production-ready AI code reviewer** with zero external dependencies. Intelligent, incremental, and GitHub-native.
 
+### 💬 Comment Commands
+Trigger different modes via PR comments:
+- `/review` - Perform code review
+- `/summary` - Generate PR summary
+- `/suggestion` - Generate code suggestions
+- `/description` - Generate PR description
+
 ## ✨ Features
 
 ### 🎯 Core Capabilities
-- **🧠 Smart AI Reviews** - Powered by OpenAI GPT-4o, GPT-4o-mini, or self-hosted models
+- **🧠 Smart AI Reviews** - Powered by OpenAI GPT-5-mini, GPT-4o, GPT-4-turbo, or self-hosted models
 - **⚡ Incremental Analysis** - Reviews only changed code, not the entire PR
 - **💾 GitHub-Native Caching** - Uses GitHub Actions Cache API (no external services)
-- **🔄 Outdated Comment Cleanup** - Automatically resolves comments on updated code
-- **📊 Multi-Commit Support** - Tracks changes across multiple commits
+- **🔄 Outdated Comment Cleanup** - Automatically marks outdated comments on updated code
+- **📊 Multi-Mode Operation** - Supports review, summary, suggestion, and description modes via comments
 - **🎨 Customizable Templates** - Use Handlebars templates for custom prompts
 - **🚀 Zero Dependencies** - No Redis, PostgreSQL, or S3 required
 
@@ -51,12 +58,12 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: AI Code Review
-        uses: ashsaym/ai-code-reviewer@v2
+        uses: ashsaym/code-sentinel-ai@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           api-key: ${{ secrets.OPENAI_API_KEY }}
           provider: 'openai'
-          model: 'gpt-4o-mini'
+          model: 'gpt-5-mini'
 ```
 
 ### 2. Set Your API Key
@@ -79,23 +86,30 @@ Open a PR and watch Code Sentinel review your code automatically.
 |-----------|-------------|----------|---------|
 | `github-token` | GitHub token for API access | ✅ | `${{ github.token }}` |
 | `api-key` | API key for AI provider | ✅ | - |
+| `mode` | Operation mode: `review`, `summary`, `suggestion`, or `description` (auto-detected from comments) | ❌ | `review` |
 | `provider` | AI provider (`openai` or `openwebui`) | ❌ | `openai` |
-| `model` | AI model to use | ❌ | `gpt-4o-mini` |
-| `max-completion-tokens-mode` | Enable max_completion_tokens | ❌ | `false` |
-| `api-endpoint` | Custom API endpoint (for self-hosted) | ❌ | - |
-| `include-patterns` | File patterns to include | ❌ | `**/*.{js,ts,jsx,tsx,py,java,go,rb,php,cs,cpp,c,rs,swift,kt}` |
-| `exclude-patterns` | File patterns to exclude | ❌ | `**/node_modules/**, **/dist/**, **/build/**` |
-| `max-files` | Maximum files to review per PR | ❌ | `50` |
-| `max-lines-per-file` | Maximum lines to review per file | ❌ | `1000` |
-| `enable-suggestions` | Enable inline code suggestions | ❌ | `true` |
-| `enable-summary` | Enable PR summary comment | ❌ | `true` |
-| `log-level` | Logging level (`debug`, `info`, `warn`, `error`) | ❌ | `info` |
+| `model` | AI model to use | ❌ | `gpt-5-mini` |
+| `max-completion-tokens-mode` | Enable max_completion_tokens for newer models | ❌ | `false` |
+| `api-endpoint` | Custom API endpoint (required for `openwebui` provider) | ❌ | - |
+| `include-patterns` | File patterns to include (comma or newline separated) | ❌ | `**/*.{js,ts,jsx,tsx,py,java,go,rb,php,cs,cpp,c,rs,swift,kt}` |
+| `exclude-patterns` | File patterns to exclude (comma or newline separated) | ❌ | `**/node_modules/**, **/dist/**, **/build/**, **/*.min.js, **/*.lock` |
+| `max-files-per-batch` | Maximum files to review in one AI call | ❌ | `10` |
+| `max-lines-per-file` | Maximum lines to review per file | ❌ | `500` |
+| `auto-clean-outdated` | Automatically mark outdated comments | ❌ | `true` |
+| `incremental-mode` | Enable incremental review mode | ❌ | `true` |
+| `enable-check-runs` | Enable GitHub Check Runs for review history | ❌ | `true` |
+| `check-name` | Name for the GitHub Check Run | ❌ | `Code Sentinel AI Review` |
+| `custom-prompt-path` | Path to custom prompt template (Handlebars) | ❌ | - |
+| `custom-rules` | Custom review rules to add to the prompt | ❌ | - |
+| `cache-enabled` | Enable GitHub Actions cache | ❌ | `true` |
+| `cache-ttl-days` | Cache TTL in days (1-7) | ❌ | `7` |
+| `debug-mode` | Enable debug logging | ❌ | `false` |
 
 ### Example: Self-Hosted Models
 
 ```yaml
 - name: AI Code Review (Self-Hosted)
-  uses: ashsaym/ai-code-reviewer@v2
+  uses: ashsaym/code-sentinel-ai@v2
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     api-key: ${{ secrets.OPENWEBUI_API_KEY }}
@@ -108,16 +122,16 @@ Open a PR and watch Code Sentinel review your code automatically.
 
 ```yaml
 - name: AI Code Review (Strict)
-  uses: ashsaym/ai-code-reviewer@v2
+  uses: ashsaym/code-sentinel-ai@v2
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     api-key: ${{ secrets.OPENAI_API_KEY }}
     model: 'gpt-4o'  # More powerful model
-    max-files: 100
-    max-lines-per-file: 2000
-    enable-suggestions: true
-    enable-summary: true
-    log-level: 'debug'
+    max-files-per-batch: 20
+    max-lines-per-file: 1000
+    incremental-mode: true
+    enable-check-runs: true
+    debug-mode: true
 ```
 
 ## 🎨 Customization
@@ -128,14 +142,12 @@ Create custom templates in your repository:
 
 ```
 .github/
-└── ai-code-reviewer/
+└── code-sentinel-ai/
     └── templates/
-        ├── review.hbs       # Custom review prompt
-        ├── summary.hbs      # Custom summary prompt
-        └── suggestions.hbs  # Custom suggestions prompt
+        └── review.hbs       # Custom review prompt
 ```
 
-**Example: `.github/ai-code-reviewer/templates/review.hbs`**
+**Example: `.github/code-sentinel-ai/templates/review.hbs`**
 
 ```handlebars
 You are a senior {{language}} developer reviewing a pull request.
@@ -185,14 +197,17 @@ Code Sentinel uses **GitHub Actions Cache API** for intelligent caching:
 ## 🏗️ Architecture
 
 ```
-v2/
+code-sentinel-ai/
 ├── src/
 │   ├── core/           # Orchestration & workflow
 │   ├── storage/        # GitHub-native caching
 │   ├── github/         # GitHub API integration
 │   ├── providers/      # LLM providers (OpenAI, OpenWebUI)
 │   ├── prompts/        # Template management
-│   ├── analysis/       # Incremental & multi-commit analysis
+│   ├── analysis/       # Incremental analysis
+│   ├── description/    # PR description generation
+│   ├── suggestion/     # Code suggestions
+│   ├── summary/        # PR summary generation
 │   ├── parsers/        # Response parsing
 │   └── utils/          # Logging, retry, token counting
 ├── tests/
@@ -206,10 +221,13 @@ v2/
 
 | Module | Responsibility |
 |--------|---------------|
-| `ActionOrchestrator` | Main workflow coordinator |
+| `ActionOrchestrator` | Main workflow coordinator & mode routing |
 | `ReviewEngine` | Review processing logic |
+| `SummaryService` | PR summary generation |
+| `SuggestionService` | Code suggestion generation |
+| `DescriptionService` | PR description generation |
 | `StorageManager` | Unified caching interface |
-| `GitHubClient` | GitHub API wrapper |
+| `GitHubClient` | GitHub API wrapper with retry/throttling |
 | `ProviderFactory` | LLM provider registry |
 | `IncrementalAnalyzer` | Delta detection |
 | `OutdatedCommentCleaner` | Comment lifecycle management |
@@ -227,7 +245,7 @@ v2/
 ```bash
 # Clone the repository
 git clone https://github.com/ashsaym/ai-code-reviewer.git
-cd ai-code-reviewer/v2
+cd ai-code-reviewer/code-sentinel-ai
 
 # Install dependencies
 npm install
@@ -300,8 +318,8 @@ Contributions are welcome! Please see:
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes in `v2/src/`
-4. Add tests in `v2/tests/`
+3. Make your changes in `code-sentinel-ai/src/`
+4. Add tests in `code-sentinel-ai/tests/`
 5. Run `npm run validate` (lint + typecheck + test + build)
 6. Commit your changes (`git commit -m 'feat: add amazing feature'`)
 7. Push to the branch (`git push origin feature/amazing-feature`)
