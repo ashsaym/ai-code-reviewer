@@ -9,9 +9,7 @@ import { BaseProvider } from '../providers/BaseProvider';
 import { CodebaseMapper } from '../common/CodebaseMapper';
 import { ContentAnalyzer, AnalyzedContent } from './ContentAnalyzer';
 import { DocumentationResult, DocumentationScope } from './types';
-import { DocumentationConfig, DEPTH_SETTINGS } from './DocumentationConfig';
-import { FileDocumentor } from './FileDocumentor';
-import { ModuleDocumentor } from './ModuleDocumentor';
+import { DocumentationConfig } from './DocumentationConfig';
 
 interface RetryConfig {
   maxRetries: number;
@@ -27,9 +25,6 @@ const DEFAULT_RETRY_CONFIG: RetryConfig = {
 
 export class DocumentationEngine {
   private config: DocumentationConfig;
-  private depthSettings: any;
-  private fileDocumentor: FileDocumentor;
-  private moduleDocumentor: ModuleDocumentor;
 
   constructor(
     private workspacePath: string,
@@ -49,10 +44,6 @@ export class DocumentationEngine {
       includeExamples: config?.includeExamples !== undefined ? config.includeExamples : true,
       includeDependencies: config?.includeDependencies !== undefined ? config.includeDependencies : true,
     };
-    
-    this.depthSettings = DEPTH_SETTINGS[this.config.depth];
-    this.fileDocumentor = new FileDocumentor(aiProvider);
-    this.moduleDocumentor = new ModuleDocumentor(aiProvider);
     
     core.info(`📚 Documentation Config: depth=${this.config.depth}, moduleBatch=${this.config.moduleBatchSize}, includeFiles=${this.config.includeFiles}`);
   }
