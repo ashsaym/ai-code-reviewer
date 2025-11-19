@@ -72,8 +72,8 @@ export class SummaryService {
         { role: 'user', content: prompt }
       ], { responseFormat: 'text' });
 
-      // Format summary with commit analysis
-      const formattedSummary = this.formatSummary(response.content, prInfo, commitDetails);
+      // Format summary
+      const formattedSummary = this.formatSummary(response.content, prInfo);
 
       // Delete old summary comments
       await this.deleteOldSummaries();
@@ -161,7 +161,11 @@ Please generate a comprehensive summary of this pull request that includes:
 5. **Recommendations for reviewers**: What should reviewers pay attention to?
 
 Also provide:
-- A brief description (15-30 words) of what changed in EACH commit for the commit analysis table
+- **Commit-by-commit summaries**: For EACH commit, provide a detailed 20-40 word summary that:
+  * Explains WHAT changed (specific files, functions, features)
+  * Explains WHY it changed (purpose, motivation, problem solved)
+  * Mentions any important technical details or context
+  * Format as: "commit_sha - commit_message: [your detailed summary]"
 - A concise summary timeline (3-5 key milestones) showing the evolution of changes
 
 Keep the summary informative but concise. Use bullet points where appropriate. Focus on providing value to reviewers and stakeholders.`;
@@ -201,9 +205,9 @@ ${filesList}`;
   }
 
   /**
-   * Format the final summary with commit analysis
+   * Format the final summary
    */
-  private formatSummary(aiContent: string, prInfo: PRInfo, commits: CommitInfo[]): string {
+  private formatSummary(aiContent: string, prInfo: PRInfo): string {
     const parts: string[] = [];
 
     // Add marker for identification
@@ -226,48 +230,10 @@ ${filesList}`;
     if (timeline.length > 0) {
       parts.push('### ⏱️ Summary Timeline');
       parts.push('');
-      timeline.forEach((item, index) => {
+      timeline.forEach((item: string, index: number) => {
         parts.push(`${index + 1}. ${item}`);
       });
       parts.push('');
-    }
-
-    // Add commit-based analysis as table
-    parts.push('---');
-    parts.push('');
-    parts.push('### 📝 Commit Analysis');
-    parts.push('');
-
-    if (commits.length === 0) {
-      parts.push('_No commits yet in this pull request._');
-    } else {
-      // Extract commit descriptions from AI response
-      const commitDescriptions = this.extractCommitDescriptions(aiContent, commits);
-      
-      // Table header
-      parts.push('| Commit | Files Changed | Message | Description |');
-      parts.push('|--------|---------------|---------|-------------|');
-      
-      // Table rows
-      for (let i = 0; i < commits.length; i++) {
-        const commit = commits[i];
-        const sha = commit.sha.substring(0, 7);
-        const message = commit.message.split('\n')[0]; // Keep full message
-        
-        // Format files with links to PR file diff view
-        const prUrl = this.prService.getPRUrl(prInfo.number);
-        const filesSummary = commit.files.length === 0 
-          ? '_No files_'
-          : commit.files.slice(0, 2).map(f => {
-              // Link to PR file diff, not commit
-              const fileName = f.filename.split('/').pop() || f.filename;
-              return `[${fileName}](${prUrl}/files#diff-${this.getFileDiffId(f.filename)}) (+${f.additions}/-${f.deletions})`;
-            }).join(', ') + (commit.files.length > 2 ? `, +${commit.files.length - 2} more` : '');
-        
-        const description = commitDescriptions[i] || '_See message_';
-        
-        parts.push(`| [${sha}](${prUrl}/commits/${commit.sha}) | ${filesSummary} | ${message} | ${description} |`);
-      }
     }
 
     // Add footer
@@ -345,94 +311,6 @@ ${filesList}`;
     }
     
     return result.join('\n');
-  }
-
-  /**
-   * Generate a simple hash for file diff anchor (GitHub uses complex hashing)
-   * This is a simplified version - users can click filename to see diff
-   */
-  private getFileDiffId(filename: string): string {
-    // Simple hash - GitHub's actual algorithm is more complex
-    // This creates a reasonable anchor that will take user to Files tab
-    return Buffer.from(filename).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
-  }
-
-  /**
-   * Extract commit descriptions from AI response
-   */
-  private extractCommitDescriptions(aiContent: string, commits: CommitInfo[]): string[] {
-    const descriptions: string[] = [];
-    const lines = aiContent.split('\n');
-    
-    // Look for "Commit analysis" section with numbered items
-    let inCommitAnalysis = false;
-    const commitDescMap = new Map<string, string>();
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const trimmed = line.trim();
-      
-      // Detect commit analysis section
-      if (trimmed.toLowerCase().includes('commit analysis') || 
-          trimmed.toLowerCase().includes('commit descriptions')) {
-        inCommitAnalysis = true;
-        continue;
-      }
-      
-      // Stop at next major section
-      if (inCommitAnalysis && trimmed.startsWith('###')) {
-        break;
-      }
-      
-      // Parse commit entries like: "1. c7d01d4 - message"
-      if (inCommitAnalysis) {
-        const match = trimmed.match(/^\d+\.\s+([a-f0-9]{7})\s*-\s*(.+)/i);
-        if (match) {
-          const sha = match[1];
-          
-          // Look for description in next line(s)
-          let description = '';
-          for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
-            const nextLine = lines[j].trim();
-            // Description lines typically start with "-" or are indented
-            if (nextLine.startsWith('-') || (nextLine.length > 20 && !nextLine.match(/^\d+\./))) {
-              description = nextLine.replace(/^[-\s]+/, '').trim();
-              if (description.length > 20) {
-                break;
-              }
-            }
-          }
-          
-          if (description && description.length > 20) {
-            commitDescMap.set(sha, description);
-          }
-        }
-      }
-    }
-    
-    // Match descriptions to commits
-    for (const commit of commits) {
-      const sha = commit.sha.substring(0, 7);
-      const desc = commitDescMap.get(sha);
-      
-      if (desc && desc !== commit.message) {
-        // Use AI description if different from message
-        descriptions.push(desc.substring(0, 100));
-      } else {
-        // Fallback: generate brief description from files changed
-        if (commit.files.length === 0) {
-          descriptions.push('_No file changes_');
-        } else if (commit.files.length === 1) {
-          const file = commit.files[0];
-          descriptions.push(`${file.status} \`${file.filename}\` (+${file.additions}/-${file.deletions})`);
-        } else {
-          const summary = commit.files.map(f => f.filename.split('/').pop()).slice(0, 2).join(', ');
-          descriptions.push(`Modified ${commit.files.length} files: ${summary}${commit.files.length > 2 ? ', ...' : ''}`);
-        }
-      }
-    }
-    
-    return descriptions;
   }
 
   /**
