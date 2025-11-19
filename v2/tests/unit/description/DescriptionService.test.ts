@@ -50,6 +50,9 @@ describe('DescriptionService', () => {
     });
 
     mockPrService.getFiles.mockResolvedValue([]);
+    mockPrService.getCommits = jest.fn().mockResolvedValue([
+      { sha: 'abc123', message: 'Test commit', author: 'user', date: '2024-01-01' }
+    ]);
     mockPrService.updatePullRequest.mockResolvedValue(undefined);
 
     service = new DescriptionService({

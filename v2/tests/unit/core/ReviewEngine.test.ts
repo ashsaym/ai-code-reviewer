@@ -14,10 +14,12 @@ import { OutdatedCommentCleaner } from '../../../src/analysis/OutdatedCommentCle
 import { IncrementalReviewStrategy } from '../../../src/core/IncrementalReviewStrategy';
 import { PromptBuilder } from '../../../src/prompts/PromptBuilder';
 import { ResponseParser } from '../../../src/parsers/ResponseParser';
+import { DiffParser } from '../../../src/github/DiffParser';
 
 jest.mock('../../../src/storage/StorageManager');
 jest.mock('../../../src/github/PullRequestService');
 jest.mock('../../../src/github/CommentService');
+jest.mock('../../../src/github/DiffParser');
 jest.mock('../../../src/analysis/IncrementalAnalyzer');
 jest.mock('../../../src/analysis/OutdatedCommentCleaner');
 jest.mock('../../../src/core/IncrementalReviewStrategy');
@@ -163,8 +165,31 @@ describe('ReviewEngine', () => {
         }),
       } as any));
 
+      // Mock IncrementalReviewStrategy
+      (IncrementalReviewStrategy as jest.MockedClass<typeof IncrementalReviewStrategy>).mockImplementation(() => ({
+        reviewIncremental: jest.fn().mockResolvedValue({
+          commentsDeleted: 0,
+          threadsResolved: 0,
+          newIssuesCreated: 1,
+          reviewsDismissed: 0,
+          oldIssues: [],
+          issuesResolved: [],
+          issuesUpdated: [],
+          issuesNew: [{ path: 'src/test.ts', line: 10, message: 'Test issue', severity: 'error' }],
+        }),
+      } as any));
+
       // Mock PromptBuilder
       (PromptBuilder.buildReviewPrompt as jest.Mock) = jest.fn().mockResolvedValue('Review this code');
+
+      // Mock DiffParser
+      (DiffParser.parsePatch as jest.Mock) = jest.fn().mockReturnValue({
+        valid: true,
+        lines: [
+          { lineNumber: 10, content: 'new line', type: 'added' },
+        ],
+      });
+      (DiffParser.getPositionForLine as jest.Mock) = jest.fn().mockReturnValue(10);
 
       // Mock ResponseParser
       (ResponseParser.parse as jest.Mock) = jest.fn().mockReturnValue({
