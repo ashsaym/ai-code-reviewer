@@ -24,16 +24,15 @@ export class FullScanEngine {
   private provider: BaseProvider;
   private scanType: ScanType;
   private scanScope: ScanScope;
-  private maxTokensPerCall: number;
   private customIncludePatterns?: string[];
   private customExcludePatterns?: string[];
+  private maxTokensPerCall: number;
 
   constructor(
     workspacePath: string,
     provider: BaseProvider,
     scanType: ScanType,
     scanScope: ScanScope,
-    maxTokensPerCall: number = 120000,
     customIncludePatterns?: string[],
     customExcludePatterns?: string[]
   ) {
@@ -41,9 +40,9 @@ export class FullScanEngine {
     this.provider = provider;
     this.scanType = scanType;
     this.scanScope = scanScope;
-    this.maxTokensPerCall = maxTokensPerCall;
     this.customIncludePatterns = customIncludePatterns;
     this.customExcludePatterns = customExcludePatterns;
+    this.maxTokensPerCall = provider.getMaxTokens();
   }
 
   /**

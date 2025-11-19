@@ -558,12 +558,10 @@ export class ActionOrchestrator {
       // Get scan-specific config
       const scanType = config.scanType || 'security';
       const scanScope = config.scanScope || 'src-only';
-      const maxScanTokens = config.maxScanTokens || 120000;
 
       core.info(`Scan Configuration:`);
       core.info(`  Type: ${scanType}`);
       core.info(`  Scope: ${scanScope}`);
-      core.info(`  Max Tokens: ${maxScanTokens.toLocaleString()}`);
       core.info('');
 
       // 2. Initialize AI provider
@@ -585,7 +583,6 @@ export class ActionOrchestrator {
         aiProvider,
         scanType,
         scanScope,
-        maxScanTokens,
         config.scanIncludePatterns,
         config.scanExcludePatterns
       );

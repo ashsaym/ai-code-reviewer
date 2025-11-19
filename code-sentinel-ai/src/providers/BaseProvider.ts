@@ -66,4 +66,11 @@ export abstract class BaseProvider {
    * Get provider name
    */
   abstract getProviderName(): string;
+
+  /**
+   * Get max tokens for this provider/model
+   */
+  getMaxTokens(): number {
+    return this.maxTokens;
+  }
 }

@@ -128,11 +128,6 @@ inputs:
     required: false
     default: 'src-only'
   
-  max-scan-tokens:
-    description: 'Maximum tokens per LLM call during full scan'
-    required: false
-    default: '120000'
-  
   publish-outputs:
     description: 'Comma-separated outputs: check-run, artifact, issue'
     required: false

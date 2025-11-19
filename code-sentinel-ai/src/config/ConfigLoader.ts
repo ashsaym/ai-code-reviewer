@@ -45,7 +45,6 @@ export interface ActionConfig {
   // Scan settings
   scanType?: 'security' | 'quality' | 'documentation' | 'architecture' | 'all';
   scanScope?: 'full-codebase' | 'src-only' | 'tests-excluded';
-  maxScanTokens?: number;
   publishOutputs?: string[];
   issueThreshold?: 'critical' | 'high' | 'medium' | 'low';
   scanIncludePatterns?: string[];
@@ -113,7 +112,6 @@ export class ConfigLoader {
     // Scan settings
     const scanType = this.getInput('scan-type') as 'security' | 'quality' | 'documentation' | 'architecture' | 'all' | undefined;
     const scanScope = this.getInput('scan-scope', 'src-only') as 'full-codebase' | 'src-only' | 'tests-excluded';
-    const maxScanTokens = this.getNumberInput('max-scan-tokens', 120000);
     const publishOutputs = this.getArrayInput('publish-outputs', ['check-run', 'artifact']);
     const issueThreshold = this.getInput('issue-threshold', 'high') as 'critical' | 'high' | 'medium' | 'low';
     const scanIncludePatterns = this.getArrayInput('scan-include-patterns', []);
@@ -155,7 +153,6 @@ export class ConfigLoader {
       debugMode,
       scanType,
       scanScope,
-      maxScanTokens,
       publishOutputs,
       issueThreshold,
       scanIncludePatterns,
