@@ -167,6 +167,7 @@ describe('ReviewEngine', () => {
 
       // Mock IncrementalReviewStrategy
       (IncrementalReviewStrategy as jest.MockedClass<typeof IncrementalReviewStrategy>).mockImplementation(() => ({
+        shouldUseIncrementalMode: jest.fn().mockReturnValue(false),
         reviewIncremental: jest.fn().mockResolvedValue({
           commentsDeleted: 0,
           threadsResolved: 0,
@@ -180,6 +181,20 @@ describe('ReviewEngine', () => {
       } as any));
 
       // Mock PromptBuilder
+      (PromptBuilder.createContext as jest.Mock) = jest.fn().mockReturnValue({
+        repository: 'owner/repo',
+        prNumber: 123,
+        prTitle: 'Test PR',
+        prDescription: 'Test description',
+        prAuthor: 'testuser',
+        headRef: 'feature-branch',
+        baseRef: 'main',
+        files: mockFiles,
+      });
+      (PromptBuilder.validateContext as jest.Mock) = jest.fn().mockReturnValue({
+        valid: true,
+        errors: [],
+      });
       (PromptBuilder.buildReviewPrompt as jest.Mock) = jest.fn().mockResolvedValue('Review this code');
 
       // Mock DiffParser
@@ -206,6 +221,7 @@ describe('ReviewEngine', () => {
           summary: 'Overall summary',
         },
       });
+      (ResponseParser.deduplicateComments as jest.Mock) = jest.fn().mockImplementation((comments) => comments);
 
       // Mock AI provider response
       mockAiProvider.sendMessage.mockResolvedValue({
@@ -227,6 +243,11 @@ describe('ReviewEngine', () => {
 
     it('should execute full review successfully', async () => {
       const result = await reviewEngine.executeReview('owner', 'repo', 123);
+
+      // Debug: log errors if any
+      if (result.errors.length > 0) {
+        console.log('Test errors:', result.errors);
+      }
 
       expect(result.success).toBe(true);
       expect(result.filesReviewed).toBeGreaterThan(0);
