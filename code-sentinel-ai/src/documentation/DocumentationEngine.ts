@@ -1,7 +1,7 @@
 /**
  * Documentation Engine
  * 
- * Main orchestrator for documentation generation
+ * Main orchestrator for documentation generation with hierarchical progressive analysis
  */
 
 import * as core from '@actions/core';
@@ -9,6 +9,18 @@ import { BaseProvider } from '../providers/BaseProvider';
 import { CodebaseMapper } from '../common/CodebaseMapper';
 import { ContentAnalyzer, AnalyzedContent } from './ContentAnalyzer';
 import { DocumentationResult, DocumentationScope } from './types';
+
+interface RetryConfig {
+  maxRetries: number;
+  baseDelay: number;
+  maxDelay: number;
+}
+
+const DEFAULT_RETRY_CONFIG: RetryConfig = {
+  maxRetries: 3,
+  baseDelay: 1000,
+  maxDelay: 10000,
+};
 
 export class DocumentationEngine {
   constructor(
@@ -18,6 +30,49 @@ export class DocumentationEngine {
     private includePatterns?: string[],
     private excludePatterns?: string[]
   ) {}
+
+  /**
+   * Retry logic with exponential backoff for transient failures
+   */
+  private async retryWithBackoff<T>(
+    operation: () => Promise<T>,
+    context: string,
+    config: RetryConfig = DEFAULT_RETRY_CONFIG
+  ): Promise<T> {
+    let lastError: Error | undefined;
+    
+    for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error: any) {
+        lastError = error;
+        const isRetryable = 
+          error.response?.status === 502 ||
+          error.response?.status === 503 ||
+          error.response?.status === 429 ||
+          error.code === 'ECONNRESET' ||
+          error.code === 'ETIMEDOUT';
+        
+        if (!isRetryable || attempt === config.maxRetries) {
+          throw error;
+        }
+        
+        const delay = Math.min(
+          config.baseDelay * Math.pow(2, attempt),
+          config.maxDelay
+        );
+        
+        core.warning(
+          `${context} failed (attempt ${attempt + 1}/${config.maxRetries + 1}): ${error.message}. ` +
+          `Retrying in ${delay}ms...`
+        );
+        
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+    
+    throw lastError || new Error(`${context} failed after ${config.maxRetries} retries`);
+  }
 
   async execute(): Promise<DocumentationResult> {
     core.startGroup('📚 Generating Project Documentation');
@@ -43,8 +98,9 @@ export class DocumentationEngine {
       const contentAnalyzer = new ContentAnalyzer(codebaseMap);
       const analyzedContent = await contentAnalyzer.analyze();
 
-      // 3. Generate documentation sections based on scope
-      const sections = await this.generateSections(codebaseMap, analyzedContent);
+      // 3. Generate documentation using hierarchical progressive approach
+      core.info('🎯 Using hierarchical progressive documentation generation...');
+      const sections = await this.generateSectionsProgressively(codebaseMap, analyzedContent);
       
       for (const section of sections) {
         totalTokens += section.content.length / 4; // Rough estimate
@@ -83,7 +139,13 @@ export class DocumentationEngine {
     }
   }
 
-  private async generateSections(codebaseMap: any, content: AnalyzedContent) {
+  /**
+   * Hierarchical progressive documentation generation
+   * Layer 1: High-level project context
+   * Layer 2: Module/component summaries 
+   * Layer 3: Detailed sections with full context
+   */
+  private async generateSectionsProgressively(codebaseMap: any, content: AnalyzedContent) {
     const sections = [];
     let order = 1;
 
@@ -99,53 +161,86 @@ export class DocumentationEngine {
       examples: this.scope === 'full' || this.scope === 'guide-only',
     };
 
+    // LAYER 1: High-level project understanding (lightweight, fast)
+    core.info('📋 Layer 1: Generating high-level project context...');
+    const projectContext = await this.generateProjectContext(codebaseMap, content);
+    core.info(`  ✓ Project context generated (${projectContext.length} chars)`);
+
+    // LAYER 2: Module-level summaries (parallel where possible)
+    core.info('🔷 Layer 2: Generating module summaries...');
+    const moduleSummaries = await this.generateModuleSummaries(codebaseMap, content, projectContext);
+    core.info(`  ✓ Generated ${moduleSummaries.length} module summaries`);
+
+    // LAYER 3: Detailed sections with full context (sequential with retry)
+
+    core.info('📝 Layer 3: Generating detailed sections with full context...');
+    const enrichedContext = `${projectContext}\n\n## Module Summaries:\n${moduleSummaries.join('\n\n')}`;
+
     // Project Overview
     if (shouldInclude.overview) {
-      core.info('📝 Generating project overview...');
-      const overview = await this.generateOverview(codebaseMap, content);
+      const overview = await this.retryWithBackoff(
+        () => this.generateOverview(codebaseMap, content, enrichedContext),
+        'Project overview generation'
+      );
       sections.push({ ...overview, order: order++ });
+      core.info(`  ✓ Project overview complete`);
     }
 
     // Architecture
     if (shouldInclude.architecture) {
-      core.info('🏗️  Documenting architecture...');
-      const architecture = await this.generateArchitecture(codebaseMap, content);
+      const architecture = await this.retryWithBackoff(
+        () => this.generateArchitecture(codebaseMap, content, enrichedContext),
+        'Architecture documentation'
+      );
       sections.push({ ...architecture, order: order++ });
+      core.info(`  ✓ Architecture documentation complete`);
     }
 
     // API Reference
     if (shouldInclude.api && content.apiEndpoints.length > 0) {
-      core.info('📡 Creating API reference...');
-      const apiRef = await this.generateAPIReference(content);
+      const apiRef = await this.retryWithBackoff(
+        () => this.generateAPIReference(content, enrichedContext),
+        'API reference generation'
+      );
       sections.push({ ...apiRef, order: order++ });
+      core.info(`  ✓ API reference complete`);
     }
 
     // Getting Started
     if (shouldInclude.gettingStarted) {
-      core.info('🚀 Writing getting started guide...');
-      const gettingStarted = await this.generateGettingStarted(codebaseMap, content);
+      const gettingStarted = await this.retryWithBackoff(
+        () => this.generateGettingStarted(codebaseMap, content, enrichedContext),
+        'Getting started guide'
+      );
       sections.push({ ...gettingStarted, order: order++ });
+      core.info(`  ✓ Getting started guide complete`);
     }
 
     // User Guide
     if (shouldInclude.userGuide) {
-      core.info('👤 Creating user guide...');
-      const userGuide = await this.generateUserGuide(codebaseMap, content);
+      const userGuide = await this.retryWithBackoff(
+        () => this.generateUserGuide(codebaseMap, content, enrichedContext),
+        'User guide'
+      );
       sections.push({ ...userGuide, order: order++ });
+      core.info(`  ✓ User guide complete`);
     }
 
-    // Configuration Reference
+    // Configuration Reference (no AI call needed)
     if (shouldInclude.configuration && content.configurations.length > 0) {
-      core.info('⚙️  Documenting configuration...');
       const configRef = await this.generateConfigReference(content);
       sections.push({ ...configRef, order: order++ });
+      core.info(`  ✓ Configuration reference complete`);
     }
 
     // Developer Guide
     if (shouldInclude.developerGuide) {
-      core.info('💻 Creating developer guide...');
-      const devGuide = await this.generateDeveloperGuide(codebaseMap, content);
+      const devGuide = await this.retryWithBackoff(
+        () => this.generateDeveloperGuide(codebaseMap, content, enrichedContext),
+        'Developer guide'
+      );
       sections.push({ ...devGuide, order: order++ });
+      core.info(`  ✓ Developer guide complete`);
     }
 
     // Examples
@@ -158,14 +253,115 @@ export class DocumentationEngine {
     return sections;
   }
 
-  private async generateOverview(codebaseMap: any, content: AnalyzedContent) {
+  /**
+   * Layer 1: Generate lightweight high-level project context
+   */
+  private async generateProjectContext(codebaseMap: any, content: AnalyzedContent): Promise<string> {
+    const prompt = `Provide a concise project summary:
+
+Project: ${codebaseMap.projectName}
+Files: ${codebaseMap.files.length}
+Languages: ${Object.keys(codebaseMap.statistics.languageBreakdown).join(', ')}
+Key Components: ${content.mainComponents.slice(0, 10).map(c => c.name).join(', ')}
+
+Provide in 3-4 sentences:
+1. What this project does
+2. Primary technology stack
+3. Main architectural pattern`;
+
+    const response = await this.retryWithBackoff(
+      () => this.aiProvider.sendMessage([
+        { role: 'system', content: 'You are a technical analyst. Provide concise, factual summaries.' },
+        { role: 'user', content: prompt },
+      ]),
+      'Project context generation'
+    );
+
+    return response.content;
+  }
+
+  /**
+   * Layer 2: Generate module-level summaries in parallel batches
+   */
+  private async generateModuleSummaries(
+    codebaseMap: any,
+    content: AnalyzedContent,
+    projectContext: string
+  ): Promise<string[]> {
+    // Group files by top-level directory (modules)
+    const moduleMap = new Map<string, any[]>();
+    
+    codebaseMap.files.forEach((file: any) => {
+      const parts = file.path.split('/');
+      const moduleIdx = parts.findIndex((p: string) => p === 'src') + 1;
+      if (moduleIdx > 0 && moduleIdx < parts.length) {
+        const moduleName = parts[moduleIdx];
+        if (!moduleMap.has(moduleName)) {
+          moduleMap.set(moduleName, []);
+        }
+        moduleMap.get(moduleName)!.push(file);
+      }
+    });
+
+    const summaries: string[] = [];
+    const modules = Array.from(moduleMap.entries()).slice(0, 15); // Limit to top 15 modules
+
+    // Process modules in batches of 3 for controlled parallelism
+    const batchSize = 3;
+    for (let i = 0; i < modules.length; i += batchSize) {
+      const batch = modules.slice(i, i + batchSize);
+      const batchPromises = batch.map(([moduleName, files]) =>
+        this.retryWithBackoff(
+          async () => {
+            const components = content.mainComponents.filter(c => 
+              c.location.includes(`/${moduleName}/`)
+            );
+            
+            const prompt = `Summarize the '${moduleName}' module in 2-3 sentences:
+
+Files: ${files.length}
+Components: ${components.map(c => c.name).join(', ') || 'None identified'}
+
+Project Context: ${projectContext}
+
+What is the purpose of this module?`;
+
+            const response = await this.aiProvider.sendMessage([
+              { role: 'system', content: 'You are a code analyst. Provide brief module summaries.' },
+              { role: 'user', content: prompt },
+            ]);
+
+            return `**${moduleName}**: ${response.content}`;
+          },
+          `Module summary for '${moduleName}'`
+        )
+      );
+
+      const batchResults = await Promise.all(batchPromises);
+      summaries.push(...batchResults);
+      
+      // Small delay between batches to avoid rate limiting
+      if (i + batchSize < modules.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+
+    return summaries;
+  }
+
+  private async generateOverview(
+    codebaseMap: any,
+    content: AnalyzedContent,
+    context?: string
+  ) {
+    const contextSection = context ? `\n\nProject Context:\n${context}\n` : '';
     const prompt = `Generate a comprehensive project overview for this project:
 
 Project: ${codebaseMap.projectName}
 Files: ${codebaseMap.files.length}
 Languages: ${Object.keys(codebaseMap.statistics.languageBreakdown).join(', ')}
 Main Components: ${content.mainComponents.slice(0, 10).map(c => c.name).join(', ')}
-Dependencies: ${content.dependencies.slice(0, 10).map(d => d.name).join(', ')}
+Dependencies: ${content.dependencies.slice(0, 10).map(d => d.name).join(', ')}${contextSection}
 
 Write a detailed overview including:
 1. Project purpose and goals
@@ -189,13 +385,18 @@ Format as markdown. Be informative and comprehensive.`;
     };
   }
 
-  private async generateArchitecture(codebaseMap: any, content: AnalyzedContent) {
+  private async generateArchitecture(
+    codebaseMap: any,
+    content: AnalyzedContent,
+    context?: string
+  ) {
+    const contextSection = context ? `\n\nProject Context:\n${context}\n` : '';
     const prompt = `Document the system architecture:
 
 Project: ${codebaseMap.projectName}
 Structure: ${JSON.stringify(codebaseMap.structure, null, 2).slice(0, 2000)}
 Components: ${content.mainComponents.map(c => `${c.name} (${c.type})`).join(', ')}
-Dependencies: ${content.dependencies.map(d => d.name).join(', ')}
+Dependencies: ${content.dependencies.map(d => d.name).join(', ')}${contextSection}
 
 Create comprehensive architecture documentation including:
 1. High-level system architecture
@@ -219,7 +420,8 @@ Include mermaid diagrams where helpful. Format as markdown.`;
     };
   }
 
-  private async generateAPIReference(content: AnalyzedContent) {
+  private async generateAPIReference(content: AnalyzedContent, context?: string) {
+    const contextSection = context ? `\n\nProject Context:\n${context}\n` : '';
     const endpointsDoc = content.apiEndpoints.map(ep => `
 ### ${ep.method} ${ep.path}
 
@@ -240,7 +442,7 @@ ${ep.responses.map(r => `- ${r.status}: ${r.description}`).join('\n')}
 
     const prompt = `Enhance this API reference documentation:
 
-${endpointsDoc}
+${endpointsDoc}${contextSection}
 
 Add:
 1. Usage examples for each endpoint
@@ -264,11 +466,16 @@ Format as markdown with code examples.`;
     };
   }
 
-  private async generateGettingStarted(codebaseMap: any, content: AnalyzedContent) {
+  private async generateGettingStarted(
+    codebaseMap: any,
+    content: AnalyzedContent,
+    context?: string
+  ) {
+    const contextSection = context ? `\n\nProject Context:\n${context}\n` : '';
     const prompt = `Create a getting started guide:
 
 Project: ${codebaseMap.projectName}
-Dependencies: ${content.dependencies.slice(0, 10).map(d => `${d.name}@${d.version}`).join(', ')}
+Dependencies: ${content.dependencies.slice(0, 10).map(d => `${d.name}@${d.version}`).join(', ')}${contextSection}
 
 Write a comprehensive getting started guide with:
 1. Prerequisites (Node, Python, etc.)
@@ -293,12 +500,17 @@ Format as markdown with clear step-by-step instructions.`;
     };
   }
 
-  private async generateUserGuide(codebaseMap: any, content: AnalyzedContent) {
+  private async generateUserGuide(
+    codebaseMap: any,
+    content: AnalyzedContent,
+    context?: string
+  ) {
+    const contextSection = context ? `\n\nProject Context:\n${context}\n` : '';
     const prompt = `Create a user guide for this project:
 
 Project: ${codebaseMap.projectName}
 Components: ${content.mainComponents.slice(0, 15).map(c => c.name).join(', ')}
-Configuration: ${content.configurations.length} options available
+Configuration: ${content.configurations.length} options available${contextSection}
 
 Write a comprehensive user guide covering:
 1. Basic usage
@@ -348,12 +560,17 @@ ${cfg.examples.join('\n')}
     };
   }
 
-  private async generateDeveloperGuide(codebaseMap: any, content: AnalyzedContent) {
+  private async generateDeveloperGuide(
+    codebaseMap: any,
+    content: AnalyzedContent,
+    context?: string
+  ) {
+    const contextSection = context ? `\n\nProject Context:\n${context}\n` : '';
     const prompt = `Create a developer/contributor guide:
 
 Project: ${codebaseMap.projectName}
 Files: ${codebaseMap.files.length}
-Components: ${content.mainComponents.length}
+Components: ${content.mainComponents.length}${contextSection}
 
 Write a developer guide including:
 1. Development environment setup
