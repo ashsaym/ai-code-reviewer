@@ -24,6 +24,108 @@ describe('OpenWebUIProvider', () => {
     });
   });
 
+  describe('constructor', () => {
+    it('should append /chat/completions when not present', () => {
+      const customProvider = new OpenWebUIProvider({
+        apiKey: 'test-key',
+        model: 'mistral-large',
+        endpoint: 'http://localhost:8080',
+        maxTokens: 16000,
+        temperature: 0.3,
+      });
+
+      mockedAxios.post.mockResolvedValue({
+        data: {
+          choices: [{ message: { content: 'ok' }, finish_reason: 'stop' }],
+          usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+        },
+      });
+
+      customProvider.sendMessage([{ role: 'user', content: 'test' }]);
+
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        'http://localhost:8080/chat/completions',
+        expect.any(Object),
+        expect.any(Object)
+      );
+    });
+
+    it('should remove trailing slash and append /chat/completions', () => {
+      const customProvider = new OpenWebUIProvider({
+        apiKey: 'test-key',
+        model: 'mistral-large',
+        endpoint: 'http://localhost:8080/',
+        maxTokens: 16000,
+        temperature: 0.3,
+      });
+
+      mockedAxios.post.mockResolvedValue({
+        data: {
+          choices: [{ message: { content: 'ok' }, finish_reason: 'stop' }],
+          usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+        },
+      });
+
+      customProvider.sendMessage([{ role: 'user', content: 'test' }]);
+
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        'http://localhost:8080/chat/completions',
+        expect.any(Object),
+        expect.any(Object)
+      );
+    });
+
+    it('should keep existing /chat/completions path', () => {
+      const customProvider = new OpenWebUIProvider({
+        apiKey: 'test-key',
+        model: 'mistral-large',
+        endpoint: 'http://localhost:8080/chat/completions',
+        maxTokens: 16000,
+        temperature: 0.3,
+      });
+
+      mockedAxios.post.mockResolvedValue({
+        data: {
+          choices: [{ message: { content: 'ok' }, finish_reason: 'stop' }],
+          usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+        },
+      });
+
+      customProvider.sendMessage([{ role: 'user', content: 'test' }]);
+
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        'http://localhost:8080/chat/completions',
+        expect.any(Object),
+        expect.any(Object)
+      );
+    });
+
+    it('should keep existing /v1/chat/completions path for compatibility', () => {
+      const customProvider = new OpenWebUIProvider({
+        apiKey: 'test-key',
+        model: 'mistral-large',
+        endpoint: 'http://localhost:8080/v1/chat/completions',
+        maxTokens: 16000,
+        temperature: 0.3,
+      });
+
+      mockedAxios.post.mockResolvedValue({
+        data: {
+          choices: [{ message: { content: 'ok' }, finish_reason: 'stop' }],
+          usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+        },
+      });
+
+      customProvider.sendMessage([{ role: 'user', content: 'test' }]);
+
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        'http://localhost:8080/v1/chat/completions',
+        expect.any(Object),
+        expect.any(Object)
+      );
+    });
+  });
+
   describe('sendMessage', () => {
     it('should send message and return response', async () => {
       const messages: AIMessage[] = [
