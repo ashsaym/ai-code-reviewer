@@ -9,9 +9,14 @@ jest.mock('../../../src/storage/GitHubCacheStorage');
 jest.mock('../../../src/storage/CommentStateStorage');
 jest.mock('../../../src/storage/CheckRunStorage');
 
+import { GitHubCacheStorage } from '../../../src/storage/GitHubCacheStorage';
+import { CommentStateStorage } from '../../../src/storage/CommentStateStorage';
+
 describe('StorageManager', () => {
   let storage: StorageManager;
   let mockOctokit: any;
+  let mockCacheStorage: jest.Mocked<GitHubCacheStorage>;
+  let mockCommentStorage: jest.Mocked<CommentStateStorage>;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -43,6 +48,16 @@ describe('StorageManager', () => {
       checkName: 'Code Sentinel AI',
       enableCheckRuns: true,
     });
+
+    // Get the mocked instances
+    mockCacheStorage = (storage as any).cacheStorage as jest.Mocked<GitHubCacheStorage>;
+    mockCommentStorage = (storage as any).commentStorage as jest.Mocked<CommentStateStorage>;
+    
+    // Setup default mocks
+    mockCacheStorage.loadPRCache = jest.fn().mockResolvedValue(null);
+    mockCacheStorage.savePRCache = jest.fn().mockResolvedValue(undefined);
+    mockCommentStorage.getComments = jest.fn().mockResolvedValue([]);
+    mockCommentStorage.createComment = jest.fn().mockResolvedValue(undefined);
   });
 
   describe('constructor', () => {
