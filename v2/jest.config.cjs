@@ -21,5 +21,11 @@ module.exports = {
     '^.+\\.ts$': ['ts-jest', {
       tsconfig: 'tsconfig.test.json'
     }]
+  },
+  transformIgnorePatterns: [
+    'node_modules/(?!(@octokit|bottleneck)/)'
+  ],
+  moduleNameMapper: {
+    '^openai$': '<rootDir>/tests/mocks/openai.mock.ts'
   }
 };
