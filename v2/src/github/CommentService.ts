@@ -465,7 +465,7 @@ export class CommentService {
   }
 
   /**
-   * Dismiss a specific review by ID
+   * Dismiss a specific review by ID (only works for APPROVED/CHANGES_REQUESTED reviews)
    */
   async dismissReview(prNumber: number, reviewId: number, message: string): Promise<void> {
     await this.octokit.pulls.dismissReview({
@@ -475,6 +475,35 @@ export class CommentService {
       review_id: reviewId,
       message: message,
     });
+  }
+
+  /**
+   * Get all comments for a specific review
+   */
+  async getReviewComments(prNumber: number, reviewId: number): Promise<ReviewComment[]> {
+    try {
+      const { data } = await this.octokit.pulls.listCommentsForReview({
+        owner: this.owner,
+        repo: this.repo,
+        pull_number: prNumber,
+        review_id: reviewId,
+        per_page: 100,
+      });
+
+      return data.map(c => ({
+        id: c.id,
+        path: c.path,
+        position: c.position || null,
+        line: c.line || null,
+        body: c.body,
+        createdAt: c.created_at,
+        updatedAt: c.updated_at,
+        user: c.user?.login || 'unknown',
+      }));
+    } catch (error) {
+      core.error(`Failed to get review comments: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
   }
 
   /**
