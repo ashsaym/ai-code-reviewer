@@ -77537,9 +77537,9 @@ beforeAfterHook.exports.Hook = Hook;
 beforeAfterHook.exports.Singular = Hook.Singular;
 var Collection = beforeAfterHook.exports.Collection = Hook.Collection;
 
-const VERSION$c = "9.0.6";
+const VERSION$d = "9.0.6";
 
-const userAgent = `octokit-endpoint.js/${VERSION$c} ${getUserAgent()}`;
+const userAgent = `octokit-endpoint.js/${VERSION$d} ${getUserAgent()}`;
 const DEFAULTS = {
   method: "GET",
   baseUrl: "https://api.github.com",
@@ -77868,7 +77868,7 @@ function withDefaults$2(oldDefaults, newDefaults) {
 
 const endpoint = withDefaults$2(null, DEFAULTS);
 
-const VERSION$b = "8.4.1";
+const VERSION$c = "8.4.1";
 
 function isPlainObject$1(value) {
   if (typeof value !== "object" || value === null)
@@ -78196,14 +78196,14 @@ function withDefaults$1(oldEndpoint, newDefaults) {
 
 const request = withDefaults$1(endpoint, {
   headers: {
-    "user-agent": `octokit-request.js/${VERSION$b} ${getUserAgent()}`
+    "user-agent": `octokit-request.js/${VERSION$c} ${getUserAgent()}`
   }
 });
 
 // pkg/dist-src/index.js
 
 // pkg/dist-src/version.js
-var VERSION$a = "7.1.1";
+var VERSION$b = "7.1.1";
 
 // pkg/dist-src/error.js
 function _buildMessageForResponseErrors(data) {
@@ -78302,7 +78302,7 @@ function withDefaults(request2, newDefaults) {
 // pkg/dist-src/index.js
 withDefaults(request, {
   headers: {
-    "user-agent": `octokit-graphql.js/${VERSION$a} ${getUserAgent()}`
+    "user-agent": `octokit-graphql.js/${VERSION$b} ${getUserAgent()}`
   },
   method: "POST",
   url: "/graphql"
@@ -78363,7 +78363,7 @@ const createTokenAuth = function createTokenAuth2(token) {
 // pkg/dist-src/index.js
 
 // pkg/dist-src/version.js
-var VERSION$9 = "5.2.2";
+var VERSION$a = "5.2.2";
 
 // pkg/dist-src/index.js
 var noop$4 = () => {
@@ -78385,10 +78385,10 @@ function createLogger(logger = {}) {
   }
   return logger;
 }
-var userAgentTrail = `octokit-core.js/${VERSION$9} ${getUserAgent()}`;
+var userAgentTrail = `octokit-core.js/${VERSION$a} ${getUserAgent()}`;
 var Octokit$1 = class Octokit {
   static {
-    this.VERSION = VERSION$9;
+    this.VERSION = VERSION$a;
   }
   static defaults(defaults) {
     const OctokitWithDefaults = class extends this {
@@ -78498,7 +78498,7 @@ var Octokit$1 = class Octokit {
   }
 };
 
-const VERSION$8 = "4.0.1";
+const VERSION$9 = "4.0.1";
 
 function requestLog(octokit) {
   octokit.hook.wrap("request", (request, options) => {
@@ -78519,10 +78519,10 @@ function requestLog(octokit) {
     });
   });
 }
-requestLog.VERSION = VERSION$8;
+requestLog.VERSION = VERSION$9;
 
 // pkg/dist-src/version.js
-var VERSION$7 = "11.4.4-cjs.2";
+var VERSION$8 = "11.4.4-cjs.2";
 
 // pkg/dist-src/normalize-paginated-list-response.js
 function normalizePaginatedListResponse(response) {
@@ -78632,9 +78632,9 @@ function paginateRest(octokit) {
     })
   };
 }
-paginateRest.VERSION = VERSION$7;
+paginateRest.VERSION = VERSION$8;
 
-const VERSION$6 = "13.3.2-cjs.1";
+const VERSION$7 = "13.3.2-cjs.1";
 
 const Endpoints = {
   actions: {
@@ -80832,12 +80832,12 @@ function legacyRestEndpointMethods(octokit) {
     rest: api
   };
 }
-legacyRestEndpointMethods.VERSION = VERSION$6;
+legacyRestEndpointMethods.VERSION = VERSION$7;
 
 // pkg/dist-src/index.js
 
 // pkg/dist-src/version.js
-var VERSION$5 = "20.1.2";
+var VERSION$6 = "20.1.2";
 
 // pkg/dist-src/index.js
 var Octokit = Octokit$1.plugin(
@@ -80845,7 +80845,7 @@ var Octokit = Octokit$1.plugin(
   legacyRestEndpointMethods,
   paginateRest
 ).defaults({
-  userAgent: `octokit-rest.js/${VERSION$5}`
+  userAgent: `octokit-rest.js/${VERSION$6}`
 });
 
 var light = {exports: {}};
@@ -82380,7 +82380,7 @@ var Bottleneck = /*@__PURE__*/getDefaultExportFromCjs(lightExports);
 // pkg/dist-src/index.js
 
 // pkg/dist-src/version.js
-var VERSION$4 = "0.0.0-development";
+var VERSION$5 = "0.0.0-development";
 
 // pkg/dist-src/wrap-request.js
 var noop$3 = () => Promise.resolve();
@@ -82599,7 +82599,7 @@ function throttling(octokit, octokitOptions) {
   octokit.hook.wrap("request", wrapRequest$1.bind(null, state));
   return {};
 }
-throttling.VERSION = VERSION$4;
+throttling.VERSION = VERSION$5;
 throttling.triggersNotification = triggersNotification;
 
 class RequestError extends Error {
@@ -82642,7 +82642,7 @@ class RequestError extends Error {
 }
 
 // pkg/dist-src/version.js
-var VERSION$3 = "0.0.0-development";
+var VERSION$4 = "0.0.0-development";
 
 // pkg/dist-src/error-request.js
 async function errorRequest(state, octokit, error, options) {
@@ -82712,7 +82712,7 @@ function retry(octokit, octokitOptions) {
     }
   };
 }
-retry.VERSION = VERSION$3;
+retry.VERSION = VERSION$4;
 
 /**
  * GitHub API Client
@@ -99743,7 +99743,7 @@ followRedirects$1.exports.wrap = wrap;
 var followRedirectsExports = followRedirects$1.exports;
 var followRedirects = /*@__PURE__*/getDefaultExportFromCjs(followRedirectsExports);
 
-const VERSION$2 = "1.13.2";
+const VERSION$3 = "1.13.2";
 
 function parseProtocol(url) {
   const match = /^([-+\w]{1,25})(:?\/\/|:)/.exec(url);
@@ -100750,7 +100750,7 @@ var httpAdapter = isHttpAdapterSupported && function httpAdapter(config) {
     // See https://github.com/axios/axios/issues/69
     // User-Agent is specified; handle case where no UA header is desired
     // Only set header if it hasn't been set in config
-    headers.set('User-Agent', 'axios/' + VERSION$2, false);
+    headers.set('User-Agent', 'axios/' + VERSION$3, false);
 
     const {onUploadProgress, onDownloadProgress} = config;
     const maxRate = config.maxRate;
@@ -100764,7 +100764,7 @@ var httpAdapter = isHttpAdapterSupported && function httpAdapter(config) {
       data = formDataToStream(data, (formHeaders) => {
         headers.set(formHeaders);
       }, {
-        tag: `axios-${VERSION$2}-boundary`,
+        tag: `axios-${VERSION$3}-boundary`,
         boundary: userBoundary && userBoundary[1] || undefined
       });
       // support for https://www.npmjs.com/package/form-data api
@@ -102194,7 +102194,7 @@ const deprecatedWarnings = {};
  */
 validators$1.transitional = function transitional(validator, version, message) {
   function formatMessage(opt, desc) {
-    return '[Axios v' + VERSION$2 + '] Transitional option \'' + opt + '\'' + desc + (message ? '. ' + message : '');
+    return '[Axios v' + VERSION$3 + '] Transitional option \'' + opt + '\'' + desc + (message ? '. ' + message : '');
   }
 
   // eslint-disable-next-line func-names
@@ -102772,7 +102772,7 @@ axios.Axios = Axios$1;
 axios.CanceledError = CanceledError$1;
 axios.CancelToken = CancelToken$1;
 axios.isCancel = isCancel$1;
-axios.VERSION = VERSION$2;
+axios.VERSION = VERSION$3;
 axios.toFormData = toFormData$1;
 
 // Expose AxiosError class
@@ -102813,7 +102813,7 @@ const {
   CanceledError,
   isCancel,
   CancelToken,
-  VERSION: VERSION$1,
+  VERSION: VERSION$2,
   all,
   Cancel,
   isAxiosError,
@@ -104838,8 +104838,8 @@ var _logger2 = _interopRequireDefault$5(_logger);
 
 var _internalProtoAccess$1 = protoAccess;
 
-var VERSION = '4.7.8';
-base$1.VERSION = VERSION;
+var VERSION$1 = '4.7.8';
+base$1.VERSION = VERSION$1;
 var COMPILER_REVISION = 8;
 base$1.COMPILER_REVISION = COMPILER_REVISION;
 var LAST_COMPATIBLE_COMPILER_REVISION = 7;
@@ -116238,6 +116238,12 @@ ZodOptional.create;
 ZodNullable.create;
 
 /**
+ * Version information
+ * This file is auto-updated during build
+ */
+const VERSION = '2.0.0';
+
+/**
  * Response Parser
  *
  * Parses AI responses and validates against schema
@@ -116419,9 +116425,8 @@ class ResponseParser {
             summary += aiSummary;
         }
         // Add generated by footer with version and model
-        const version = require('../../package.json').version;
         const model = modelName || 'gpt-5-mini';
-        summary += `\n\n_Generated by Code Sentinel AI v${version} (${model})_`;
+        summary += `\n\n_Generated by Code Sentinel AI v${VERSION} (${model})_`;
         return summary;
     }
     /**
@@ -117119,11 +117124,10 @@ ${filesList}`;
             }
         }
         // Add footer
-        const version = require('../../package.json').version;
         parts.push('');
         parts.push('---');
         parts.push('');
-        parts.push(`_Generated by Code Sentinel AI v${version} (${this.aiProvider.getModel()}) • [View PR Files](${this.prService.getPRUrl(prInfo.number)}/files)_`);
+        parts.push(`_Generated by Code Sentinel AI v${VERSION} (${this.aiProvider.getModel()}) • [View PR Files](${this.prService.getPRUrl(prInfo.number)}/files)_`);
         return parts.join('\n');
     }
     /**
@@ -117348,18 +117352,16 @@ Provide 5-10 specific inline suggestions. Be constructive and specific. Focus on
      * Build review body for suggestions
      */
     buildReviewBody(count) {
-        const version = require('../../package.json').version;
         return `## 💡 Improvement Suggestions
 
 Found ${count} suggestions to improve this pull request. See inline comments below.
 
-_Generated by Code Sentinel AI v${version} (${this.aiProvider.getModel()})_`;
+_Generated by Code Sentinel AI v${VERSION} (${this.aiProvider.getModel()})_`;
     }
     /**
      * Post general suggestions as a comment (fallback)
      */
     async postGeneralSuggestions(prInfo, content) {
-        const version = require('../../package.json').version;
         const body = `${SuggestionService.SUGGESTION_MARKER}
 
 ## 💡 Improvement Suggestions
@@ -117368,7 +117370,7 @@ ${content}
 
 ---
 
-_Generated by Code Sentinel AI v${version} (${this.aiProvider.getModel()}) • [View PR Files](${this.prService.getPRUrl(prInfo.number)}/files)_`;
+_Generated by Code Sentinel AI v${VERSION} (${this.aiProvider.getModel()}) • [View PR Files](${this.prService.getPRUrl(prInfo.number)}/files)_`;
         await this.commentService.createIssueComment(this.prNumber, body);
     }
 }
