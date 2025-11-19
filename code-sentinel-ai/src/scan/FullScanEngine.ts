@@ -502,7 +502,25 @@ Analyze the provided code for security vulnerabilities including:
 - Dependency vulnerabilities
 - Secrets in code
 
-Be thorough and provide actionable recommendations.`;
+Be thorough and provide actionable recommendations.
+
+Respond in JSON format with the following structure:
+{
+  "summary": "Brief summary of security analysis",
+  "findings": [
+    {
+      "severity": "critical|high|medium|low|info",
+      "category": "security",
+      "title": "Short title",
+      "description": "Detailed description",
+      "file": "relative/path/to/file",
+      "line": 42,
+      "code": "problematic code snippet",
+      "recommendation": "How to fix"
+    }
+  ],
+  "recommendations": ["List of security improvement suggestions"]
+}`;
   }
 
   private getInfrastructureSecurityPrompt(): string {
@@ -513,7 +531,25 @@ Analyze APIs, databases, caching, and infrastructure code for:
 - Database security (SQL injection, access control)
 - Network security
 - Container/deployment security
-- Logging and monitoring gaps`;
+- Logging and monitoring gaps
+
+Respond in JSON format with the following structure:
+{
+  "summary": "Brief summary of infrastructure security analysis",
+  "findings": [
+    {
+      "severity": "critical|high|medium|low|info",
+      "category": "infrastructure-security",
+      "title": "Short title",
+      "description": "Detailed description",
+      "file": "relative/path/to/file",
+      "line": 42,
+      "code": "problematic code snippet",
+      "recommendation": "How to fix"
+    }
+  ],
+  "recommendations": ["List of infrastructure security improvement suggestions"]
+}`;
   }
 
   private getConfigSecurityPrompt(): string {
@@ -524,7 +560,25 @@ Analyze configuration files for:
 - Insecure default configurations
 - CI/CD pipeline security
 - Container security (Dockerfile)
-- Infrastructure as Code issues`;
+- Infrastructure as Code issues
+
+Respond in JSON format with the following structure:
+{
+  "summary": "Brief summary of configuration security analysis",
+  "findings": [
+    {
+      "severity": "critical|high|medium|low|info",
+      "category": "config-security",
+      "title": "Short title",
+      "description": "Detailed description",
+      "file": "relative/path/to/file",
+      "line": 42,
+      "code": "problematic code snippet",
+      "recommendation": "How to fix"
+    }
+  ],
+  "recommendations": ["List of configuration security improvement suggestions"]
+}`;
   }
 
   private getQualityPrompt(): string {
@@ -536,7 +590,25 @@ Analyze code for:
 - Performance issues
 - Maintainability concerns
 - Testing gaps
-- Documentation quality`;
+- Documentation quality
+
+Respond in JSON format with the following structure:
+{
+  "summary": "Brief summary of code quality analysis",
+  "findings": [
+    {
+      "severity": "critical|high|medium|low|info",
+      "category": "quality",
+      "title": "Short title",
+      "description": "Detailed description",
+      "file": "relative/path/to/file",
+      "line": 42,
+      "code": "problematic code snippet",
+      "recommendation": "How to fix"
+    }
+  ],
+  "recommendations": ["List of code quality improvement suggestions"]
+}`;
   }
 
   private getArchitecturePrompt(): string {
@@ -548,7 +620,25 @@ Analyze the overall architecture for:
 - Scalability considerations
 - Module coupling and cohesion
 - Architectural anti-patterns
-- Improvement opportunities`;
+- Improvement opportunities
+
+Respond in JSON format with the following structure:
+{
+  "summary": "Brief summary of architecture analysis",
+  "findings": [
+    {
+      "severity": "critical|high|medium|low|info",
+      "category": "architecture",
+      "title": "Short title",
+      "description": "Detailed description",
+      "file": "relative/path/to/file",
+      "line": 42,
+      "code": "problematic code snippet",
+      "recommendation": "How to fix"
+    }
+  ],
+  "recommendations": ["List of architectural improvement suggestions"]
+}`;
   }
 
   private getDocumentationPrompt(): string {
