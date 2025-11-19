@@ -199,10 +199,20 @@ describe('ReviewEngine', () => {
 
       // Mock DiffParser
       (DiffParser.parsePatch as jest.Mock) = jest.fn().mockReturnValue({
-        valid: true,
-        lines: [
-          { lineNumber: 10, content: 'new line', type: 'added' },
+        filename: 'src/test.ts',
+        hunks: [
+          {
+            oldStart: 1,
+            oldLines: 5,
+            newStart: 1,
+            newLines: 10,
+            lines: [
+              { lineNumber: 10, content: 'new line', type: 'added', oldLineNumber: null, newLineNumber: 10 },
+            ],
+          },
         ],
+        additions: 10,
+        deletions: 5,
       });
       (DiffParser.getPositionForLine as jest.Mock) = jest.fn().mockReturnValue(10);
 
@@ -358,6 +368,13 @@ describe('ReviewEngine', () => {
 
     it('should handle empty file list', async () => {
       mockPrService.getFiles.mockResolvedValue([]);
+      
+      (IncrementalAnalyzer as jest.MockedClass<typeof IncrementalAnalyzer>).mockImplementation(() => ({
+        analyzeFiles: jest.fn().mockResolvedValue([]),
+        markAsReviewed: jest.fn().mockResolvedValue(undefined),
+      } as any));
+      
+      (IncrementalAnalyzer.getFilesNeedingReview as jest.Mock).mockReturnValue([]);
 
       const result = await reviewEngine.executeReview('owner', 'repo', 123);
 
@@ -379,6 +396,8 @@ describe('ReviewEngine', () => {
 
     it('should use incremental strategy when enabled', async () => {
       const mockIncrementalStrategy = {
+        shouldUseIncrementalMode: jest.fn().mockReturnValue(true),
+        findLatestReview: jest.fn().mockResolvedValue(null),
         processIncrementalUpdate: jest.fn().mockResolvedValue({
           commentsDeleted: 5,
           threadsResolved: 3,
@@ -388,7 +407,16 @@ describe('ReviewEngine', () => {
           issuesUpdated: [],
           issuesNew: [],
           oldIssues: [],
-          outdatedDeleted: 0,
+        }),
+        reviewIncremental: jest.fn().mockResolvedValue({
+          commentsDeleted: 5,
+          threadsResolved: 3,
+          newIssuesCreated: 2,
+          reviewsDismissed: 1,
+          issuesResolved: [],
+          issuesUpdated: [],
+          issuesNew: [],
+          oldIssues: [],
         }),
       };
 
@@ -397,6 +425,10 @@ describe('ReviewEngine', () => {
       );
 
       const result = await reviewEngine.executeReview('owner', 'repo', 123);
+
+      if (result.errors.length > 0) {
+        console.log('Incremental strategy test errors:', result.errors);
+      }
 
       expect(result.success).toBe(true);
     });
@@ -442,6 +474,13 @@ describe('ReviewEngine', () => {
 
       mockPrService.getPullRequest.mockResolvedValue(mockPR);
       mockPrService.getFiles.mockResolvedValue([]);
+      
+      (IncrementalAnalyzer as jest.MockedClass<typeof IncrementalAnalyzer>).mockImplementation(() => ({
+        analyzeFiles: jest.fn().mockResolvedValue([]),
+        markAsReviewed: jest.fn().mockResolvedValue(undefined),
+      } as any));
+      
+      (IncrementalAnalyzer.getFilesNeedingReview as jest.Mock).mockReturnValue([]);
 
       const result = await reviewEngine.executeReview('owner', 'repo', 123);
 
@@ -524,6 +563,13 @@ describe('ReviewEngine', () => {
 
       mockPrService.getPullRequest.mockResolvedValue(mockPR);
       mockPrService.getFiles.mockResolvedValue(filesNoPatch);
+      
+      (IncrementalAnalyzer as jest.MockedClass<typeof IncrementalAnalyzer>).mockImplementation(() => ({
+        analyzeFiles: jest.fn().mockResolvedValue([]),
+        markAsReviewed: jest.fn().mockResolvedValue(undefined),
+      } as any));
+      
+      (IncrementalAnalyzer.getFilesNeedingReview as jest.Mock).mockReturnValue([]);
 
       const result = await reviewEngine.executeReview('owner', 'repo', 123);
 
