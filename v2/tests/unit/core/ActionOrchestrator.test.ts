@@ -399,7 +399,12 @@ describe('ActionOrchestrator', () => {
         issue: { number: 123 },
       };
       mockReadFileSync.mockReturnValue(JSON.stringify(mockEvent));
-      mockCore.getInput.mockReturnValue('');
+      mockCore.getInput.mockImplementation((name: string) => {
+        if (name === 'github-token') return 'test-token';
+        if (name === 'api-key') return 'test-api-key';
+        if (name === 'provider') return 'openai';
+        return '';
+      });
 
       const mockSummaryService = {
         generateSummary: jest.fn().mockResolvedValue(undefined),
@@ -450,15 +455,31 @@ describe('ActionOrchestrator', () => {
     it('should handle missing event path gracefully', async () => {
       delete process.env.GITHUB_EVENT_PATH;
       mockCore.getInput.mockReturnValue('review');
+      
+      // Mock ConfigLoader to return invalid config when event path is missing
+      mockConfigLoader.load.mockReturnValue({ ...mockConfig, prNumber: 0 });
+      mockConfigLoader.validate.mockReturnValue({
+        valid: false,
+        errors: ['Valid PR number is required'],
+      });
 
       await ActionOrchestrator.execute();
 
-      expect(mockCore.setFailed).toHaveBeenCalledWith('Valid PR number is required');
+      expect(mockCore.setFailed).toHaveBeenCalledWith('Invalid configuration: Valid PR number is required');
     });
 
     it('should handle malformed event JSON', async () => {
-      mockReadFileSync.mockReturnValue('{ invalid json }');
+      mockReadFileSync.mockImplementation(() => {
+        throw new Error('Invalid JSON');
+      });
       mockCore.getInput.mockReturnValue('review');
+      
+      // Mock ConfigLoader to return invalid config when JSON is malformed
+      mockConfigLoader.load.mockReturnValue({ ...mockConfig, prNumber: 0 });
+      mockConfigLoader.validate.mockReturnValue({
+        valid: false,
+        errors: ['Valid PR number is required'],
+      });
 
       await ActionOrchestrator.execute();
 
@@ -470,10 +491,14 @@ describe('ActionOrchestrator', () => {
   describe('environment variable handling', () => {
     it('should handle missing GITHUB_TOKEN', async () => {
       delete process.env.GITHUB_TOKEN;
-      mockCore.getInput.mockReturnValue('');
-
+      
       const mockEvent = { pull_request: { number: 123 } };
       mockReadFileSync.mockReturnValue(JSON.stringify(mockEvent));
+      
+      // Mock ConfigLoader.load to throw error about missing token
+      mockConfigLoader.load.mockImplementation(() => {
+        throw new Error("Input 'github-token' is required");
+      });
 
       await ActionOrchestrator.execute();
 
