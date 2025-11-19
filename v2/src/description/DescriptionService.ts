@@ -134,6 +134,15 @@ Mark with [x] the applicable types:
 - [ ] Documentation update
 - [ ] Performance improvement
 - [ ] Test coverage improvement
+- [ ] Configuration change
+- [ ] Dependency update
+- [ ] CI/CD pipeline change
+- [ ] Database schema change
+- [ ] API change
+- [ ] UI/UX improvement
+- [ ] Security fix
+- [ ] Code cleanup
+- [ ] Build system change
 
 ## Changes Made
 List 3-7 key changes as concise bullet points. Focus on:
