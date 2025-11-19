@@ -117223,28 +117223,67 @@ ${filesList}`;
      */
     extractCommitDescriptions(aiContent, commits) {
         const descriptions = [];
-        // Try to find commit descriptions in AI response
-        // Look for patterns like "- commit_sha: description" or similar
         const lines = aiContent.split('\n');
-        for (const commit of commits) {
-            const sha = commit.sha.substring(0, 7);
-            let found = false;
-            // Search for this commit's description in the AI response
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i].toLowerCase();
-                if (line.includes(sha.toLowerCase()) || line.includes(commit.message.substring(0, 20).toLowerCase())) {
-                    // Try to extract description from next line or same line
-                    const descMatch = lines[i].match(/[-:•]\s*(.{15,}?)(?:\.|$)/);
-                    if (descMatch) {
-                        descriptions.push(descMatch[1].trim().substring(0, 80));
-                        found = true;
-                        break;
+        // Look for "Commit analysis" section with numbered items
+        let inCommitAnalysis = false;
+        const commitDescMap = new Map();
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const trimmed = line.trim();
+            // Detect commit analysis section
+            if (trimmed.toLowerCase().includes('commit analysis') ||
+                trimmed.toLowerCase().includes('commit descriptions')) {
+                inCommitAnalysis = true;
+                continue;
+            }
+            // Stop at next major section
+            if (inCommitAnalysis && trimmed.startsWith('###')) {
+                break;
+            }
+            // Parse commit entries like: "1. c7d01d4 - message"
+            if (inCommitAnalysis) {
+                const match = trimmed.match(/^\d+\.\s+([a-f0-9]{7})\s*-\s*(.+)/i);
+                if (match) {
+                    const sha = match[1];
+                    // Look for description in next line(s)
+                    let description = '';
+                    for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+                        const nextLine = lines[j].trim();
+                        // Description lines typically start with "-" or are indented
+                        if (nextLine.startsWith('-') || (nextLine.length > 20 && !nextLine.match(/^\d+\./))) {
+                            description = nextLine.replace(/^[-\s]+/, '').trim();
+                            if (description.length > 20) {
+                                break;
+                            }
+                        }
+                    }
+                    if (description && description.length > 20) {
+                        commitDescMap.set(sha, description);
                     }
                 }
             }
-            if (!found) {
-                // Fallback: use first line of commit message
-                descriptions.push(commit.message.split('\n')[0].substring(0, 80));
+        }
+        // Match descriptions to commits
+        for (const commit of commits) {
+            const sha = commit.sha.substring(0, 7);
+            const desc = commitDescMap.get(sha);
+            if (desc && desc !== commit.message) {
+                // Use AI description if different from message
+                descriptions.push(desc.substring(0, 100));
+            }
+            else {
+                // Fallback: generate brief description from files changed
+                if (commit.files.length === 0) {
+                    descriptions.push('_No file changes_');
+                }
+                else if (commit.files.length === 1) {
+                    const file = commit.files[0];
+                    descriptions.push(`${file.status} \`${file.filename}\` (+${file.additions}/-${file.deletions})`);
+                }
+                else {
+                    const summary = commit.files.map(f => f.filename.split('/').pop()).slice(0, 2).join(', ');
+                    descriptions.push(`Modified ${commit.files.length} files: ${summary}${commit.files.length > 2 ? ', ...' : ''}`);
+                }
             }
         }
         return descriptions;
