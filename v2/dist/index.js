@@ -117298,7 +117298,7 @@ Provide 5-10 specific inline suggestions. Be constructive and specific. Focus on
                     continue;
                 }
                 // Calculate position from line number
-                const position = this.calculatePosition(file.patch, sug.line);
+                const position = this.calculatePosition(file.filename, file.patch, sug.line);
                 if (position === null) {
                     coreExports.warning(`Could not calculate position for line ${sug.line} in ${sug.path}`);
                     continue;
@@ -117316,37 +117316,26 @@ Provide 5-10 specific inline suggestions. Be constructive and specific. Focus on
         }
     }
     /**
-     * Calculate diff position from line number
+     * Calculate diff position from line number using DiffParser
      */
-    calculatePosition(patch, targetLine) {
-        const lines = patch.split('\n');
-        let currentLine = 0;
-        let position = 0;
-        for (const line of lines) {
-            position++;
-            // Parse diff header to get starting line
-            if (line.startsWith('@@')) {
-                const match = line.match(/@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
-                if (match) {
-                    currentLine = parseInt(match[1], 10) - 1;
-                }
-                continue;
-            }
-            // Track line numbers
-            if (line.startsWith('+')) {
-                currentLine++;
-                if (currentLine === targetLine) {
-                    return position;
+    calculatePosition(filename, patch, targetLine) {
+        try {
+            const parsed = DiffParser.parsePatch(filename, patch);
+            // Find the line in the diff
+            for (const hunk of parsed.hunks) {
+                for (const line of hunk.lines) {
+                    // Match new line number for added or context lines
+                    if (line.newLineNumber === targetLine) {
+                        return line.position;
+                    }
                 }
             }
-            else if (!line.startsWith('-')) {
-                currentLine++;
-                if (currentLine === targetLine) {
-                    return position;
-                }
-            }
+            return null;
         }
-        return null;
+        catch (error) {
+            coreExports.warning(`Failed to parse diff: ${error instanceof Error ? error.message : String(error)}`);
+            return null;
+        }
     }
     /**
      * Build review body for suggestions

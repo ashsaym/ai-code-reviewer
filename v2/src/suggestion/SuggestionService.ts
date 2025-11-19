@@ -8,6 +8,7 @@ import * as core from '@actions/core';
 import { PullRequestService, PRInfo } from '../github/PullRequestService';
 import { CommentService } from '../github/CommentService';
 import { BaseProvider } from '../providers/BaseProvider';
+import { DiffParser } from '../github/DiffParser';
 import { VERSION } from '../version';
 
 export interface SuggestionServiceOptions {
@@ -185,7 +186,7 @@ Provide 5-10 specific inline suggestions. Be constructive and specific. Focus on
         }
 
         // Calculate position from line number
-        const position = this.calculatePosition(file.patch, sug.line);
+        const position = this.calculatePosition(file.filename, file.patch, sug.line);
         if (position === null) {
           core.warning(`Could not calculate position for line ${sug.line} in ${sug.path}`);
           continue;
@@ -206,40 +207,27 @@ Provide 5-10 specific inline suggestions. Be constructive and specific. Focus on
   }
 
   /**
-   * Calculate diff position from line number
+   * Calculate diff position from line number using DiffParser
    */
-  private calculatePosition(patch: string, targetLine: number): number | null {
-    const lines = patch.split('\n');
-    let currentLine = 0;
-    let position = 0;
-
-    for (const line of lines) {
-      position++;
+  private calculatePosition(filename: string, patch: string, targetLine: number): number | null {
+    try {
+      const parsed = DiffParser.parsePatch(filename, patch);
       
-      // Parse diff header to get starting line
-      if (line.startsWith('@@')) {
-        const match = line.match(/@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
-        if (match) {
-          currentLine = parseInt(match[1], 10) - 1;
-        }
-        continue;
-      }
-
-      // Track line numbers
-      if (line.startsWith('+')) {
-        currentLine++;
-        if (currentLine === targetLine) {
-          return position;
-        }
-      } else if (!line.startsWith('-')) {
-        currentLine++;
-        if (currentLine === targetLine) {
-          return position;
+      // Find the line in the diff
+      for (const hunk of parsed.hunks) {
+        for (const line of hunk.lines) {
+          // Match new line number for added or context lines
+          if (line.newLineNumber === targetLine) {
+            return line.position;
+          }
         }
       }
+      
+      return null;
+    } catch (error) {
+      core.warning(`Failed to parse diff: ${error instanceof Error ? error.message : String(error)}`);
+      return null;
     }
-
-    return null;
   }
 
   /**
