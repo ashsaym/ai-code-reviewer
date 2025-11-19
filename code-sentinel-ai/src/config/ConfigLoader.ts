@@ -10,6 +10,7 @@ import { readFileSync } from 'fs';
 export interface ActionConfig {
   // GitHub context
   token: string;
+  githubHost: string;
   repository: string;
   prNumber: number;
   
@@ -49,6 +50,7 @@ export class ConfigLoader {
   static load(): ActionConfig {
     // GitHub context
     const token = this.getRequiredInput('github-token');
+    const githubHost = this.getInput('github-host', 'https://api.github.com') || 'https://api.github.com';
     const repository = this.getEnv('GITHUB_REPOSITORY') || '';
     
     // Get PR number from GitHub event
@@ -101,6 +103,7 @@ export class ConfigLoader {
 
     return {
       token,
+      githubHost,
       repository,
       prNumber,
       provider,
@@ -213,6 +216,7 @@ export class ConfigLoader {
    */
   static print(config: ActionConfig): void {
     core.info('📋 Configuration:');
+    core.info(`  GitHub Host: ${config.githubHost}`);
     core.info(`  Repository: ${config.repository}`);
     core.info(`  PR Number: ${config.prNumber}`);
     core.info(`  Provider: ${config.provider}`);

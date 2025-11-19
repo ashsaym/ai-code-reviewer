@@ -17,6 +17,9 @@ export interface GitHubClientOptions {
   /** GitHub token */
   token: string;
   
+  /** GitHub API base URL */
+  baseUrl?: string;
+  
   /** Repository owner */
   owner: string;
   
@@ -42,6 +45,7 @@ export class GitHubClient {
     // Initialize Octokit with plugins
     this.octokit = new OctokitWithPlugins({
       auth: options.token,
+      baseUrl: options.baseUrl || 'https://api.github.com',
       throttle: options.enableThrottling !== false ? {
         onRateLimit: (retryAfter: number, _options: any, _octokit: Octokit) => {
           core.warning(`Rate limit hit, retrying after ${retryAfter} seconds`);

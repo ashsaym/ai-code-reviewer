@@ -113,6 +113,7 @@ export class ActionOrchestrator {
       // 2. Initialize GitHub clients
       const githubClient = new GitHubClient({
         token: config.token,
+        baseUrl: config.githubHost,
         owner,
         repo,
       });
@@ -253,8 +254,10 @@ export class ActionOrchestrator {
       core.info(`📊 Generating summary for PR #${prNumber}`);
 
       // 2. Initialize GitHub clients
+      const githubHost = core.getInput('github-host') || 'https://api.github.com';
       const githubClient = new GitHubClient({
         token,
+        baseUrl: githubHost,
         owner,
         repo,
       });
@@ -359,8 +362,10 @@ export class ActionOrchestrator {
       core.info(`💡 Generating suggestions for PR #${prNumber}`);
 
       // 2. Initialize GitHub clients
+      const githubHost = core.getInput('github-host') || 'https://api.github.com';
       const githubClient = new GitHubClient({
         token,
+        baseUrl: githubHost,
         owner,
         repo,
       });
@@ -465,8 +470,10 @@ export class ActionOrchestrator {
       core.info(`📝 Generating description for PR #${prNumber}`);
 
       // 2. Initialize GitHub clients
+      const githubHost = core.getInput('github-host') || 'https://api.github.com';
       const githubClient = new GitHubClient({
         token,
+        baseUrl: githubHost,
         owner,
         repo,
       });

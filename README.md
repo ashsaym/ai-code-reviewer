@@ -85,6 +85,7 @@ Open a PR and watch Code Sentinel review your code automatically.
 | Parameter | Description | Required | Default |
 |-----------|-------------|----------|---------|
 | `github-token` | GitHub token for API access | ✅ | `${{ github.token }}` |
+| `github-host` | GitHub API host (for GitHub Enterprise) | ❌ | `https://api.github.com` |
 | `api-key` | API key for AI provider | ✅ | - |
 | `mode` | Operation mode: `review`, `summary`, `suggestion`, or `description` (auto-detected from comments) | ❌ | `review` |
 | `provider` | AI provider (`openai` or `openwebui`) | ❌ | `openai` |
@@ -104,6 +105,17 @@ Open a PR and watch Code Sentinel review your code automatically.
 | `cache-enabled` | Enable GitHub Actions cache | ❌ | `true` |
 | `cache-ttl-days` | Cache TTL in days (1-7) | ❌ | `7` |
 | `debug-mode` | Enable debug logging | ❌ | `false` |
+
+### Example: GitHub Enterprise
+
+```yaml
+- name: AI Code Review (GitHub Enterprise)
+  uses: ashsaym/code-sentinel-ai@v1
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    github-host: 'https://github.enterprise.com/api/v3'
+    api-key: ${{ secrets.OPENAI_API_KEY }}
+```
 
 ### Example: Self-Hosted Models
 

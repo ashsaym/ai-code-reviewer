@@ -12,6 +12,11 @@ inputs:
     required: true
     default: ${{ github.token }}
   
+  github-host:
+    description: 'GitHub API host (default: https://api.github.com, for Enterprise use your custom host)'
+    required: false
+    default: 'https://api.github.com'
+  
   api-key:
     description: 'API key for AI provider (OpenAI or OpenWebUI)'
     required: true
