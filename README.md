@@ -91,7 +91,7 @@ Open a PR and watch Code Sentinel review your code automatically.
 | `provider` | AI provider (`openai` or `openwebui`) | ❌ | `openai` |
 | `model` | AI model to use | ❌ | `gpt-5-mini` |
 | `max-completion-tokens-mode` | Enable max_completion_tokens for newer models | ❌ | `false` |
-| `api-endpoint` | Custom API endpoint (required for `openwebui` provider) | ❌ | - |
+| `api-endpoint` | Custom API endpoint (required for `openwebui` provider). Should include the full host URL with any versioning (e.g., `https://openwebui.example.com/v1` or `https://openwebui.example.com`). The provider will append `/chat/completions` automatically. | ❌ | - |
 | `include-patterns` | File patterns to include (comma or newline separated) | ❌ | `**/*.{js,ts,jsx,tsx,py,java,go,rb,php,cs,cpp,c,rs,swift,kt}` |
 | `exclude-patterns` | File patterns to exclude (comma or newline separated) | ❌ | `**/node_modules/**, **/dist/**, **/build/**, **/*.min.js, **/*.lock` |
 | `max-files-per-batch` | Maximum files to review in one AI call | ❌ | `10` |
@@ -127,7 +127,10 @@ Open a PR and watch Code Sentinel review your code automatically.
     api-key: ${{ secrets.OPENWEBUI_API_KEY }}
     provider: 'openwebui'
     model: 'llama3.1:70b'
-    api-endpoint: 'https://your-openwebui-instance.com'
+    # For OpenWebUI with /v1 API prefix:
+    api-endpoint: 'https://your-openwebui-instance.com/v1'
+    # Or without /v1 (provider appends /chat/completions automatically):
+    # api-endpoint: 'https://your-openwebui-instance.com'
 ```
 
 ### Example: Strict Review Mode

@@ -20,8 +20,8 @@ export class OpenWebUIProvider extends BaseProvider {
     // Ensure endpoint has the correct path
     let endpoint = options.endpoint.replace(/\/$/, ''); // Remove trailing slash
     if (!endpoint.endsWith('/chat/completions')) {
-      // Add the standard OpenAI-compatible path
-      endpoint = `${endpoint}/v1/chat/completions`;
+      // Add the chat completions path (no /v1 prefix for self-hosted flexibility)
+      endpoint = `${endpoint}/chat/completions`;
     }
     this.endpoint = endpoint;
   }
