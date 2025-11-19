@@ -161,6 +161,7 @@ export class ActionOrchestrator {
       const aiProvider = ProviderFactory.create({
         type: config.provider,
         model: config.model,
+        maxTokens: config.maxTokens,
         apiKey: config.apiKey,
         endpoint: config.apiEndpoint,
         maxCompletionTokensMode: config.maxCompletionTokensMode,
@@ -296,12 +297,15 @@ export class ActionOrchestrator {
 
       const provider = core.getInput('provider', { required: false }) || 'openai';
       const model = core.getInput('model', { required: false }) || 'gpt-5-mini';
+      const maxTokensInput = core.getInput('max-tokens', { required: false }) || '16000';
+      const maxTokens = parseInt(maxTokensInput, 10);
       const apiEndpoint = core.getInput('api-endpoint', { required: false });
       const maxCompletionTokensMode = core.getBooleanInput('max-completion-tokens-mode', { required: false });
 
       const aiProvider = ProviderFactory.create({
         type: provider as 'openai' | 'openwebui',
         model,
+        maxTokens,
         apiKey,
         endpoint: apiEndpoint,
         maxCompletionTokensMode,
@@ -404,12 +408,15 @@ export class ActionOrchestrator {
 
       const provider = core.getInput('provider', { required: false }) || 'openai';
       const model = core.getInput('model', { required: false }) || 'gpt-5-mini';
+      const maxTokensInput = core.getInput('max-tokens', { required: false }) || '16000';
+      const maxTokens = parseInt(maxTokensInput, 10);
       const apiEndpoint = core.getInput('api-endpoint', { required: false });
       const maxCompletionTokensMode = core.getBooleanInput('max-completion-tokens-mode', { required: false });
 
       const aiProvider = ProviderFactory.create({
         type: provider as 'openai' | 'openwebui',
         model,
+        maxTokens,
         apiKey,
         endpoint: apiEndpoint,
         maxCompletionTokensMode,
@@ -506,12 +513,15 @@ export class ActionOrchestrator {
 
       const provider = core.getInput('provider', { required: false }) || 'openai';
       const model = core.getInput('model', { required: false }) || 'gpt-5-mini';
+      const maxTokensInput = core.getInput('max-tokens', { required: false }) || '16000';
+      const maxTokens = parseInt(maxTokensInput, 10);
       const apiEndpoint = core.getInput('api-endpoint', { required: false });
       const maxCompletionTokensMode = core.getBooleanInput('max-completion-tokens-mode', { required: false });
 
       const aiProvider = ProviderFactory.create({
         type: provider as 'openai' | 'openwebui',
         model,
+        maxTokens,
         apiKey,
         endpoint: apiEndpoint,
         maxCompletionTokensMode,
@@ -568,6 +578,7 @@ export class ActionOrchestrator {
       const aiProvider = ProviderFactory.create({
         type: config.provider,
         model: config.model,
+        maxTokens: config.maxTokens,
         apiKey: config.apiKey,
         endpoint: config.apiEndpoint,
         maxCompletionTokensMode: config.maxCompletionTokensMode,
@@ -646,6 +657,7 @@ export class ActionOrchestrator {
       const aiProvider = ProviderFactory.create({
         type: config.provider,
         model: config.model,
+        maxTokens: config.maxTokens,
         apiKey: config.apiKey,
         endpoint: config.apiEndpoint,
         maxCompletionTokensMode: config.maxCompletionTokensMode,

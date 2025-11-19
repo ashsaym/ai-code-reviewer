@@ -87,6 +87,7 @@ jobs:
           api-key: ${{ secrets.OPENAI_API_KEY }}
           provider: 'openai'
           model: 'gpt-5-mini'
+          max-tokens: '128000'
           publish-outputs: check-run,artifact,issue
           issue-threshold: high
       
@@ -170,6 +171,7 @@ jobs:
           api-key: ${{ secrets.OPENAI_API_KEY }}
           provider: 'openai'
           model: 'gpt-5-mini'
+          max-tokens: '128000'
       
       - name: Upload Documentation
         if: always()

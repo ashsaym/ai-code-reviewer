@@ -17,6 +17,7 @@ export interface ActionConfig {
   // AI Provider
   provider: 'openai' | 'openwebui';
   model: string;
+  maxTokens: number;
   apiKey: string;
   apiEndpoint?: string;
   maxCompletionTokensMode: boolean;
@@ -76,6 +77,7 @@ export class ConfigLoader {
     // AI Provider
     const provider = this.getInput('provider', 'openai') as 'openai' | 'openwebui';
     const model = this.getInput('model', 'gpt-5-mini') || 'gpt-5-mini';
+    const maxTokens = parseInt(this.getInput('max-tokens', '16000') || '16000', 10);
     const apiKey = this.getRequiredInput('api-key');
     const apiEndpoint = this.getInput('api-endpoint');
     const maxCompletionTokensMode = this.getBooleanInput('max-completion-tokens-mode', false);
@@ -135,6 +137,7 @@ export class ConfigLoader {
       prNumber,
       provider,
       model,
+      maxTokens,
       apiKey,
       apiEndpoint,
       maxCompletionTokensMode,

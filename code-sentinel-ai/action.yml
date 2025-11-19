@@ -36,6 +36,11 @@ inputs:
     required: false
     default: 'gpt-5-mini'
   
+  max-tokens:
+    description: 'Maximum tokens for model context (default: 16000, gpt-5-mini: 128000)'
+    required: false
+    default: '16000'
+  
   max-completion-tokens-mode:
     description: 'Enable max_completion_tokens for newer models (true/false)'
     required: false
