@@ -90,6 +90,51 @@ export class ContentAnalyzer {
     };
   }
 
+  /**
+   * Get package.json for project metadata (only for technical info like dependencies)
+   */
+  getPackageJson(): any {
+    return this.codebaseMap.dependencies?.packageJson || {};
+  }
+
+  /**
+   * Get code samples from specific files for analysis
+   */
+  getFilesContent(filePaths: string[], maxCharsPerFile: number = 3000): Array<{path: string, content: string, language: string}> {
+    const samples: Array<{path: string, content: string, language: string}> = [];
+    
+    for (const filePath of filePaths) {
+      const file = this.codebaseMap.files.find(f => f.path === filePath || f.relativePath === filePath);
+      if (!file) continue;
+      
+      const truncatedContent = file.content.length > maxCharsPerFile
+        ? file.content.slice(0, maxCharsPerFile) + '\n\n// ... (file truncated for analysis)'
+        : file.content;
+      
+      samples.push({
+        path: file.relativePath,
+        content: truncatedContent,
+        language: file.language
+      });
+    }
+
+    return samples;
+  }
+
+  /**
+   * Get all files in a specific directory/module
+   */
+  getModuleFiles(modulePath: string): Array<{path: string, relativePath: string, language: string, size: number}> {
+    return this.codebaseMap.files
+      .filter(f => f.relativePath.startsWith(modulePath))
+      .map(f => ({
+        path: f.path,
+        relativePath: f.relativePath,
+        language: f.language,
+        size: f.size
+      }));
+  }
+
   private extractAPIEndpoints(): APIEndpoint[] {
     const endpoints: APIEndpoint[] = [];
     const routeFiles = this.codebaseMap.files.filter(f => 
@@ -114,10 +159,12 @@ export class ContentAnalyzer {
           if (getMatch || postMatch || putMatch || deleteMatch) {
             const match = getMatch || postMatch || putMatch || deleteMatch;
             if (match) {
+              // Calculate character position for the line
+              const linePosition = lines.slice(0, idx).join('\n').length;
               endpoints.push({
                 path: match[1],
                 method: getMatch ? 'GET' : postMatch ? 'POST' : putMatch ? 'PUT' : 'DELETE',
-                description: this.extractDescription(lines, idx),
+                description: this.extractDescriptionFromPosition(content, linePosition),
                 parameters: [],
                 responses: [],
                 location: `${file.path}:${idx + 1}`,
@@ -183,44 +230,103 @@ export class ContentAnalyzer {
   private extractComponents(): Component[] {
     const components: Component[] = [];
     const sourceFiles = this.codebaseMap.files.filter(f =>
-      f.path.match(/\.(ts|js)$/) && 
+      f.path.match(/\.(ts|js|py|java|go|rs|cpp|c|cs|rb|php)$/) && 
       !f.path.includes('test') &&
-      !f.path.includes('spec')
+      !f.path.includes('spec') &&
+      !f.path.includes('.min.')
     );
 
-    sourceFiles.slice(0, 50).forEach(file => {
+    sourceFiles.forEach(file => {
       try {
-        const content = readFileSync(file.path, 'utf-8');
+        const content = file.content;
         
-        // Match class declarations
-        const classMatches = content.matchAll(/export\s+class\s+(\w+)/g);
-        for (const match of classMatches) {
-          components.push({
-            name: match[1],
-            type: 'class',
-            description: '',
-            location: file.path,
-            publicAPI: [],
-          });
+        // Match class declarations (multiple languages)
+        const classPatterns = [
+          /(?:export\s+)?class\s+(\w+)/g,  // JS/TS
+          /class\s+(\w+)(?:\s*<[^>]*>)?\s*[:{]/g,  // Java/C#/Generic
+          /class\s+(\w+)\s*\(/g,  // Python
+        ];
+        
+        for (const pattern of classPatterns) {
+          const matches = content.matchAll(pattern);
+          for (const match of matches) {
+            if (match[1] && !components.find(c => c.name === match[1])) {
+              const description = this.extractDescriptionFromPosition(content, match.index || 0);
+              components.push({
+                name: match[1],
+                type: 'class',
+                description,
+                location: file.relativePath,
+                publicAPI: [],
+              });
+            }
+          }
         }
 
         // Match exported functions
-        const funcMatches = content.matchAll(/export\s+(?:async\s+)?function\s+(\w+)/g);
-        for (const match of funcMatches) {
-          components.push({
-            name: match[1],
-            type: 'function',
-            description: '',
-            location: file.path,
-            publicAPI: [],
-          });
+        const funcPatterns = [
+          /(?:export\s+)?(?:async\s+)?function\s+(\w+)/g,  // JS/TS
+          /def\s+(\w+)\s*\(/g,  // Python
+          /func\s+(\w+)\s*\(/g,  // Go
+        ];
+        
+        for (const pattern of funcPatterns) {
+          const matches = content.matchAll(pattern);
+          for (const match of matches) {
+            if (match[1] && !components.find(c => c.name === match[1])) {
+              const description = this.extractDescriptionFromPosition(content, match.index || 0);
+              components.push({
+                name: match[1],
+                type: 'function',
+                description,
+                location: file.relativePath,
+                publicAPI: [],
+              });
+            }
+          }
+        }
+
+        // Match interfaces/types (TypeScript)
+        const interfaceMatches = content.matchAll(/(?:export\s+)?interface\s+(\w+)/g);
+        for (const match of interfaceMatches) {
+          if (!components.find(c => c.name === match[1])) {
+            const description = this.extractDescriptionFromPosition(content, match.index || 0);
+            components.push({
+              name: match[1],
+              type: 'module',
+              description,
+              location: file.relativePath,
+              publicAPI: [],
+            });
+          }
         }
       } catch (error) {
         core.debug(`Failed to parse ${file.path}: ${error}`);
       }
     });
 
-    return components.slice(0, 30); // Limit to top 30 components
+    return components;
+  }
+
+  private extractDescriptionFromPosition(content: string, position: number): string {
+    // Look backwards for JSDoc or comments
+    const before = content.slice(Math.max(0, position - 500), position);
+    const lines = before.split('\n').reverse();
+    
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('*') && !trimmed.startsWith('*/')) {
+        return trimmed.replace(/^\*\s*/, '').trim();
+      }
+      if (trimmed.startsWith('//')) {
+        return trimmed.replace(/^\/\/\s*/, '').trim();
+      }
+      if (trimmed.startsWith('#')) {
+        return trimmed.replace(/^#\s*/, '').trim();
+      }
+    }
+    
+    return '';
   }
 
   private extractDependencies(): DependencyInfo[] {
@@ -268,16 +374,7 @@ export class ContentAnalyzer {
     return examples;
   }
 
-  private extractDescription(lines: string[], startIdx: number): string {
-    // Look for comments above the line
-    for (let i = startIdx - 1; i >= Math.max(0, startIdx - 5); i--) {
-      const line = lines[i].trim();
-      if (line.startsWith('//') || line.startsWith('*')) {
-        return line.replace(/^[/\s*]+/, '').trim();
-      }
-    }
-    return '';
-  }
+
 
   private guessPurpose(packageName: string): string {
     const purposes: Record<string, string> = {

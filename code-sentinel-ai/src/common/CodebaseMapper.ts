@@ -43,9 +43,22 @@ export class CodebaseMapper {
     core.startGroup('📊 Mapping Codebase');
     
     const startTime = Date.now();
+    
+    core.info(`Scanning directory: ${this.rootPath}`);
+    core.info(`Scope: ${this.scope}`);
+    core.info(`Custom includes: ${this.customIncludePatterns?.join(', ') || 'none'}`);
+    core.info(`Custom excludes: ${this.customExcludePatterns?.join(', ') || 'none'}`);
 
     const allFiles = await this.getAllFiles();
     core.info(`Found ${allFiles.length} files to analyze`);
+    
+    if (allFiles.length === 0) {
+      core.warning('⚠️  No files found! This could mean:');
+      core.warning('  1. Wrong workspace path (check GITHUB_WORKSPACE or cwd)');
+      core.warning('  2. Exclude patterns are too aggressive');
+      core.warning('  3. Include patterns don\'t match any files');
+      core.warning(`  Current path: ${this.rootPath}`);
+    }
 
     const files = await this.createFileMetadata(allFiles);
     core.info(`Processed ${files.length} files`);

@@ -1,13 +1,15 @@
 /**
  * Documentation Engine
  * 
- * Main orchestrator for documentation generation with hierarchical progressive analysis
+ * Tree-based hierarchical documentation generator
+ * Generates docs: Root → Modules (folders) → Submodules (subfolders) → Files
  */
 
 import * as core from '@actions/core';
 import { BaseProvider } from '../providers/BaseProvider';
 import { CodebaseMapper } from '../common/CodebaseMapper';
-import { ContentAnalyzer, AnalyzedContent } from './ContentAnalyzer';
+import { ContentAnalyzer } from './ContentAnalyzer';
+import { TreeBuilder, TreeNode, TreeLevel } from './TreeBuilder';
 import { DocumentationResult, DocumentationScope } from './types';
 import { DocumentationConfig } from './DocumentationConfig';
 
@@ -29,7 +31,7 @@ export class DocumentationEngine {
   constructor(
     private workspacePath: string,
     private aiProvider: BaseProvider,
-    private scope: DocumentationScope = 'full',
+    _scope: DocumentationScope = 'full',
     private includePatterns?: string[],
     private excludePatterns?: string[],
     config?: Partial<DocumentationConfig>
@@ -49,7 +51,7 @@ export class DocumentationEngine {
   }
 
   /**
-   * Retry logic with exponential backoff for transient failures
+   * Retry logic with exponential backoff
    */
   private async retryWithBackoff<T>(
     operation: () => Promise<T>,
@@ -91,15 +93,18 @@ export class DocumentationEngine {
     throw lastError || new Error(`${context} failed after ${config.maxRetries} retries`);
   }
 
+  /**
+   * Main execution method - Tree-based hierarchical documentation
+   */
   async execute(): Promise<DocumentationResult> {
-    core.startGroup('📚 Generating Project Documentation');
+    core.startGroup('📚 Tree-Based Hierarchical Documentation Generation');
 
     const startTime = Date.now();
     let totalTokens = 0;
 
     try {
-      // 1. Map the codebase
-      core.info('🗺️  Mapping codebase structure...');
+      // 1. Map complete codebase
+      core.info('🗺️  Mapping complete codebase...');
       const mapper = new CodebaseMapper(
         this.workspacePath,
         'full-codebase',
@@ -110,29 +115,35 @@ export class DocumentationEngine {
 
       core.info(`📊 Found ${codebaseMap.files.length} files to document`);
 
-      // 2. Analyze content
-      core.info('🔍 Analyzing codebase content...');
-      const contentAnalyzer = new ContentAnalyzer(codebaseMap);
-      const analyzedContent = await contentAnalyzer.analyze();
+      // 2. Build hierarchical tree
+      core.info('🌳 Building hierarchical tree...');
+      const treeBuilder = new TreeBuilder(codebaseMap);
+      const tree = treeBuilder.buildCompleteTree();
+      const levels = treeBuilder.getTreeByLevels();
 
-      // 3. Generate documentation using hierarchical progressive approach
-      core.info('🎯 Using hierarchical progressive documentation generation...');
-      const sections = await this.generateSectionsProgressively(codebaseMap, analyzedContent);
+      core.info(`  ✓ Tree built: ${levels.length} levels`);
+      levels.forEach((level, idx) => {
+        core.info(`  ✓ Level ${idx} (${level.type}): ${level.nodes.length} nodes`);
+      });
+
+      // 3. Generate documentation hierarchically
+      core.info('📝 Generating documentation by tree levels...');
+      const sections = await this.generateTreeBasedDocumentation(tree, levels, codebaseMap, treeBuilder);
       
       for (const section of sections) {
-        totalTokens += section.content.length / 4; // Rough estimate
+        totalTokens += section.content.length / 4;
       }
 
-      // 4. Compile full markdown
+      // 4. Compile markdown
       const fullMarkdown = this.compileMarkdown(sections, codebaseMap.projectName);
 
-      // 5. Calculate statistics
+      // 5. Statistics
       const statistics = {
         filesAnalyzed: codebaseMap.files.length,
         sectionsGenerated: sections.length,
         totalWords: fullMarkdown.split(/\s+/).length,
         tokensUsed: Math.round(totalTokens),
-        estimatedCost: (totalTokens / 1000000) * 2.0, // Rough estimate $2/1M tokens
+        estimatedCost: (totalTokens / 1000000) * 2.0,
       };
 
       const duration = Date.now() - startTime;
@@ -157,493 +168,332 @@ export class DocumentationEngine {
   }
 
   /**
-   * Hierarchical progressive documentation generation
-   * Layer 1: High-level project context
-   * Layer 2: Module/component summaries 
-   * Layer 3: Detailed sections with full context
+   * Tree-based hierarchical documentation generation
+   * Root → Modules → Submodules → Files
    */
-  private async generateSectionsProgressively(codebaseMap: any, content: AnalyzedContent) {
+  private async generateTreeBasedDocumentation(
+    tree: TreeNode,
+    levels: TreeLevel[],
+    codebaseMap: any,
+    treeBuilder: TreeBuilder
+  ) {
     const sections = [];
     let order = 1;
 
-    // Determine which sections to generate based on scope
-    const shouldInclude = {
-      overview: this.scope === 'full' || this.scope === 'minimal',
-      architecture: this.scope === 'full' || this.scope === 'architecture',
-      api: this.scope === 'full' || this.scope === 'api-only',
-      gettingStarted: this.scope === 'full' || this.scope === 'minimal',
-      userGuide: this.scope === 'full' || this.scope === 'guide-only',
-      developerGuide: this.scope === 'full',
-      configuration: this.scope === 'full' || this.scope === 'guide-only',
-      examples: this.scope === 'full' || this.scope === 'guide-only',
-    };
+    // Step 1: Analyze complete tree
+    core.info('📋 Step 1: Analyzing codebase tree...');
+    const treeASCII = treeBuilder.getTreeAsASCII(8);
+    const treeContext = await this.retryWithBackoff(
+      () => this.analyzeCompleteTree(tree, treeASCII, codebaseMap),
+      'Tree analysis'
+    );
+    core.info(`  ✓ Analysis complete (${treeContext.length} chars)`);
 
-    // LAYER 1: High-level project understanding (lightweight, fast)
-    core.info('📋 Layer 1: Generating high-level project context...');
-    const projectContext = await this.generateProjectContext(codebaseMap, content);
-    core.info(`  ✓ Project context generated (${projectContext.length} chars)`);
+    // Step 2: Root documentation
+    core.info('📝 Step 2: Root overview...');
+    const rootDoc = await this.retryWithBackoff(
+      () => this.generateRootDocumentation(tree, treeContext, treeBuilder, codebaseMap),
+      'Root documentation'
+    );
+    sections.push({ ...rootDoc, order: order++ });
+    core.info(`  ✓ Root complete`);
 
-    // LAYER 2: Module-level summaries (parallel where possible)
-    core.info('🔷 Layer 2: Generating module summaries...');
-    const moduleSummaries = await this.generateModuleSummaries(codebaseMap, content, projectContext);
-    core.info(`  ✓ Generated ${moduleSummaries.length} module summaries`);
+    // Step 3 & 4: Modules and submodules
+    const directoryLevels = levels.filter(l => l.type === 'modules' || l.type === 'submodules');
+    
+    for (const level of directoryLevels) {
+      core.info(`📁 Step 3.${level.depth}: ${level.nodes.length} ${level.type}...`);
+      
+      const nodesToDocument = this.config.maxModules > 0
+        ? level.nodes.slice(0, this.config.maxModules)
+        : level.nodes;
 
-    // LAYER 3: Detailed sections with full context (sequential with retry)
+      const batchSize = this.config.moduleBatchSize;
+      for (let i = 0; i < nodesToDocument.length; i += batchSize) {
+        const batch = nodesToDocument.slice(i, i + batchSize);
+        const batchPromises = batch.map(node =>
+          this.retryWithBackoff(
+            () => this.generateModuleDocumentation(node, treeContext, codebaseMap),
+            `Module: ${node.name}`
+          )
+        );
 
-    core.info('📝 Layer 3: Generating detailed sections with full context...');
-    const enrichedContext = `${projectContext}\n\n## Module Summaries:\n${moduleSummaries.join('\n\n')}`;
+        const batchResults = await Promise.all(batchPromises);
+        batchResults.forEach(doc => sections.push({ ...doc, order: order++ }));
 
-    // Project Overview
-    if (shouldInclude.overview) {
-      const overview = await this.retryWithBackoff(
-        () => this.generateOverview(codebaseMap, content, enrichedContext),
-        'Project overview generation'
-      );
-      sections.push({ ...overview, order: order++ });
-      core.info(`  ✓ Project overview complete`);
+        core.info(`  ✓ ${Math.min(i + batchSize, nodesToDocument.length)}/${nodesToDocument.length}`);
+
+        if (i + batchSize < nodesToDocument.length) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
     }
 
-    // Architecture
-    if (shouldInclude.architecture) {
-      const architecture = await this.retryWithBackoff(
-        () => this.generateArchitecture(codebaseMap, content, enrichedContext),
-        'Architecture documentation'
-      );
-      sections.push({ ...architecture, order: order++ });
-      core.info(`  ✓ Architecture documentation complete`);
-    }
+    // Step 5: Files (if enabled)
+    if (this.config.includeFiles) {
+      const filesLevel = levels.find(l => l.type === 'files');
+      if (filesLevel && filesLevel.nodes.length > 0) {
+        core.info(`📄 Step 4: ${filesLevel.nodes.length} files...`);
 
-    // API Reference
-    if (shouldInclude.api && content.apiEndpoints.length > 0) {
-      const apiRef = await this.retryWithBackoff(
-        () => this.generateAPIReference(content, enrichedContext),
-        'API reference generation'
-      );
-      sections.push({ ...apiRef, order: order++ });
-      core.info(`  ✓ API reference complete`);
-    }
+        const batchSize = 5;
+        for (let i = 0; i < filesLevel.nodes.length; i += batchSize) {
+          const batch = filesLevel.nodes.slice(i, i + batchSize);
+          const batchPromises = batch.map(node =>
+            this.retryWithBackoff(
+              () => this.generateFileDocumentation(node, treeContext, codebaseMap),
+              `File: ${node.name}`
+            )
+          );
 
-    // Getting Started
-    if (shouldInclude.gettingStarted) {
-      const gettingStarted = await this.retryWithBackoff(
-        () => this.generateGettingStarted(codebaseMap, content, enrichedContext),
-        'Getting started guide'
-      );
-      sections.push({ ...gettingStarted, order: order++ });
-      core.info(`  ✓ Getting started guide complete`);
-    }
+          const batchResults = await Promise.all(batchPromises);
+          batchResults.forEach(doc => sections.push({ ...doc, order: order++ }));
 
-    // User Guide
-    if (shouldInclude.userGuide) {
-      const userGuide = await this.retryWithBackoff(
-        () => this.generateUserGuide(codebaseMap, content, enrichedContext),
-        'User guide'
-      );
-      sections.push({ ...userGuide, order: order++ });
-      core.info(`  ✓ User guide complete`);
-    }
+          core.info(`  ✓ ${Math.min(i + batchSize, filesLevel.nodes.length)}/${filesLevel.nodes.length}`);
 
-    // Configuration Reference (no AI call needed)
-    if (shouldInclude.configuration && content.configurations.length > 0) {
-      const configRef = await this.generateConfigReference(content);
-      sections.push({ ...configRef, order: order++ });
-      core.info(`  ✓ Configuration reference complete`);
-    }
-
-    // Developer Guide
-    if (shouldInclude.developerGuide) {
-      const devGuide = await this.retryWithBackoff(
-        () => this.generateDeveloperGuide(codebaseMap, content, enrichedContext),
-        'Developer guide'
-      );
-      sections.push({ ...devGuide, order: order++ });
-      core.info(`  ✓ Developer guide complete`);
-    }
-
-    // Examples
-    if (shouldInclude.examples && content.examples.length > 0) {
-      core.info('📖 Adding examples...');
-      const examples = await this.generateExamples(content);
-      sections.push({ ...examples, order: order++ });
+          if (i + batchSize < filesLevel.nodes.length) {
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+        }
+      }
     }
 
     return sections;
   }
 
   /**
-   * Layer 1: Generate lightweight high-level project context
+   * Analyze complete tree structure
    */
-  private async generateProjectContext(codebaseMap: any, content: AnalyzedContent): Promise<string> {
-    const prompt = `Provide a concise project summary:
+  private async analyzeCompleteTree(tree: TreeNode, treeASCII: string, codebaseMap: any): Promise<string> {
+    const pkg = codebaseMap.dependencies?.packageJson || {};
+    const totalFiles = tree.fileCount || 0;
+    const totalDirs = tree.directoryCount || 0;
+    const languages = Array.from(tree.languages || []).join(', ');
 
-Project: ${codebaseMap.projectName}
-Files: ${codebaseMap.files.length}
-Languages: ${Object.keys(codebaseMap.statistics.languageBreakdown).join(', ')}
-Key Components: ${content.mainComponents.slice(0, 10).map(c => c.name).join(', ')}
+    const prompt = `Analyze this codebase structure:
 
-Provide in 3-4 sentences:
-1. What this project does
-2. Primary technology stack
-3. Main architectural pattern`;
+Project: ${tree.name}
+Files: ${totalFiles}
+Directories: ${totalDirs}
+Languages: ${languages}
 
-    const response = await this.retryWithBackoff(
-      () => this.aiProvider.sendMessage([
-        { role: 'system', content: 'You are a technical analyst. Provide concise, factual summaries.' },
-        { role: 'user', content: prompt },
-      ], { responseFormat: 'text' }),
-      'Project context generation'
-    );
+Tree:
+\`\`\`
+${treeASCII}
+\`\`\`
+
+Dependencies: ${Object.keys(pkg.dependencies || {}).slice(0, 20).join(', ')}
+
+Provide a concise summary (3-4 sentences):
+1. Project type (based on structure/dependencies)
+2. Main modules (top-level folders)
+3. Technology stack
+4. Architecture pattern
+
+Base analysis on actual structure provided.`;
+
+    const response = await this.aiProvider.sendMessage([
+      { role: 'system', content: 'You are a code structure analyst. Analyze directory trees to understand project organization. Be factual and specific.' },
+      { role: 'user', content: prompt },
+    ], { responseFormat: 'text' });
 
     return response.content;
   }
 
   /**
-   * Layer 2: Generate module-level summaries in parallel batches
+   * Generate root documentation
    */
-  private async generateModuleSummaries(
-    codebaseMap: any,
-    content: AnalyzedContent,
-    projectContext: string
-  ): Promise<string[]> {
-    // Group files by top-level directory (modules)
-    const moduleMap = new Map<string, any[]>();
-    
-    codebaseMap.files.forEach((file: any) => {
-      const parts = file.path.split('/');
-      const moduleIdx = parts.findIndex((p: string) => p === 'src') + 1;
-      if (moduleIdx > 0 && moduleIdx < parts.length) {
-        const moduleName = parts[moduleIdx];
-        if (!moduleMap.has(moduleName)) {
-          moduleMap.set(moduleName, []);
-        }
-        moduleMap.get(moduleName)!.push(file);
-      }
-    });
+  private async generateRootDocumentation(
+    tree: TreeNode,
+    treeContext: string,
+    treeBuilder: TreeBuilder,
+    codebaseMap: any
+  ) {
+    const treeMarkdown = treeBuilder.getTreeAsMarkdown(3);
+    const pkg = codebaseMap.dependencies?.packageJson || {};
+    const rootLink = TreeBuilder.getFileLink(tree.absolutePath, tree.name);
 
-    const summaries: string[] = [];
-    const modules = Array.from(moduleMap.entries()).slice(0, 15); // Limit to top 15 modules
+    const prompt = `Generate root-level project documentation:
 
-    // Process modules in batches of 3 for controlled parallelism
-    const batchSize = 3;
-    for (let i = 0; i < modules.length; i += batchSize) {
-      const batch = modules.slice(i, i + batchSize);
-      const batchPromises = batch.map(([moduleName, files]) =>
-        this.retryWithBackoff(
-          async () => {
-            const components = content.mainComponents.filter(c => 
-              c.location.includes(`/${moduleName}/`)
-            );
-            
-            const prompt = `Summarize the '${moduleName}' module in 2-3 sentences:
+Project: ${rootLink}
+Files: ${tree.fileCount || 0}
+Directories: ${tree.directoryCount || 0}
+Languages: ${Array.from(tree.languages || []).join(', ')}
 
-Files: ${files.length}
-Components: ${components.map(c => c.name).join(', ') || 'None identified'}
+Structure (clickable links):
+${treeMarkdown}
 
-Project Context: ${projectContext}
+Dependencies: ${Object.keys(pkg.dependencies || {}).join(', ')}
+Dev Dependencies: ${Object.keys(pkg.devDependencies || {}).join(', ')}
 
-What is the purpose of this module?`;
+Context:
+${treeContext}
 
-            const response = await this.aiProvider.sendMessage([
-              { role: 'system', content: 'You are a code analyst. Provide brief module summaries.' },
-              { role: 'user', content: prompt },
-            ]);
+Generate documentation with:
+1. **Project Overview** - What this codebase does
+2. **Architecture** - Overall system design
+3. **Main Modules** - Top-level folders and purposes
+4. **Technology Stack** - Languages, frameworks, tools
+5. **Getting Started** - Setup and run
 
-            return `**${moduleName}**: ${response.content}`;
-          },
-          `Module summary for '${moduleName}'`
-        )
-      );
+Include file:// links. Be specific.
 
-      const batchResults = await Promise.all(batchPromises);
-      summaries.push(...batchResults);
-      
-      // Small delay between batches to avoid rate limiting
-      if (i + batchSize < modules.length) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
+Format as markdown with clear headings.`;
+
+    const response = await this.aiProvider.sendMessage([
+      { role: 'system', content: 'You are a technical documentation expert. Generate comprehensive documentation by analyzing actual codebase structure.' },
+      { role: 'user', content: prompt },
+    ], { responseFormat: 'text' });
+
+    return {
+      id: `root-${tree.name}`,
+      title: `Project: ${tree.name}`,
+      content: response.content,
+      subsections: [],
+    };
+  }
+
+  /**
+   * Generate module documentation
+   */
+  private async generateModuleDocumentation(node: TreeNode, treeContext: string, codebaseMap: any) {
+    const contentAnalyzer = new ContentAnalyzer(codebaseMap);
+    const moduleFiles = contentAnalyzer.getModuleFiles(node.path);
+    const moduleLink = TreeBuilder.getFileLink(node.absolutePath, node.name);
+
+    const childrenLinks = (node.children || [])
+      .sort((a, b) => {
+        if (a.type !== b.type) return a.type === 'directory' ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      })
+      .slice(0, 30)
+      .map(child => {
+        const link = TreeBuilder.getFileLink(child.absolutePath, child.name);
+        const suffix = child.type === 'directory' ? '/' : '';
+        const info = child.type === 'directory' && child.fileCount ? ` (${child.fileCount} files)` : '';
+        return `- ${link}${suffix}${info}`;
+      }).join('\n');
+
+    const sampleFilePaths = moduleFiles
+      .filter(f => !f.path.includes('test') && !f.path.includes('.min.'))
+      .slice(0, 3)
+      .map(f => f.path);
+
+    const codeSamples = contentAnalyzer.getFilesContent(sampleFilePaths, 2000);
+    const codeSection = codeSamples.length > 0
+      ? `\n\nSample Code:\n${codeSamples.map(s => {
+          const fileLink = TreeBuilder.getFileLink(codebaseMap.rootPath + '/' + s.path, s.path);
+          return `\n### ${fileLink}\n\`\`\`${s.language}\n${s.content}\n\`\`\``;
+        }).join('\n\n')}`
+      : '';
+
+    const prompt = `Document this module:
+
+Module: ${moduleLink}
+Path: ${node.path}
+Files: ${node.fileCount || 0}
+Subdirs: ${node.directoryCount || 0}
+Languages: ${Array.from(node.languages || []).join(', ')}
+
+Contents:
+${childrenLinks}
+
+Context:
+${treeContext}${codeSection}
+
+Generate documentation with:
+1. **Purpose** - What this module does
+2. **Key Components** - Important files and roles
+3. **Functionality** - Main features
+4. **Internal Structure** - Organization
+5. **Usage** - How it's used
+
+Include file:// links. Be specific.
+
+Format as markdown.`;
+
+    const response = await this.aiProvider.sendMessage([
+      { role: 'system', content: 'You are a code documentation specialist. Analyze module code and structure to generate accurate documentation.' },
+      { role: 'user', content: prompt },
+    ], { responseFormat: 'text' });
+
+    return {
+      id: `module-${node.path.replace(/\//g, '-')}`,
+      title: `Module: ${node.name}`,
+      content: response.content,
+      subsections: [],
+    };
+  }
+
+  /**
+   * Generate file documentation
+   */
+  private async generateFileDocumentation(node: TreeNode, _treeContext: string, _codebaseMap: any) {
+    if (!node.file) {
+      return {
+        id: `file-${node.path.replace(/\//g, '-')}`,
+        title: `File: ${node.name}`,
+        content: 'File content not available',
+        subsections: [],
+      };
     }
 
-    return summaries;
-  }
+    const fileLink = TreeBuilder.getFileLink(node.absolutePath, node.name);
+    const content = node.file.content.length > 5000
+      ? node.file.content.slice(0, 5000) + '\n\n// ... (truncated)'
+      : node.file.content;
 
-  private async generateOverview(
-    codebaseMap: any,
-    content: AnalyzedContent,
-    context?: string
-  ) {
-    const contextSection = context ? `\n\nProject Context:\n${context}\n` : '';
-    const prompt = `Generate a comprehensive project overview for this project:
+    const prompt = `Document this file:
 
-Project: ${codebaseMap.projectName}
-Files: ${codebaseMap.files.length}
-Languages: ${Object.keys(codebaseMap.statistics.languageBreakdown).join(', ')}
-Main Components: ${content.mainComponents.slice(0, 10).map(c => c.name).join(', ')}
-Dependencies: ${content.dependencies.slice(0, 10).map(d => d.name).join(', ')}${contextSection}
+File: ${fileLink}
+Path: ${node.path}
+Language: ${node.file.language}
+Size: ${node.file.size} bytes
+Lines: ${node.file.content.split('\n').length}
 
-Write a detailed overview including:
-1. Project purpose and goals
-2. Key features and capabilities
-3. Technology stack
-4. Project structure overview
-5. Target audience
-
-Format as markdown. Be informative and comprehensive.`;
-
-    const response = await this.aiProvider.sendMessage([
-      { role: 'system', content: 'You are a technical documentation expert writing clear, comprehensive project documentation.' },
-      { role: 'user', content: prompt },
-    ], { responseFormat: 'text' });
-
-    return {
-      id: 'overview',
-      title: 'Project Overview',
-      content: response.content,
-      subsections: [],
-    };
-  }
-
-  private async generateArchitecture(
-    codebaseMap: any,
-    content: AnalyzedContent,
-    context?: string
-  ) {
-    const contextSection = context ? `\n\nProject Context:\n${context}\n` : '';
-    const prompt = `Document the system architecture:
-
-Project: ${codebaseMap.projectName}
-Structure: ${JSON.stringify(codebaseMap.structure, null, 2).slice(0, 2000)}
-Components: ${content.mainComponents.map(c => `${c.name} (${c.type})`).join(', ')}
-Dependencies: ${content.dependencies.map(d => d.name).join(', ')}${contextSection}
-
-Create comprehensive architecture documentation including:
-1. High-level system architecture
-2. Component breakdown and relationships
-3. Data flow
-4. Design patterns used
-5. Technology choices and rationale
-
-Include mermaid diagrams where helpful. Format as markdown.`;
-
-    const response = await this.aiProvider.sendMessage([
-      { role: 'system', content: 'You are a software architect creating detailed technical documentation.' },
-      { role: 'user', content: prompt },
-    ], { responseFormat: 'text' });
-
-    return {
-      id: 'architecture',
-      title: 'Architecture',
-      content: response.content,
-      subsections: [],
-    };
-  }
-
-  private async generateAPIReference(content: AnalyzedContent, context?: string) {
-    const contextSection = context ? `\n\nProject Context:\n${context}\n` : '';
-    const endpointsDoc = content.apiEndpoints.map(ep => `
-### ${ep.method} ${ep.path}
-
-**Location:** \`${ep.location}\`
-
-${ep.description || 'No description available'}
-
-${ep.parameters.length > 0 ? `
-**Parameters:**
-${ep.parameters.map(p => `- \`${p.name}\` (${p.type})${p.required ? ' *required*' : ''}: ${p.description}`).join('\n')}
-` : ''}
-
-${ep.responses.length > 0 ? `
-**Responses:**
-${ep.responses.map(r => `- ${r.status}: ${r.description}`).join('\n')}
-` : ''}
-`).join('\n---\n');
-
-    const prompt = `Enhance this API reference documentation:
-
-${endpointsDoc}${contextSection}
-
-Add:
-1. Usage examples for each endpoint
-2. Authentication details if applicable
-3. Rate limiting information
-4. Common error scenarios
-5. Best practices
-
-Format as markdown with code examples.`;
-
-    const response = await this.aiProvider.sendMessage([
-      { role: 'system', content: 'You are an API documentation specialist.' },
-      { role: 'user', content: prompt },
-    ], { responseFormat: 'text' });
-
-    return {
-      id: 'api-reference',
-      title: 'API Reference',
-      content: response.content,
-      subsections: [],
-    };
-  }
-
-  private async generateGettingStarted(
-    codebaseMap: any,
-    content: AnalyzedContent,
-    context?: string
-  ) {
-    const contextSection = context ? `\n\nProject Context:\n${context}\n` : '';
-    const prompt = `Create a getting started guide:
-
-Project: ${codebaseMap.projectName}
-Dependencies: ${content.dependencies.slice(0, 10).map(d => `${d.name}@${d.version}`).join(', ')}${contextSection}
-
-Write a comprehensive getting started guide with:
-1. Prerequisites (Node, Python, etc.)
-2. Installation steps
-3. Initial configuration
-4. First run instructions
-5. Verification steps
-6. Common issues and troubleshooting
-
-Format as markdown with clear step-by-step instructions.`;
-
-    const response = await this.aiProvider.sendMessage([
-      { role: 'system', content: 'You are a technical writer creating user-friendly documentation.' },
-      { role: 'user', content: prompt },
-    ], { responseFormat: 'text' });
-
-    return {
-      id: 'getting-started',
-      title: 'Getting Started',
-      content: response.content,
-      subsections: [],
-    };
-  }
-
-  private async generateUserGuide(
-    codebaseMap: any,
-    content: AnalyzedContent,
-    context?: string
-  ) {
-    const contextSection = context ? `\n\nProject Context:\n${context}\n` : '';
-    const prompt = `Create a user guide for this project:
-
-Project: ${codebaseMap.projectName}
-Components: ${content.mainComponents.slice(0, 15).map(c => c.name).join(', ')}
-Configuration: ${content.configurations.length} options available${contextSection}
-
-Write a comprehensive user guide covering:
-1. Basic usage
-2. Common workflows
-3. Feature overview
-4. Tips and best practices
-5. FAQ
-
-Format as markdown with practical examples.`;
-
-    const response = await this.aiProvider.sendMessage([
-      { role: 'system', content: 'You are a user experience writer creating clear user guides.' },
-      { role: 'user', content: prompt },
-    ], { responseFormat: 'text' });
-
-    return {
-      id: 'user-guide',
-      title: 'User Guide',
-      content: response.content,
-      subsections: [],
-    };
-  }
-
-  private async generateConfigReference(content: AnalyzedContent) {
-    const configDoc = content.configurations.map(cfg => `
-### \`${cfg.name}\`
-
-**Type:** ${cfg.type}
-**Required:** ${cfg.required ? 'Yes' : 'No'}
-${cfg.defaultValue ? `**Default:** \`${cfg.defaultValue}\`` : ''}
-
-${cfg.description || 'No description available'}
-
-${cfg.examples.length > 0 ? `
-**Examples:**
+Content:
+\`\`\`${node.file.language}
+${content}
 \`\`\`
-${cfg.examples.join('\n')}
-\`\`\`
-` : ''}
-`).join('\n');
 
-    return {
-      id: 'configuration',
-      title: 'Configuration Reference',
-      content: `# Configuration Options\n\n${configDoc}`,
-      subsections: [],
-    };
-  }
+Generate documentation with:
+1. **Purpose** - What this file does
+2. **Exports** - Functions, classes, interfaces
+3. **Key Logic** - Important functions
+4. **Dependencies** - Imports
+5. **Usage Examples** - How to use exports
 
-  private async generateDeveloperGuide(
-    codebaseMap: any,
-    content: AnalyzedContent,
-    context?: string
-  ) {
-    const contextSection = context ? `\n\nProject Context:\n${context}\n` : '';
-    const prompt = `Create a developer/contributor guide:
+Be specific. Include code snippets.
 
-Project: ${codebaseMap.projectName}
-Files: ${codebaseMap.files.length}
-Components: ${content.mainComponents.length}${contextSection}
-
-Write a developer guide including:
-1. Development environment setup
-2. Project structure for developers
-3. Coding standards and conventions
-4. Testing guidelines
-5. Pull request process
-6. Build and deployment
-
-Format as markdown with clear guidelines.`;
+Format as markdown.`;
 
     const response = await this.aiProvider.sendMessage([
-      { role: 'system', content: 'You are a developer relations expert creating contributor guides.' },
+      { role: 'system', content: 'You are a code documentation expert. Analyze source code to generate detailed file documentation.' },
       { role: 'user', content: prompt },
     ], { responseFormat: 'text' });
 
     return {
-      id: 'developer-guide',
-      title: 'Developer Guide',
+      id: `file-${node.path.replace(/\//g, '-')}`,
+      title: `File: ${node.name}`,
       content: response.content,
       subsections: [],
     };
   }
 
-  private async generateExamples(content: AnalyzedContent) {
-    const examplesDoc = content.examples.map(ex => `
-## ${ex.title}
-
-${ex.description}
-
-\`\`\`${ex.language}
-${ex.code}
-\`\`\`
-`).join('\n');
-
-    return {
-      id: 'examples',
-      title: 'Examples',
-      content: `# Examples\n\n${examplesDoc}`,
-      subsections: [],
-    };
-  }
-
+  /**
+   * Compile markdown with table of contents
+   */
   private compileMarkdown(sections: any[], projectName: string): string {
     let markdown = `# ${projectName} Documentation\n\n`;
     markdown += `*Generated on ${new Date().toLocaleDateString()}*\n\n`;
     markdown += `## Table of Contents\n\n`;
 
-    // Table of contents
     sections.forEach((section, idx) => {
-      markdown += `${idx + 1}. [${section.title}](#${section.title.toLowerCase().replace(/\s+/g, '-')})\n`;
+      const anchor = section.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      markdown += `${idx + 1}. [${section.title}](#${anchor})\n`;
     });
 
     markdown += '\n---\n\n';
 
-    // Sections
     sections.forEach(section => {
       markdown += `## ${section.title}\n\n`;
       markdown += `${section.content}\n\n`;
