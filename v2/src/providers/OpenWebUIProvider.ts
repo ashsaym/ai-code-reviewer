@@ -23,7 +23,7 @@ export class OpenWebUIProvider extends BaseProvider {
   /**
    * Send messages to OpenWebUI
    */
-  async sendMessage(messages: AIMessage[], options?: SendMessageOptions): Promise<AIResponse> {
+  async sendMessage(messages: AIMessage[], _options?: SendMessageOptions): Promise<AIResponse> {
     try {
       core.debug(`Sending ${messages.length} messages to OpenWebUI (${this.model})`);
 

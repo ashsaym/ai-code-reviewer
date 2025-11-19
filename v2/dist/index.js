@@ -103054,7 +103054,7 @@ class OpenWebUIProvider extends BaseProvider {
     /**
      * Send messages to OpenWebUI
      */
-    async sendMessage(messages, options) {
+    async sendMessage(messages, _options) {
         try {
             coreExports.debug(`Sending ${messages.length} messages to OpenWebUI (${this.model})`);
             const response = await axios.post(this.endpoint, {
