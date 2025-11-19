@@ -56,6 +56,46 @@ inputs:
     required: false
     default: ''
   
+  doc-depth:
+    description: 'Documentation depth level: minimal, standard, detailed, comprehensive (default: standard)'
+    required: false
+    default: 'standard'
+  
+  doc-module-batch-size:
+    description: 'Number of modules to process in parallel (default: 3, range: 1-10)'
+    required: false
+    default: '3'
+  
+  doc-max-modules:
+    description: 'Maximum number of modules to document (default: unlimited, 0 = all)'
+    required: false
+    default: '0'
+  
+  doc-include-files:
+    description: 'Include individual file documentation (true/false, default: true)'
+    required: false
+    default: 'true'
+  
+  doc-output-format:
+    description: 'Output format: markdown, html, or both (default: markdown)'
+    required: false
+    default: 'markdown'
+  
+  doc-include-diagrams:
+    description: 'Include mermaid diagrams in documentation (true/false, default: true)'
+    required: false
+    default: 'true'
+  
+  doc-include-examples:
+    description: 'Include code examples in documentation (true/false, default: true)'
+    required: false
+    default: 'true'
+  
+  doc-include-dependencies:
+    description: 'Include dependency analysis in documentation (true/false, default: true)'
+    required: false
+    default: 'true'
+  
   include-patterns:
     description: 'File patterns to include (comma or newline separated)'
     required: false

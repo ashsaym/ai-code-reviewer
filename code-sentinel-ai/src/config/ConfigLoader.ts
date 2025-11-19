@@ -51,6 +51,16 @@ export interface ActionConfig {
   issueThreshold?: 'critical' | 'high' | 'medium' | 'low';
   scanIncludePatterns?: string[];
   scanExcludePatterns?: string[];
+  
+  // Documentation settings
+  docDepth?: 'minimal' | 'standard' | 'detailed' | 'comprehensive';
+  docModuleBatchSize?: number;
+  docMaxModules?: number;
+  docIncludeFiles?: boolean;
+  docOutputFormat?: 'markdown' | 'html' | 'both';
+  docIncludeDiagrams?: boolean;
+  docIncludeExamples?: boolean;
+  docIncludeDependencies?: boolean;
 }
 
 export class ConfigLoader {
@@ -131,6 +141,16 @@ export class ConfigLoader {
       '**/yarn.lock',
       '**/pnpm-lock.yaml',
     ]);
+    
+    // Documentation settings
+    const docDepth = this.getInput('doc-depth', 'standard') as 'minimal' | 'standard' | 'detailed' | 'comprehensive';
+    const docModuleBatchSize = this.getNumberInput('doc-module-batch-size', 3);
+    const docMaxModules = this.getNumberInput('doc-max-modules', 0);
+    const docIncludeFiles = this.getBooleanInput('doc-include-files', true);
+    const docOutputFormat = this.getInput('doc-output-format', 'markdown') as 'markdown' | 'html' | 'both';
+    const docIncludeDiagrams = this.getBooleanInput('doc-include-diagrams', true);
+    const docIncludeExamples = this.getBooleanInput('doc-include-examples', true);
+    const docIncludeDependencies = this.getBooleanInput('doc-include-dependencies', true);
 
     return {
       token,
@@ -163,6 +183,14 @@ export class ConfigLoader {
       issueThreshold,
       scanIncludePatterns,
       scanExcludePatterns,
+      docDepth,
+      docModuleBatchSize,
+      docMaxModules,
+      docIncludeFiles,
+      docOutputFormat,
+      docIncludeDiagrams,
+      docIncludeExamples,
+      docIncludeDependencies,
     };
   }
 

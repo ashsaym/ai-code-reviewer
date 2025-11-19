@@ -685,7 +685,17 @@ export class ActionOrchestrator {
         aiProvider,
         docScope as any,
         config.scanIncludePatterns,
-        config.scanExcludePatterns
+        config.scanExcludePatterns,
+        {
+          depth: config.docDepth,
+          moduleBatchSize: config.docModuleBatchSize,
+          maxModules: config.docMaxModules,
+          includeFiles: config.docIncludeFiles,
+          outputFormat: config.docOutputFormat,
+          includeDiagrams: config.docIncludeDiagrams,
+          includeExamples: config.docIncludeExamples,
+          includeDependencies: config.docIncludeDependencies,
+        }
       );
 
       const docResult = await docEngine.execute();
