@@ -1,0 +1,1 @@
+export { SuggestionService } from './SuggestionService';

@@ -1,0 +1,58 @@
+name: AI Commands
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  checks: write
+
+jobs:
+  ai-command:
+    # Trigger on any AI command (/review, /summary, /suggestion, /description)
+    if: |
+      github.event.issue.pull_request &&
+      (contains(github.event.comment.body, '/review') || 
+       contains(github.event.comment.body, '/summary') || 
+       contains(github.event.comment.body, '/suggestion') ||
+       contains(github.event.comment.body, '/suggestions') ||
+       contains(github.event.comment.body, '/description'))
+    runs-on: ubuntu-latest
+    name: Run AI Command
+    
+    steps:
+      - name: Extract PR Number
+        id: pr
+        run: echo "number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
+      
+      - name: Checkout main repo
+        uses: actions/checkout@v4
+        with:
+          repository: ashsaym/ai-code-reviewer
+          ref: main
+          path: ai-code-reviewer
+      
+      - name: Verify dist exists
+        working-directory: ai-code-reviewer/code-sentinel-ai
+        run: |
+          if [ ! -f "dist/index.js" ]; then
+            echo "Error: dist/index.js not found"
+            exit 1
+          fi
+          echo "dist/index.js found"
+      
+      - name: Run AI Action
+        uses: ./ai-code-reviewer/code-sentinel-ai
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          api-key: ${{ secrets.OPENAI_API_KEY }}
+          provider: 'openai'
+          model: 'gpt-5-mini'
+          max-completion-tokens-mode: 'true'
+          debug-mode: 'true'
+          # Mode is auto-detected from the comment (/review, /summary, or /suggestion)

@@ -32,22 +32,22 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: 'v2/package-lock.json'
+          cache-dependency-path: 'code-sentinel-ai/package-lock.json'
 
       - name: Install dependencies
         run: |
-          cd v2
+          cd code-sentinel-ai
           npm ci
 
       - name: Run npm audit
         run: |
-          cd v2
+          cd code-sentinel-ai
           npm audit --audit-level=moderate
 
       - name: Run npm audit (JSON)
         if: always()
         run: |
-          cd v2
+          cd code-sentinel-ai
           npm audit --json > npm-audit.json || true
 
       - name: Upload audit results
@@ -55,7 +55,7 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: npm-audit-results
-          path: v2/npm-audit.json
+          path: code-sentinel-ai/npm-audit.json
           retention-days: 30
 
   codeql-analysis:

@@ -1,0 +1,137 @@
+name: 'Code Sentinel AI'
+description: 'AI-powered code review with incremental analysis and GitHub-native caching'
+author: 'ashsaym'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  github-token:
+    description: 'GitHub token for API access'
+    required: true
+    default: ${{ github.token }}
+  
+  api-key:
+    description: 'API key for AI provider (OpenAI or OpenWebUI)'
+    required: true
+  
+  mode:
+    description: 'Operation mode: review, summary, suggestion, or description (auto-detected from /review, /summary, /suggestion, /description comments if not specified)'
+    required: false
+    default: 'review'
+  
+  provider:
+    description: 'AI provider: openai or openwebui'
+    required: false
+    default: 'openai'
+  
+  model:
+    description: 'AI model to use (default: gpt-5-mini)'
+    required: false
+    default: 'gpt-5-mini'
+  
+  max-completion-tokens-mode:
+    description: 'Enable max_completion_tokens for newer models (true/false)'
+    required: false
+    default: 'false'
+  
+  api-endpoint:
+    description: 'Custom API endpoint (for self-hosted providers)'
+    required: false
+    default: ''
+  
+  include-patterns:
+    description: 'File patterns to include (comma or newline separated)'
+    required: false
+    default: '**/*.{js,ts,jsx,tsx,py,java,go,rb,php,cs,cpp,c,rs,swift,kt}'
+  
+  exclude-patterns:
+    description: 'File patterns to exclude (comma or newline separated)'
+    required: false
+    default: |
+      **/node_modules/**
+      **/dist/**
+      **/build/**
+      **/*.min.js
+      **/*.lock
+      **/package-lock.json
+      **/yarn.lock
+  
+  max-files-per-batch:
+    description: 'Maximum files to review in one AI call'
+    required: false
+    default: '10'
+  
+  max-lines-per-file:
+    description: 'Maximum lines per file to review'
+    required: false
+    default: '500'
+  
+  auto-clean-outdated:
+    description: 'Automatically mark outdated comments'
+    required: false
+    default: 'true'
+  
+  incremental-mode:
+    description: 'Enable incremental review mode (updates existing reviews instead of creating new ones)'
+    required: false
+    default: 'true'
+  
+  enable-check-runs:
+    description: 'Enable GitHub Check Runs for review history'
+    required: false
+    default: 'true'
+  
+  check-name:
+    description: 'Name for the GitHub Check Run'
+    required: false
+    default: 'Code Sentinel AI Review'
+  
+  custom-prompt-path:
+    description: 'Path to custom prompt template (Handlebars)'
+    required: false
+    default: ''
+  
+  custom-rules:
+    description: 'Custom review rules to add to the prompt'
+    required: false
+    default: ''
+  
+  cache-enabled:
+    description: 'Enable GitHub Actions cache'
+    required: false
+    default: 'true'
+  
+  cache-ttl-days:
+    description: 'Cache TTL in days (1-7)'
+    required: false
+    default: '7'
+  
+  debug-mode:
+    description: 'Enable debug logging'
+    required: false
+    default: 'false'
+
+outputs:
+  files-reviewed:
+    description: 'Number of files reviewed'
+  
+  comments-created:
+    description: 'Number of review comments created'
+  
+  outdated-cleaned:
+    description: 'Number of outdated comments marked'
+  
+  tokens-used:
+    description: 'Total tokens used'
+  
+  estimated-cost:
+    description: 'Estimated cost in USD'
+  
+  success:
+    description: 'Whether the review completed successfully'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

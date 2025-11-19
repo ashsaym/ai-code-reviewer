@@ -1,4 +1,0 @@
-# Ignore generated docs and vendored assets
-docs/**
-**/*.lock
-public/assets/**

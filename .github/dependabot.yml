@@ -1,8 +1,8 @@
 version: 2
 updates:
-  # Enable version updates for npm (v2)
+  # Enable version updates for npm (code-sentinel-ai)
   - package-ecosystem: "npm"
-    directory: "/v2"
+    directory: "/code-sentinel-ai"
     schedule:
       interval: "weekly"
       day: "monday"
