@@ -110,14 +110,25 @@ describe('GitHubCacheStorage', () => {
 
   describe('loadPRCache', () => {
     it('should load PR cache successfully', async () => {
+      const now = new Date().toISOString();
       const cachedData = {
         owner: 'owner',
         repo: 'repo',
         prNumber: 123,
-        headSha: 'abc123',
-        baseSha: 'def456',
-        files: {},
-        lastUpdated: '2024-01-01T00:00:00Z',
+        lastCommitSha: 'abc123',
+        files: [],
+        tokenUsage: {
+          promptTokens: 1000,
+          completionTokens: 500,
+          totalTokens: 1500,
+          estimatedCost: 0.05,
+        },
+        metadata: {
+          cacheVersion: 1,
+          createdAt: now,
+          updatedAt: now,
+          reviewCount: 1,
+        },
       };
 
       mockCache.restoreCache.mockResolvedValue('test-v1-owner-repo-pr-123');
@@ -148,13 +159,18 @@ describe('GitHubCacheStorage', () => {
 
   describe('clearPRCache', () => {
     it('should clear cache', async () => {
+      mockFs.writeFile.mockResolvedValue(undefined);
+      mockFs.stat.mockResolvedValue({ size: 1024 } as any);
+      mockCache.saveCache.mockResolvedValue(1);
+      
       await storage.clearPRCache('owner', 'repo', 123);
-      expect(true).toBe(true);
+      expect(mockCache.saveCache).toHaveBeenCalled();
     });
   });
 
   describe('getFileAnalysis', () => {
     it('should get file analysis from cache', async () => {
+      const now = new Date().toISOString();
       const cachedData = {
         owner: 'owner',
         repo: 'repo',
@@ -164,9 +180,8 @@ describe('GitHubCacheStorage', () => {
           {
             filePath: 'test.ts',
             sha: 'file123',
-            analyzed: true,
-            lastReviewed: '2024-01-01T00:00:00Z',
-            issues: [],
+            lines: {},
+            lastAnalyzedAt: now,
           },
         ],
         tokenUsage: {
@@ -174,6 +189,12 @@ describe('GitHubCacheStorage', () => {
           completionTokens: 0,
           totalTokens: 0,
           estimatedCost: 0,
+        },
+        metadata: {
+          cacheVersion: 1,
+          createdAt: now,
+          updatedAt: now,
+          reviewCount: 0,
         },
       };
 
@@ -255,20 +276,27 @@ describe('GitHubCacheStorage', () => {
 
   describe('getCacheStats', () => {
     it('should return cache statistics', async () => {
+      const now = new Date().toISOString();
       const cachedData = {
         owner: 'owner',
         repo: 'repo',
         prNumber: 123,
         lastCommitSha: 'abc123',
         files: [
-          { filePath: 'test1.ts', sha: 'a', analyzed: true, lastReviewed: '2024-01-01', issues: [] },
-          { filePath: 'test2.ts', sha: 'b', analyzed: true, lastReviewed: '2024-01-01', issues: [] },
+          { filePath: 'test1.ts', sha: 'a', lines: {}, lastAnalyzedAt: now },
+          { filePath: 'test2.ts', sha: 'b', lines: {}, lastAnalyzedAt: now },
         ],
         tokenUsage: {
           promptTokens: 1000,
           completionTokens: 500,
           totalTokens: 1500,
           estimatedCost: 0.05,
+        },
+        metadata: {
+          cacheVersion: 1,
+          createdAt: now,
+          updatedAt: now,
+          reviewCount: 1,
         },
       };
 
