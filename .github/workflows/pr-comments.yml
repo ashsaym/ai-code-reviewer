@@ -31,7 +31,7 @@ jobs:
         run: echo "number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
       
       - name: Checkout main repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ashsaym/ai-code-reviewer
           ref: main
