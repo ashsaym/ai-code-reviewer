@@ -10,6 +10,7 @@ yarn-error.log*
 
 # Testing
 coverage/
+!code-sentinel-ai/coverage/
 .nyc_output/
 *.lcov
 
@@ -31,6 +32,7 @@ coverage/
 
 # Build outputs
 dist/
+!code-sentinel-ai/dist/
 build/
 *.tgz
 
