@@ -40,6 +40,7 @@ export abstract class BaseProvider {
   protected readonly maxCompletionTokensMode: boolean;
   protected readonly temperature: number;
   protected readonly topP: number;
+  protected readonly timeout: number;
 
   constructor(options: AIProviderOptions) {
     this.apiKey = options.apiKey;
@@ -48,6 +49,7 @@ export abstract class BaseProvider {
     this.maxCompletionTokensMode = options.maxCompletionTokensMode || false;
     this.temperature = options.temperature || 1.0;
     this.topP = options.topP || 1.0;
+    this.timeout = options.timeout || 300000; // Default 5 minutes
   }
 
   /**

@@ -21,6 +21,7 @@ export interface ActionConfig {
   apiKey: string;
   apiEndpoint?: string;
   maxCompletionTokensMode: boolean;
+  timeout: number;
   
   // Review settings
   includePatterns: string[];
@@ -81,6 +82,7 @@ export class ConfigLoader {
     const apiKey = this.getRequiredInput('api-key');
     const apiEndpoint = this.getInput('api-endpoint');
     const maxCompletionTokensMode = this.getBooleanInput('max-completion-tokens-mode', false);
+    const timeout = parseInt(this.getInput('timeout', '300000') || '300000', 10);
 
     // Review settings
     const includePatterns = this.getArrayInput('include-patterns', ['**/*.{js,ts,jsx,tsx,py,java,go,rb,php}']);
@@ -141,6 +143,7 @@ export class ConfigLoader {
       apiKey,
       apiEndpoint,
       maxCompletionTokensMode,
+      timeout,
       includePatterns,
       excludePatterns,
       maxFilesPerBatch,

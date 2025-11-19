@@ -165,6 +165,7 @@ export class ActionOrchestrator {
         apiKey: config.apiKey,
         endpoint: config.apiEndpoint,
         maxCompletionTokensMode: config.maxCompletionTokensMode,
+        timeout: config.timeout,
       });
 
       // Test provider connection
@@ -301,6 +302,8 @@ export class ActionOrchestrator {
       const maxTokens = parseInt(maxTokensInput, 10);
       const apiEndpoint = core.getInput('api-endpoint', { required: false });
       const maxCompletionTokensMode = core.getBooleanInput('max-completion-tokens-mode', { required: false });
+      const timeoutInput = core.getInput('timeout', { required: false }) || '300000';
+      const timeout = parseInt(timeoutInput, 10);
 
       const aiProvider = ProviderFactory.create({
         type: provider as 'openai' | 'openwebui',
@@ -309,6 +312,7 @@ export class ActionOrchestrator {
         apiKey,
         endpoint: apiEndpoint,
         maxCompletionTokensMode,
+        timeout,
       });
 
       const providerName = aiProvider.getProviderName();
@@ -412,6 +416,8 @@ export class ActionOrchestrator {
       const maxTokens = parseInt(maxTokensInput, 10);
       const apiEndpoint = core.getInput('api-endpoint', { required: false });
       const maxCompletionTokensMode = core.getBooleanInput('max-completion-tokens-mode', { required: false });
+      const timeoutInput = core.getInput('timeout', { required: false }) || '300000';
+      const timeout = parseInt(timeoutInput, 10);
 
       const aiProvider = ProviderFactory.create({
         type: provider as 'openai' | 'openwebui',
@@ -420,6 +426,7 @@ export class ActionOrchestrator {
         apiKey,
         endpoint: apiEndpoint,
         maxCompletionTokensMode,
+        timeout,
       });
 
       const providerName = aiProvider.getProviderName();
@@ -517,6 +524,8 @@ export class ActionOrchestrator {
       const maxTokens = parseInt(maxTokensInput, 10);
       const apiEndpoint = core.getInput('api-endpoint', { required: false });
       const maxCompletionTokensMode = core.getBooleanInput('max-completion-tokens-mode', { required: false });
+      const timeoutInput = core.getInput('timeout', { required: false }) || '300000';
+      const timeout = parseInt(timeoutInput, 10);
 
       const aiProvider = ProviderFactory.create({
         type: provider as 'openai' | 'openwebui',
@@ -525,6 +534,7 @@ export class ActionOrchestrator {
         apiKey,
         endpoint: apiEndpoint,
         maxCompletionTokensMode,
+        timeout,
       });
 
       const providerName = aiProvider.getProviderName();
@@ -582,6 +592,7 @@ export class ActionOrchestrator {
         apiKey: config.apiKey,
         endpoint: config.apiEndpoint,
         maxCompletionTokensMode: config.maxCompletionTokensMode,
+        timeout: config.timeout,
       });
 
       const providerName = aiProvider.getProviderName();
@@ -661,6 +672,7 @@ export class ActionOrchestrator {
         apiKey: config.apiKey,
         endpoint: config.apiEndpoint,
         maxCompletionTokensMode: config.maxCompletionTokensMode,
+        timeout: config.timeout,
       });
 
       const providerName = aiProvider.getProviderName();

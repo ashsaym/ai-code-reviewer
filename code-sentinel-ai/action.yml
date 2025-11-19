@@ -46,6 +46,11 @@ inputs:
     required: false
     default: 'false'
   
+  timeout:
+    description: 'API request timeout in milliseconds (default: 300000 = 5 minutes)'
+    required: false
+    default: '300000'
+  
   api-endpoint:
     description: 'Custom API endpoint (for self-hosted providers)'
     required: false

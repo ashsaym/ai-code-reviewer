@@ -70,7 +70,7 @@ export class OpenAIProvider extends BaseProvider {
             'Authorization': `Bearer ${this.apiKey}`,
             ...(this.organizationId && { 'OpenAI-Organization': this.organizationId }),
           },
-          timeout: 120000, // 2 minutes
+          timeout: this.timeout,
         }
       );
 

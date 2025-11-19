@@ -17,6 +17,7 @@ export interface ProviderConfig {
   model: string;
   maxTokens?: number;
   maxCompletionTokensMode?: boolean;
+  timeout?: number;
   temperature?: number;
   topP?: number;
   
@@ -42,6 +43,7 @@ export class ProviderFactory {
           model: config.model,
           maxTokens: config.maxTokens,
           maxCompletionTokensMode: config.maxCompletionTokensMode,
+          timeout: config.timeout,
           temperature: config.temperature,
           topP: config.topP,
           baseURL: config.baseURL,
@@ -56,6 +58,7 @@ export class ProviderFactory {
           apiKey: config.apiKey,
           model: config.model,
           maxTokens: config.maxTokens,
+          timeout: config.timeout,
           temperature: config.temperature,
           topP: config.topP,
           endpoint: config.endpoint,
