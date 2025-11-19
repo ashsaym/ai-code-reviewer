@@ -22,7 +22,7 @@ inputs:
     required: true
   
   mode:
-    description: 'Operation mode: review, summary, suggestion, description, scan, or documentation (auto-detected from comments if not specified)'
+    description: 'Operation mode: review, summary, suggestion, description, or documentation (auto-detected from comments if not specified)'
     required: false
     default: 'review'
   
@@ -168,42 +168,6 @@ inputs:
     required: false
     default: 'false'
   
-  scan-type:
-    description: 'Full scan type: security, quality, documentation, architecture, or all (only for mode=scan)'
-    required: false
-    default: 'security'
-  
-  scan-scope:
-    description: 'Scan scope: full-codebase, src-only, or tests-excluded'
-    required: false
-    default: 'src-only'
-  
-  publish-outputs:
-    description: 'Comma-separated outputs: check-run, artifact, issue'
-    required: false
-    default: 'check-run,artifact'
-  
-  issue-threshold:
-    description: 'Create issue if severity >= (low|medium|high|critical)'
-    required: false
-    default: 'high'
-  
-  scan-include-patterns:
-    description: 'File patterns to include in scan (comma or newline separated, overrides scan-scope)'
-    required: false
-    default: ''
-  
-  scan-exclude-patterns:
-    description: 'Additional file patterns to exclude from scan (comma or newline separated)'
-    required: false
-    default: |
-      **/node_modules/**
-      **/dist/**
-      **/build/**
-      **/coverage/**
-      **/.git/**
-      **/*.min.js
-  
   # Documentation mode inputs
   documentation-scope:
     description: 'Documentation scope: full, api-only, guide-only, architecture, minimal'
@@ -238,36 +202,6 @@ outputs:
   
   success:
     description: 'Whether the review completed successfully'
-  
-  html-report-path:
-    description: 'Path to generated HTML report (scan mode only)'
-  
-  json-report-path:
-    description: 'Path to generated JSON report (scan mode only)'
-  
-  md-report-path:
-    description: 'Path to generated Markdown report (scan mode only)'
-  
-  scan-id:
-    description: 'Unique scan identifier (scan mode only)'
-  
-  findings-count:
-    description: 'Total number of findings (scan mode only)'
-  
-  critical-count:
-    description: 'Number of critical findings (scan mode only)'
-  
-  high-count:
-    description: 'Number of high severity findings (scan mode only)'
-  
-  create-issue:
-    description: 'Whether to create a GitHub issue (scan mode only)'
-  
-  issue-title:
-    description: 'Title for GitHub issue (scan mode only)'
-  
-  issue-body:
-    description: 'Body for GitHub issue (scan mode only)'
   
   sections-count:
     description: 'Number of documentation sections generated (documentation mode only)'

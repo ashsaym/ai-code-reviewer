@@ -16,19 +16,20 @@ import {
   DirectoryNode,
   DependencyInfo,
   ConfigurationFiles,
-  ScanScope,
   CodebaseStatistics,
 } from './types';
 
+export type DocumentationScope = 'full-codebase' | 'src-only' | 'tests-only' | 'docs-only' | 'config-only';
+
 export class CodebaseMapper {
   private rootPath: string;
-  private scope: ScanScope;
+  private scope: DocumentationScope;
   private customIncludePatterns?: string[];
   private customExcludePatterns?: string[];
 
   constructor(
     rootPath: string,
-    scope: ScanScope = 'full-codebase',
+    scope: DocumentationScope = 'full-codebase',
     customIncludePatterns?: string[],
     customExcludePatterns?: string[]
   ) {

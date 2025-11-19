@@ -89,12 +89,6 @@ export class ActionOrchestrator {
         return;
       }
 
-      if (mode === 'scan') {
-        core.info('🤖 Code Sentinel AI - Full Codebase Scan');
-        await this.executeScan();
-        return;
-      }
-
       if (mode === 'documentation') {
         core.info('🤖 Code Sentinel AI - Generating Documentation');
         await this.executeDocumentation();
@@ -565,84 +559,6 @@ export class ActionOrchestrator {
   }
 
   /**
-   * Execute full codebase scan
-   */
-  static async executeScan(): Promise<void> {
-    try {
-      const { FullScanEngine, ReportPublisher } = await import('../scan');
-
-      // 1. Load configuration
-      const config = ConfigLoader.load();
-      const workspacePath = process.env.GITHUB_WORKSPACE || process.cwd();
-
-      // Get scan-specific config
-      const scanType = config.scanType || 'security';
-      const scanScope = config.scanScope || 'src-only';
-
-      core.info(`Scan Configuration:`);
-      core.info(`  Type: ${scanType}`);
-      core.info(`  Scope: ${scanScope}`);
-      core.info('');
-
-      // 2. Initialize AI provider
-      const aiProvider = ProviderFactory.create({
-        type: config.provider,
-        model: config.model,
-        maxTokens: config.maxTokens,
-        apiKey: config.apiKey,
-        endpoint: config.apiEndpoint,
-        maxCompletionTokensMode: config.maxCompletionTokensMode,
-        timeout: config.timeout,
-      });
-
-      const providerName = aiProvider.getProviderName();
-      core.info(`✓ Connected to ${providerName} (${config.model})`);
-      core.info('');
-
-      // 3. Execute scan
-      const scanEngine = new FullScanEngine(
-        workspacePath,
-        aiProvider,
-        scanType,
-        scanScope,
-        config.scanIncludePatterns,
-        config.scanExcludePatterns
-      );
-
-      const scanResult = await scanEngine.execute();
-
-      // 4. Publish reports
-      const publisher = new ReportPublisher(scanResult, {
-        publishArtifact: config.publishOutputs?.includes('artifact') ?? true,
-        publishCheckRun: config.publishOutputs?.includes('check-run') ?? true,
-        createIssue: config.publishOutputs?.includes('issue') ?? false,
-        issueThreshold: config.issueThreshold || 'high',
-        repositoryUrl: `https://github.com/${config.repository}`,
-        commitSha: process.env.GITHUB_SHA,
-      });
-
-      await publisher.publish();
-
-      core.info('');
-      core.info('✅ Full scan completed successfully');
-      core.setOutput('success', true);
-      core.setOutput('findings-count', scanResult.overallFindings.length);
-      core.setOutput('critical-count', scanResult.statistics.criticalIssues);
-      core.setOutput('high-count', scanResult.statistics.highIssues);
-
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      core.error(`❌ Full scan failed: ${errorMessage}`);
-      
-      if (error instanceof Error && error.stack) {
-        core.debug(error.stack);
-      }
-
-      core.setFailed(errorMessage);
-    }
-  }
-
-  /**
    * Execute documentation generation
    */
   static async executeDocumentation(): Promise<void> {
@@ -684,8 +600,8 @@ export class ActionOrchestrator {
         workspacePath,
         aiProvider,
         docScope as any,
-        config.scanIncludePatterns,
-        config.scanExcludePatterns,
+        config.includePatterns,
+        config.excludePatterns,
         {
           depth: config.docDepth,
           moduleBatchSize: config.docModuleBatchSize,

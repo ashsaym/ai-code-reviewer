@@ -1,147 +1,54 @@
-name: Code Analysis Pipeline (Full Scan & Documentation)
+name: Code Sentinel AI - Documentation Generation
 
 on:
   workflow_dispatch:
     inputs:
-      mode:
-        description: 'What to run'
-        type: choice
-        required: true
-        options:
-          - scan
-          - documentation
-        default: scan
-      
-      scan_type:
-        description: '[Scan] Type of scan'
-        type: choice
-        required: false
-        options:
-          - security
-          - quality
-          - architecture
-          - all
-        default: all
-      
-      scan_scope:
-        description: '[Scan] Scope'
-        type: choice
-        required: false
-        options:
-          - full-codebase
-          - src-only
-          - tests-excluded
-        default: full-codebase
-      
       documentation_scope:
-        description: '[Docs] Scope'
+        description: 'Documentation Scope'
         type: choice
         required: false
         options:
           - full
           - api-only
-          - user-guide
+          - guide-only
+          - architecture
+          - minimal
         default: full
       
-      create_issue:
-        description: '[Scan] Create GitHub issue for critical/high findings'
+      documentation_depth:
+        description: 'Documentation Detail Level'
+        type: choice
+        required: false
+        options:
+          - minimal
+          - standard
+          - detailed
+          - comprehensive
+        default: standard
+      
+      include_diagrams:
+        description: 'Include Architecture Diagrams'
         type: boolean
-        default: false
+        default: true
+      
+      include_examples:
+        description: 'Include Code Examples'
+        type: boolean
+        default: true
+      
+      include_dependencies:
+        description: 'Include Dependency Analysis'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
-  issues: write
   checks: write
 
 jobs:
-  scan:
-    runs-on: ubuntu-latest
-    timeout-minutes: 180
-    if: inputs.mode == 'scan'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      
-      - name: Build Action
-        run: |
-          cd code-sentinel-ai
-          npm ci
-          npm run build
-      
-      - name: Run Codebase Scan
-        id: scan
-        uses: ./code-sentinel-ai
-        with:
-          mode: scan
-          scan-type: ${{ inputs.scan_type }}
-          scan-scope: ${{ inputs.scan_scope }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          api-key: ${{ secrets.OPENAI_API_KEY }}
-          provider: 'openai'
-          model: 'gpt-5-mini'
-          max-tokens: '128000'
-          timeout: '600000'  # 10 minutes
-          publish-outputs: check-run,artifact,issue
-          issue-threshold: high
-      
-      - name: Upload HTML Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: scan-report-html-${{ inputs.scan_type }}
-          path: ${{ steps.scan.outputs.html-report-path }}
-          retention-days: 90
-      
-      - name: Upload JSON Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: scan-report-json-${{ inputs.scan_type }}
-          path: ${{ steps.scan.outputs.json-report-path }}
-          retention-days: 90
-      
-      - name: Upload Markdown Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: scan-report-md-${{ inputs.scan_type }}
-          path: ${{ steps.scan.outputs.md-report-path }}
-          retention-days: 90
-      
-      - name: Create Issue for Critical Findings
-        if: inputs.create_issue && steps.scan.outputs.create-issue == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `${{ steps.scan.outputs.issue-title }}`,
-              body: `${{ steps.scan.outputs.issue-body }}`,
-              labels: ['security', 'automated-scan', '${{ inputs.scan_type }}']
-            });
-      
-      - name: Display Scan Summary
-        if: always()
-        run: |
-          echo "=== Scan Summary ==="
-          echo "Type: ${{ inputs.scan_type }}"
-          echo "Findings: ${{ steps.scan.outputs.findings-count }}"
-          echo "Critical: ${{ steps.scan.outputs.critical-count }}"
-          echo "High: ${{ steps.scan.outputs.high-count }}"
-          
   documentation:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    if: inputs.mode == 'documentation'
     
     steps:
       - name: Checkout code
@@ -168,6 +75,10 @@ jobs:
           documentation-scope: ${{ inputs.documentation_scope }}
           documentation-formats: 'markdown,html'
           documentation-output-dir: './docs-generated'
+          doc-depth: ${{ inputs.documentation_depth }}
+          doc-include-diagrams: ${{ inputs.include_diagrams }}
+          doc-include-examples: ${{ inputs.include_examples }}
+          doc-include-dependencies: ${{ inputs.include_dependencies }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           api-key: ${{ secrets.OPENAI_API_KEY }}
           provider: 'openai'
@@ -199,7 +110,7 @@ jobs:
   
   summary:
     runs-on: ubuntu-latest
-    needs: [scan, documentation]
+    needs: [documentation]
     if: always()
     
     steps:
@@ -208,18 +119,14 @@ jobs:
       
       - name: Generate Pipeline Summary
         run: |
-          echo "# 🚀 Code Analysis Complete" >> $GITHUB_STEP_SUMMARY
+          echo "# 📚 Documentation Generation Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [ "${{ inputs.mode }}" == "scan" ]; then
-            echo "## 🔍 Scan Results" >> $GITHUB_STEP_SUMMARY
-            echo "- **Type:** ${{ inputs.scan_type }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **Scope:** ${{ inputs.scan_scope }}" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "## 📚 Documentation Generated" >> $GITHUB_STEP_SUMMARY
-            echo "- **Scope:** ${{ inputs.documentation_scope }}" >> $GITHUB_STEP_SUMMARY
-          fi
-          
+          echo "## Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- **Scope:** ${{ inputs.documentation_scope }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Depth:** ${{ inputs.documentation_depth }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Diagrams:** ${{ inputs.include_diagrams }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Examples:** ${{ inputs.include_examples }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dependencies:** ${{ inputs.include_dependencies }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📦 Artifacts" >> $GITHUB_STEP_SUMMARY
-          echo "All outputs available in workflow artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "Documentation available in workflow artifacts" >> $GITHUB_STEP_SUMMARY

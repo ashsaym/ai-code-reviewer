@@ -65,8 +65,6 @@ export interface CodebaseStatistics {
   directoryDepth: number;
 }
 
-export type ScanScope = 'full-codebase' | 'src-only' | 'tests-only' | 'docs-only' | 'config-only';
-
 export interface BaseResult {
   timestamp: string;
   durationMs: number;
