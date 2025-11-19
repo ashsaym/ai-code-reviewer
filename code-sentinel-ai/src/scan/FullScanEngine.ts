@@ -344,7 +344,9 @@ ${file.content}
 ${fileContents}
 
 ## Instructions
-Analyze these files and provide your findings in JSON format:
+**CRITICAL**: You MUST respond in JSON format. Analyze these files and provide your findings as a JSON object with the following structure:
+
+\`\`\`json
 {
   "summary": "Brief overview of this module",
   "findings": [
@@ -361,6 +363,9 @@ Analyze these files and provide your findings in JSON format:
   ],
   "recommendations": ["List of improvement suggestions"]
 }
+\`\`\`
+
+Return ONLY the JSON object, no additional text before or after.
 `;
   }
 
