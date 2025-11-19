@@ -1,6 +1,6 @@
 # 🤖 Code Sentinel AI
 
-[![CI/CD](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/v2-ci.yml/badge.svg)](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/v2-ci.yml)
+[![CI/CD](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/code-sentinel-ai-ci.yml/badge.svg)](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/code-sentinel-ai-ci.yml)
 [![codecov](https://codecov.io/gh/ashsaym/ai-code-reviewer/branch/v2-rewrite/graph/badge.svg)](https://codecov.io/gh/ashsaym/ai-code-reviewer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
