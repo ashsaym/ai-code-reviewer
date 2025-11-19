@@ -15,6 +15,10 @@ export interface DocumentationConfig {
   includeDependencies: boolean;
 }
 
+/**
+ * Depth settings control the level of detail in generated documentation.
+ * These settings are reflected in the AI prompts and content generation.
+ */
 export const DEPTH_SETTINGS = {
   minimal: {
     projectOverview: true,
@@ -25,6 +29,7 @@ export const DEPTH_SETTINGS = {
     dependencyAnalysis: false,
     usageGuides: false,
     apiReference: false,
+    description: 'Quick overview with basic structure',
   },
   standard: {
     projectOverview: true,
@@ -35,6 +40,7 @@ export const DEPTH_SETTINGS = {
     dependencyAnalysis: true,
     usageGuides: true,
     apiReference: true,
+    description: 'Balanced documentation for typical projects',
   },
   detailed: {
     projectOverview: true,
@@ -47,6 +53,7 @@ export const DEPTH_SETTINGS = {
     apiReference: true,
     modificationGuides: true,
     troubleshooting: true,
+    description: 'Deep dive with file-level documentation',
   },
   comprehensive: {
     projectOverview: true,
@@ -64,5 +71,6 @@ export const DEPTH_SETTINGS = {
     securityAnalysis: true,
     testingStrategy: true,
     deploymentGuide: true,
+    description: 'Maximum detail with architectural insights, security, and operational guidance',
   },
 };

@@ -269,30 +269,37 @@ export class DocumentationEngine {
     const totalDirs = tree.directoryCount || 0;
     const languages = Array.from(tree.languages || []).join(', ');
 
-    const prompt = `Analyze this codebase structure:
+    const devDeps = Object.keys(pkg.devDependencies || {}).slice(0, 10).join(', ');
+    const scripts = Object.keys(pkg.scripts || {}).slice(0, 10).join(', ');
+    
+    const prompt = `Analyze this codebase structure in depth:
 
 Project: ${tree.name}
 Files: ${totalFiles}
 Directories: ${totalDirs}
 Languages: ${languages}
 
-Tree:
+Tree Structure:
 \`\`\`
 ${treeASCII}
 \`\`\`
 
 Dependencies: ${Object.keys(pkg.dependencies || {}).slice(0, 20).join(', ')}
+Dev Dependencies: ${devDeps}
+Available Scripts: ${scripts}
 
-Provide a concise summary (3-4 sentences):
-1. Project type (based on structure/dependencies)
-2. Main modules (top-level folders)
-3. Technology stack
-4. Architecture pattern
+Provide a comprehensive analysis (4-6 sentences):
+1. Project type and purpose (based on structure/dependencies/naming)
+2. Main modules and their likely responsibilities (analyze folder names and structure)
+3. Technology stack (languages, frameworks, build tools)
+4. Architecture pattern (monorepo, microservices, MVC, etc.)
+5. Development workflow (based on scripts and dev dependencies)
+6. Key integrations or platforms (GitHub Actions, cloud providers, databases, etc.)
 
-Base analysis on actual structure provided.`;
+Be specific and factual. Infer purpose from structure and naming conventions.`;
 
     const response = await this.aiProvider.sendMessage([
-      { role: 'system', content: 'You are a code structure analyst. Analyze directory trees to understand project organization. Be factual and specific.' },
+      { role: 'system', content: 'You are an expert software architect and code analyst. Analyze directory trees and project structures to deeply understand project organization, architecture, and purpose. Provide comprehensive, insightful analysis based on actual evidence from the codebase structure, dependencies, and conventions.' },
       { role: 'user', content: prompt },
     ], { responseFormat: 'text' });
 
@@ -312,35 +319,88 @@ Base analysis on actual structure provided.`;
     const pkg = codebaseMap.dependencies?.packageJson || {};
     const rootLink = TreeBuilder.getFileLink(tree.absolutePath, tree.name);
 
-    const prompt = `Generate root-level project documentation:
+    const scripts = pkg.scripts || {};
+    const hasTests = 'test' in scripts;
+    const hasBuild = 'build' in scripts;
+    const hasLint = 'lint' in scripts;
+    
+    const prompt = `Generate comprehensive root-level project documentation:
 
 Project: ${rootLink}
 Files: ${tree.fileCount || 0}
 Directories: ${tree.directoryCount || 0}
 Languages: ${Array.from(tree.languages || []).join(', ')}
 
-Structure (clickable links):
+Project Structure (clickable file:// links):
 ${treeMarkdown}
 
 Dependencies: ${Object.keys(pkg.dependencies || {}).join(', ')}
 Dev Dependencies: ${Object.keys(pkg.devDependencies || {}).join(', ')}
+Scripts: ${Object.keys(scripts).join(', ')}
 
-Context:
+Project Analysis:
 ${treeContext}
 
-Generate documentation with:
-1. **Project Overview** - What this codebase does
-2. **Architecture** - Overall system design
-3. **Main Modules** - Top-level folders and purposes
-4. **Technology Stack** - Languages, frameworks, tools
-5. **Getting Started** - Setup and run
+Generate COMPREHENSIVE documentation with the following sections:
 
-Include file:// links. Be specific.
+## 1. Project Overview
+- What this project does (purpose and value proposition)
+- Key features and capabilities
+- Target users or use cases
+- Project status (production-ready, experimental, etc.)
 
-Format as markdown with clear headings.`;
+## 2. Architecture & Design
+- Overall system architecture (monolith, microservices, library, etc.)
+- Design patterns and principles used
+- Key architectural decisions and their rationale
+- Component interaction and data flow
+- Technology choices and why they were made
+
+## 3. Main Modules & Organization
+- Detailed breakdown of top-level directories
+- Purpose and responsibility of each module
+- How modules interact with each other
+- Module dependencies and relationships
+- File organization conventions
+
+## 4. Technology Stack
+- Programming languages and versions
+- Frameworks and libraries (with purposes)
+- Build tools and bundlers
+- Testing frameworks
+- Development tools (linting, formatting, etc.)
+- Runtime environments
+
+## 5. Getting Started
+- Prerequisites and system requirements
+- Installation instructions (step-by-step)
+- Configuration needed
+- How to run the project (development mode)
+- How to run tests${hasTests ? ' (reference scripts)' : ''}
+- How to build for production${hasBuild ? ' (reference scripts)' : ''}
+- Common issues and troubleshooting
+
+## 6. Development Workflow
+- Code organization best practices
+- Branching strategy (if evident from structure)
+- Testing approach${hasTests ? ' (unit, integration, e2e)' : ''}
+- Linting and code quality${hasLint ? ' (reference configs)' : ''}
+- CI/CD setup (if evident from .github, etc.)
+
+## 7. Key Dependencies & Their Roles
+- Critical runtime dependencies (what they do and why needed)
+- Important dev dependencies (their purposes)
+- External services or APIs integrated
+
+Use file:// links for all file and directory references. 
+Be comprehensive, detailed, and specific.
+Include code examples where helpful.
+Use mermaid diagrams where appropriate to visualize architecture or flow.
+
+Format as clean, well-structured markdown with proper headings.`;
 
     const response = await this.aiProvider.sendMessage([
-      { role: 'system', content: 'You are a technical documentation expert. Generate comprehensive documentation by analyzing actual codebase structure.' },
+      { role: 'system', content: 'You are a senior technical documentation expert and software architect. Generate comprehensive, in-depth documentation that helps developers understand the project quickly and thoroughly. Analyze the actual codebase structure, dependencies, and organization to provide accurate, detailed insights. Include practical examples, architecture diagrams (mermaid), and actionable guidance. Write in clear, professional markdown.' },
       { role: 'user', content: prompt },
     ], { responseFormat: 'text' });
 
@@ -386,33 +446,78 @@ Format as markdown with clear headings.`;
         }).join('\n\n')}`
       : '';
 
-    const prompt = `Document this module:
+    const prompt = `Document this module comprehensively:
 
 Module: ${moduleLink}
 Path: ${node.path}
 Files: ${node.fileCount || 0}
-Subdirs: ${node.directoryCount || 0}
+Subdirectories: ${node.directoryCount || 0}
 Languages: ${Array.from(node.languages || []).join(', ')}
 
-Contents:
+Module Contents (with file:// links):
 ${childrenLinks}
 
-Context:
+Project Context:
 ${treeContext}${codeSection}
 
-Generate documentation with:
-1. **Purpose** - What this module does
-2. **Key Components** - Important files and roles
-3. **Functionality** - Main features
-4. **Internal Structure** - Organization
-5. **Usage** - How it's used
+Generate IN-DEPTH documentation with these sections:
 
-Include file:// links. Be specific.
+## 1. Module Purpose & Responsibility
+- What this module does (core responsibility)
+- Why this module exists (problem it solves)
+- Role in the overall project architecture
+- Boundaries and what this module does NOT do
 
-Format as markdown.`;
+## 2. Key Components & Files
+- Important files and their specific roles
+- Entry points or main exports
+- Configuration files (if any)
+- Helper utilities vs core functionality
+- Public API vs internal implementation
+
+## 3. Functionality & Features
+- Main features provided by this module
+- APIs, classes, functions exported
+- Data models or types defined
+- Algorithms or business logic implemented
+- External integrations (APIs, services, databases)
+
+## 4. Internal Structure & Organization
+- How files are organized within the module
+- Submodules or sub-components
+- Dependencies between files
+- Shared utilities or common code
+- Design patterns used
+
+## 5. Usage & Integration
+- How other modules use this module
+- Import/require patterns
+- Configuration needed
+- Example usage with code snippets
+- Common use cases
+
+## 6. Dependencies & Requirements
+- External packages required
+- Internal module dependencies
+- System requirements or prerequisites
+- Environment variables or configuration
+
+## 7. Technical Details
+- Key algorithms or approaches
+- Performance considerations
+- Error handling patterns
+- Testing approach (if test files present)
+- Known limitations or constraints
+
+Use file:// links for all files and directories.
+Be comprehensive and specific.
+Include code examples from the actual codebase when relevant.
+Use mermaid diagrams to visualize complex relationships or flows.
+
+Format as clean, detailed markdown.`;
 
     const response = await this.aiProvider.sendMessage([
-      { role: 'system', content: 'You are a code documentation specialist. Analyze module code and structure to generate accurate documentation.' },
+      { role: 'system', content: 'You are a senior software engineer and technical writer specializing in module documentation. Analyze code structure, dependencies, and implementation to generate comprehensive, accurate documentation. Provide deep insights into module architecture, design decisions, and usage patterns. Use actual code examples and create helpful diagrams. Write clear, detailed markdown that helps developers understand and use the module effectively.' },
       { role: 'user', content: prompt },
     ], { responseFormat: 'text' });
 
@@ -442,32 +547,84 @@ Format as markdown.`;
       ? node.file.content.slice(0, 5000) + '\n\n// ... (truncated)'
       : node.file.content;
 
-    const prompt = `Document this file:
+    const lines = node.file.content.split('\n').length;
+    const imports = node.file.content.match(/^import .+$/gm) || [];
+    const exports = node.file.content.match(/^export .+$/gm) || [];
+    
+    const prompt = `Document this file comprehensively:
 
 File: ${fileLink}
 Path: ${node.path}
 Language: ${node.file.language}
 Size: ${node.file.size} bytes
-Lines: ${node.file.content.split('\n').length}
+Lines: ${lines}
+Imports: ${imports.length}
+Exports: ${exports.length}
 
-Content:
+File Content:
 \`\`\`${node.file.language}
 ${content}
 \`\`\`
 
-Generate documentation with:
-1. **Purpose** - What this file does
-2. **Exports** - Functions, classes, interfaces
-3. **Key Logic** - Important functions
-4. **Dependencies** - Imports
-5. **Usage Examples** - How to use exports
+Generate DETAILED documentation with these sections:
 
-Be specific. Include code snippets.
+## 1. File Purpose & Responsibility
+- What this file does (single responsibility)
+- Why this file exists in the codebase
+- Role within its parent module
+- What type of file it is (model, controller, utility, test, config, etc.)
 
-Format as markdown.`;
+## 2. Exports & Public API
+- All exported functions, classes, interfaces, types, constants
+- For each export: signature, purpose, parameters, return values
+- Public API surface and intended usage
+- Which exports are primary vs secondary
+
+## 3. Key Implementation Details
+- Important functions and their logic
+- Algorithms or business logic implemented
+- Data structures or types defined
+- State management approach (if applicable)
+- Error handling patterns
+
+## 4. Dependencies & Imports
+- External packages imported (and why)
+- Internal modules imported (and their purpose)
+- Dependency relationships
+- Side effects from imports
+
+## 5. Internal Functions & Helpers
+- Private/internal functions and their purposes
+- Helper utilities specific to this file
+- Implementation details not part of public API
+
+## 6. Usage Examples & Patterns
+- How to import and use this file's exports
+- Common usage patterns with code examples
+- Best practices for using the API
+- Integration with other parts of the codebase
+
+## 7. Technical Considerations
+- Performance characteristics
+- Thread-safety or async behavior
+- Error cases and handling
+- Edge cases to be aware of
+- Testing coverage (if evident)
+
+## 8. Type Information (if applicable)
+- TypeScript types/interfaces defined
+- Generic parameters and constraints
+- Type safety guarantees
+
+Be comprehensive and specific.
+Include actual code examples from the file.
+Explain complex logic in detail.
+Use mermaid diagrams for complex flows or class relationships.
+
+Format as detailed, technical markdown.`;
 
     const response = await this.aiProvider.sendMessage([
-      { role: 'system', content: 'You are a code documentation expert. Analyze source code to generate detailed file documentation.' },
+      { role: 'system', content: 'You are a principal software engineer and expert technical writer specializing in code documentation. Analyze source code deeply to understand its purpose, implementation, and API. Generate comprehensive, detailed documentation that helps developers understand not just WHAT the code does, but WHY and HOW. Explain complex logic, algorithms, and design decisions. Provide practical usage examples and highlight important edge cases or gotchas. Write in clear, technical markdown with proper code formatting and diagrams.' },
       { role: 'user', content: prompt },
     ], { responseFormat: 'text' });
 

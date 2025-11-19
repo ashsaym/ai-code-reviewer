@@ -96,6 +96,16 @@ inputs:
     required: false
     default: 'true'
   
+  doc-include-patterns:
+    description: 'File patterns to include for documentation (comma-separated, default: all files)'
+    required: false
+    default: ''
+  
+  doc-exclude-patterns:
+    description: 'File patterns to exclude for documentation (comma-separated, default: standard build artifacts)'
+    required: false
+    default: ''
+  
   include-patterns:
     description: 'File patterns to include (comma or newline separated)'
     required: false
