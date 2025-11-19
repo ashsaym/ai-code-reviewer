@@ -572,12 +572,23 @@ export class ActionOrchestrator {
       // Get documentation-specific config
       const docScope = core.getInput('documentation-scope') || 'full';
       const outputFormats = core.getInput('documentation-formats')?.split(',') || ['markdown', 'html'];
-      const outputDir = core.getInput('documentation-output-dir') || './docs-output';
+      const outputDir = core.getInput('documentation-output-dir') || './docs-generated';
+      
+      // Documentation needs broader file patterns than code review
+      const docIncludePatterns = core.getInput('doc-include-patterns')?.split(',').map(p => p.trim()).filter(p => p) || undefined;
+      const docExcludePatterns = core.getInput('doc-exclude-patterns')?.split(',').map(p => p.trim()).filter(p => p) || undefined;
 
       core.info(`Documentation Configuration:`);
       core.info(`  Scope: ${docScope}`);
       core.info(`  Formats: ${outputFormats.join(', ')}`);
       core.info(`  Output: ${outputDir}`);
+      core.info(`  Workspace: ${workspacePath}`);
+      if (docIncludePatterns) {
+        core.info(`  Include patterns: ${docIncludePatterns.join(', ')}`);
+      }
+      if (docExcludePatterns) {
+        core.info(`  Exclude patterns: ${docExcludePatterns.join(', ')}`);
+      }
       core.info('');
 
       // 2. Initialize AI provider
@@ -600,8 +611,8 @@ export class ActionOrchestrator {
         workspacePath,
         aiProvider,
         docScope as any,
-        config.includePatterns,
-        config.excludePatterns,
+        docIncludePatterns,
+        docExcludePatterns,
         {
           depth: config.docDepth,
           moduleBatchSize: config.docModuleBatchSize,

@@ -53,11 +53,36 @@ export class CodebaseMapper {
     core.info(`Found ${allFiles.length} files to analyze`);
     
     if (allFiles.length === 0) {
-      core.warning('⚠️  No files found! This could mean:');
+      const patterns = this.getScopePatterns();
+      core.warning('⚠️ No files found! This could mean:');
       core.warning('  1. Wrong workspace path (check GITHUB_WORKSPACE or cwd)');
       core.warning('  2. Exclude patterns are too aggressive');
       core.warning('  3. Include patterns don\'t match any files');
       core.warning(`  Current path: ${this.rootPath}`);
+      core.warning(`  Include patterns: ${patterns.include.join(', ')}`);
+      core.warning(`  Exclude patterns: ${patterns.exclude.join(', ')}`);
+      
+      // Try to list files in directory to help diagnose
+      try {
+        const { readdirSync, statSync } = await import('fs');
+        const { join } = await import('path');
+        const dirContents = readdirSync(this.rootPath);
+        core.warning(`  Directory contents (first 10):`);
+        dirContents.slice(0, 10).forEach(item => {
+          try {
+            const itemPath = join(this.rootPath, item);
+            const isDir = statSync(itemPath).isDirectory();
+            core.warning(`    - ${item}${isDir ? '/' : ''}`);
+          } catch {
+            core.warning(`    - ${item}`);
+          }
+        });
+        if (dirContents.length > 10) {
+          core.warning(`    ... and ${dirContents.length - 10} more items`);
+        }
+      } catch (error) {
+        core.warning(`  Could not read directory: ${error}`);
+      }
     }
 
     const files = await this.createFileMetadata(allFiles);

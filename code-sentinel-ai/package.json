@@ -41,6 +41,7 @@
     "@octokit/plugin-throttling": "^11.0.3",
     "@octokit/rest": "^20.0.2",
     "axios": "^1.13.2",
+    "glob": "^10.5.0",
     "handlebars": "^4.7.8",
     "zod": "^3.25.76"
   },
