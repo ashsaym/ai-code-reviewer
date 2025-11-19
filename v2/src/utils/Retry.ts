@@ -22,7 +22,7 @@ export class Retry {
     fn: () => Promise<T>,
     options: RetryOptions = {}
   ): Promise<T> {
-    const maxAttempts = options.maxAttempts || 3;
+    const maxAttempts = options.maxAttempts !== undefined ? options.maxAttempts : 3;
     const initialDelay = options.initialDelayMs || 1000;
     const maxDelay = options.maxDelayMs || 10000;
     const backoffMultiplier = options.backoffMultiplier || 2;

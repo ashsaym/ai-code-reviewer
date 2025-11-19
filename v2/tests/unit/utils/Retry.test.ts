@@ -5,22 +5,11 @@
 import { Retry } from '../../../src/utils/Retry';
 
 describe('Retry', () => {
-  beforeEach(() => {
-    jest.clearAllTimers();
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
   describe('execute', () => {
     it('should execute function successfully on first try', async () => {
       const fn = jest.fn().mockResolvedValue('success');
 
-      const promise = Retry.execute(fn, { maxAttempts: 3, initialDelayMs: 1000 });
-      jest.runAllTimers();
-      const result = await promise;
+      const result = await Retry.execute(fn, { maxAttempts: 3, initialDelayMs: 1 });
 
       expect(result).toBe('success');
       expect(fn).toHaveBeenCalledTimes(1);
@@ -33,9 +22,7 @@ describe('Retry', () => {
         .mockRejectedValueOnce(new Error('fail 2'))
         .mockResolvedValue('success');
 
-      const promise = Retry.execute(fn, { maxAttempts: 3, initialDelayMs: 1000 });
-      jest.runAllTimers();
-      const result = await promise;
+      const result = await Retry.execute(fn, { maxAttempts: 3, initialDelayMs: 1 });
 
       expect(result).toBe('success');
       expect(fn).toHaveBeenCalledTimes(3);
@@ -44,10 +31,10 @@ describe('Retry', () => {
     it('should throw error after max attempts', async () => {
       const fn = jest.fn().mockRejectedValue(new Error('permanent failure'));
 
-      const promise = Retry.execute(fn, { maxAttempts: 3, initialDelayMs: 1000 });
-      jest.runAllTimers();
-
-      await expect(promise).rejects.toThrow('permanent failure');
+      await expect(
+        Retry.execute(fn, { maxAttempts: 3, initialDelayMs: 1 })
+      ).rejects.toThrow('permanent failure');
+      
       expect(fn).toHaveBeenCalledTimes(3);
     });
 
@@ -58,15 +45,12 @@ describe('Retry', () => {
         .mockRejectedValueOnce(new Error('fail 2'))
         .mockResolvedValue('success');
 
-      const promise = Retry.execute(fn, {
+      await Retry.execute(fn, {
         maxAttempts: 3,
-        initialDelayMs: 1000,
-        maxDelayMs: 10000,
+        initialDelayMs: 1,
+        maxDelayMs: 100,
         backoffMultiplier: 2,
       });
-
-      jest.runAllTimers();
-      await promise;
 
       expect(fn).toHaveBeenCalledTimes(3);
     });
@@ -74,30 +58,28 @@ describe('Retry', () => {
     it('should only retry on retryable errors', async () => {
       const fn = jest.fn().mockRejectedValue(new Error('Rate limit exceeded'));
 
-      const promise = Retry.execute(fn, {
-        maxAttempts: 3,
-        initialDelayMs: 1000,
-        retryableErrors: [/rate limit/i],
-      });
-
-      jest.runAllTimers();
-
-      await expect(promise).rejects.toThrow('Rate limit exceeded');
+      await expect(
+        Retry.execute(fn, {
+          maxAttempts: 3,
+          initialDelayMs: 1,
+          retryableErrors: [/rate limit/i],
+        })
+      ).rejects.toThrow('Rate limit exceeded');
+      
       expect(fn).toHaveBeenCalledTimes(3);
     });
 
     it('should not retry on non-retryable errors', async () => {
       const fn = jest.fn().mockRejectedValue(new Error('Auth failed'));
 
-      const promise = Retry.execute(fn, {
-        maxAttempts: 3,
-        initialDelayMs: 1000,
-        retryableErrors: [/rate limit/i],
-      });
-
-      jest.runAllTimers();
-
-      await expect(promise).rejects.toThrow('Auth failed');
+      await expect(
+        Retry.execute(fn, {
+          maxAttempts: 3,
+          initialDelayMs: 1,
+          retryableErrors: [/rate limit/i],
+        })
+      ).rejects.toThrow('Auth failed');
+      
       expect(fn).toHaveBeenCalledTimes(1);
     });
   });
@@ -106,9 +88,7 @@ describe('Retry', () => {
     it('should execute with exponential backoff', async () => {
       const fn = jest.fn().mockResolvedValue('success');
 
-      const promise = Retry.withBackoff(fn, 3);
-      jest.runAllTimers();
-      const result = await promise;
+      const result = await Retry.withBackoff(fn, 3);
 
       expect(result).toBe('success');
       expect(fn).toHaveBeenCalledTimes(1);
@@ -122,9 +102,7 @@ describe('Retry', () => {
         .mockRejectedValueOnce(new Error('Rate limit exceeded'))
         .mockResolvedValue('success');
 
-      const promise = Retry.forRateLimit(fn);
-      jest.runAllTimers();
-      const result = await promise;
+      const result = await Retry.forRateLimit(fn);
 
       expect(result).toBe('success');
       expect(fn).toHaveBeenCalledTimes(2);
@@ -138,9 +116,7 @@ describe('Retry', () => {
         .mockRejectedValueOnce(new Error('Network timeout'))
         .mockResolvedValue('success');
 
-      const promise = Retry.forNetwork(fn);
-      jest.runAllTimers();
-      const result = await promise;
+      const result = await Retry.forNetwork(fn);
 
       expect(result).toBe('success');
       expect(fn).toHaveBeenCalledTimes(2);
@@ -151,10 +127,10 @@ describe('Retry', () => {
     it('should handle zero attempts', async () => {
       const fn = jest.fn().mockRejectedValue(new Error('fail'));
 
-      const promise = Retry.execute(fn, { maxAttempts: 0, initialDelayMs: 1000 });
-      jest.runAllTimers();
-
-      await expect(promise).rejects.toThrow();
+      await expect(
+        Retry.execute(fn, { maxAttempts: 0, initialDelayMs: 1 })
+      ).rejects.toThrow();
+      
       expect(fn).toHaveBeenCalledTimes(0);
     });
 
@@ -164,9 +140,7 @@ describe('Retry', () => {
         .mockRejectedValueOnce(new Error('fail'))
         .mockResolvedValue('success');
 
-      const promise = Retry.execute(fn, { maxAttempts: 2, initialDelayMs: 1 });
-      jest.runAllTimers();
-      const result = await promise;
+      const result = await Retry.execute(fn, { maxAttempts: 2, initialDelayMs: 1 });
 
       expect(result).toBe('success');
     });
@@ -176,10 +150,9 @@ describe('Retry', () => {
         throw new Error('sync error');
       });
 
-      const promise = Retry.execute(fn, { maxAttempts: 2, initialDelayMs: 1000 });
-      jest.runAllTimers();
-
-      await expect(promise).rejects.toThrow('sync error');
+      await expect(
+        Retry.execute(fn, { maxAttempts: 2, initialDelayMs: 1 })
+      ).rejects.toThrow('sync error');
     });
   });
 });

@@ -68,6 +68,8 @@ describe('ConfigLoader', () => {
 
     it('should parse array inputs correctly', () => {
       mockCore.getInput.mockImplementation((name: string) => {
+        if (name === 'github-token') return 'test-token';
+        if (name === 'api-key') return 'test-api-key';
         if (name === 'include-patterns') return '**/*.ts,**/*.js';
         if (name === 'exclude-patterns') return '**/node_modules/**,**/dist/**';
         return '';
@@ -99,6 +101,8 @@ describe('ConfigLoader', () => {
 
     it('should load custom prompt path', () => {
       mockCore.getInput.mockImplementation((name: string) => {
+        if (name === 'github-token') return 'test-token';
+        if (name === 'api-key') return 'test-api-key';
         if (name === 'custom-prompt-path') return '/path/to/prompt.md';
         return '';
       });
@@ -110,6 +114,8 @@ describe('ConfigLoader', () => {
 
     it('should load custom rules', () => {
       mockCore.getInput.mockImplementation((name: string) => {
+        if (name === 'github-token') return 'test-token';
+        if (name === 'api-key') return 'test-api-key';
         if (name === 'custom-rules') return 'Rule 1\nRule 2';
         return '';
       });
