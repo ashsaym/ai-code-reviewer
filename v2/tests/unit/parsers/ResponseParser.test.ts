@@ -279,4 +279,143 @@ describe('ResponseParser', () => {
       expect(result.errors).toBeDefined();
     });
   });
+
+  describe('deduplicateComments', () => {
+    it('should remove duplicate comments', () => {
+      const comments = [
+        { path: 'src/test.ts', line: 10, severity: 'error' as const, message: 'Error 1' },
+        { path: 'src/test.ts', line: 10, severity: 'error' as const, message: 'Error 1' },
+        { path: 'src/test.ts', line: 20, severity: 'warning' as const, message: 'Warning 1' },
+      ];
+
+      const result = ResponseParser.deduplicateComments(comments);
+
+      expect(result.length).toBe(2);
+    });
+
+    it('should keep unique comments', () => {
+      const comments = [
+        { path: 'src/test.ts', line: 10, severity: 'error' as const, message: 'Error 1' },
+        { path: 'src/test.ts', line: 20, severity: 'warning' as const, message: 'Warning 1' },
+      ];
+
+      const result = ResponseParser.deduplicateComments(comments);
+
+      expect(result.length).toBe(2);
+    });
+  });
+
+  describe('sortByLine', () => {
+    it('should sort comments by line number', () => {
+      const comments = [
+        { path: 'src/test.ts', line: 30, severity: 'error' as const, message: 'Error 3' },
+        { path: 'src/test.ts', line: 10, severity: 'error' as const, message: 'Error 1' },
+        { path: 'src/test.ts', line: 20, severity: 'warning' as const, message: 'Warning 2' },
+      ];
+
+      const result = ResponseParser.sortByLine(comments);
+
+      expect(result[0].line).toBe(10);
+      expect(result[1].line).toBe(20);
+      expect(result[2].line).toBe(30);
+    });
+  });
+
+  describe('groupByFile', () => {
+    it('should group comments by file', () => {
+      const comments = [
+        { path: 'src/file1.ts', line: 10, severity: 'error' as const, message: 'Error 1' },
+        { path: 'src/file2.ts', line: 20, severity: 'warning' as const, message: 'Warning 1' },
+        { path: 'src/file1.ts', line: 30, severity: 'info' as const, message: 'Info 1' },
+      ];
+
+      const result = ResponseParser.groupByFile(comments);
+
+      expect(result.size).toBe(2);
+      expect(result.get('src/file1.ts')?.length).toBe(2);
+      expect(result.get('src/file2.ts')?.length).toBe(1);
+    });
+  });
+
+  describe('filterBySeverity', () => {
+    it('should filter comments by severity', () => {
+      const comments = [
+        { path: 'src/test.ts', line: 10, severity: 'error' as const, message: 'Error 1' },
+        { path: 'src/test.ts', line: 20, severity: 'warning' as const, message: 'Warning 1' },
+        { path: 'src/test.ts', line: 30, severity: 'info' as const, message: 'Info 1' },
+      ];
+
+      const errors = ResponseParser.filterBySeverity(comments, ['error']);
+      const warnings = ResponseParser.filterBySeverity(comments, ['warning']);
+
+      expect(errors.length).toBe(1);
+      expect(warnings.length).toBe(1);
+    });
+
+    it('should filter multiple severities', () => {
+      const comments = [
+        { path: 'src/test.ts', line: 10, severity: 'error' as const, message: 'Error 1' },
+        { path: 'src/test.ts', line: 20, severity: 'warning' as const, message: 'Warning 1' },
+        { path: 'src/test.ts', line: 30, severity: 'info' as const, message: 'Info 1' },
+      ];
+
+      const result = ResponseParser.filterBySeverity(comments, ['error', 'warning']);
+
+      expect(result.length).toBe(2);
+    });
+  });
+
+  describe('formatForGitHub', () => {
+    it('should format comment for GitHub', () => {
+      const comment = {
+        path: 'src/test.ts',
+        line: 10,
+        severity: 'error' as const,
+        message: 'Test error',
+        suggestion: 'Fix this',
+      };
+
+      const result = ResponseParser.formatForGitHub(comment);
+
+      expect(result).toContain('Test error');
+      expect(result).toContain('Fix this');
+    });
+
+    it('should format comment without suggestion', () => {
+      const comment = {
+        path: 'src/test.ts',
+        line: 10,
+        severity: 'warning' as const,
+        message: 'Test warning',
+      };
+
+      const result = ResponseParser.formatForGitHub(comment);
+
+      expect(result).toContain('Test warning');
+    });
+  });
+
+  describe('createSummary', () => {
+    it('should create summary from comments', () => {
+      const comments = [
+        { path: 'src/test.ts', line: 10, severity: 'error' as const, message: 'Error 1' },
+        { path: 'src/test.ts', line: 20, severity: 'warning' as const, message: 'Warning 1' },
+      ];
+
+      const result = ResponseParser.createSummary(comments, 'Custom summary');
+
+      expect(result).toContain('Custom summary');
+      expect(result.length).toBeGreaterThan(0);
+    });
+
+    it('should create summary without custom text', () => {
+      const comments = [
+        { path: 'src/test.ts', line: 10, severity: 'info' as const, message: 'Info 1' },
+      ];
+
+      const result = ResponseParser.createSummary(comments);
+
+      expect(result.length).toBeGreaterThan(0);
+    });
+  });
 });
