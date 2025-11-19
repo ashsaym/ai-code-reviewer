@@ -58,7 +58,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: AI Code Review
-        uses: ashsaym/code-sentinel-ai@v2
+        uses: ashsaym/code-sentinel-ai@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           api-key: ${{ secrets.OPENAI_API_KEY }}
@@ -109,7 +109,7 @@ Open a PR and watch Code Sentinel review your code automatically.
 
 ```yaml
 - name: AI Code Review (Self-Hosted)
-  uses: ashsaym/code-sentinel-ai@v2
+  uses: ashsaym/code-sentinel-ai@v1
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     api-key: ${{ secrets.OPENWEBUI_API_KEY }}
@@ -122,7 +122,7 @@ Open a PR and watch Code Sentinel review your code automatically.
 
 ```yaml
 - name: AI Code Review (Strict)
-  uses: ashsaym/code-sentinel-ai@v2
+  uses: ashsaym/code-sentinel-ai@v1
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     api-key: ${{ secrets.OPENAI_API_KEY }}
