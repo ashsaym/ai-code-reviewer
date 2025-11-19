@@ -290,7 +290,7 @@ Provide in 3-4 sentences:
       () => this.aiProvider.sendMessage([
         { role: 'system', content: 'You are a technical analyst. Provide concise, factual summaries.' },
         { role: 'user', content: prompt },
-      ]),
+      ], { responseFormat: 'text' }),
       'Project context generation'
     );
 
@@ -392,7 +392,7 @@ Format as markdown. Be informative and comprehensive.`;
     const response = await this.aiProvider.sendMessage([
       { role: 'system', content: 'You are a technical documentation expert writing clear, comprehensive project documentation.' },
       { role: 'user', content: prompt },
-    ]);
+    ], { responseFormat: 'text' });
 
     return {
       id: 'overview',
@@ -427,7 +427,7 @@ Include mermaid diagrams where helpful. Format as markdown.`;
     const response = await this.aiProvider.sendMessage([
       { role: 'system', content: 'You are a software architect creating detailed technical documentation.' },
       { role: 'user', content: prompt },
-    ]);
+    ], { responseFormat: 'text' });
 
     return {
       id: 'architecture',
@@ -473,7 +473,7 @@ Format as markdown with code examples.`;
     const response = await this.aiProvider.sendMessage([
       { role: 'system', content: 'You are an API documentation specialist.' },
       { role: 'user', content: prompt },
-    ]);
+    ], { responseFormat: 'text' });
 
     return {
       id: 'api-reference',
@@ -505,9 +505,9 @@ Write a comprehensive getting started guide with:
 Format as markdown with clear step-by-step instructions.`;
 
     const response = await this.aiProvider.sendMessage([
-      { role: 'system', content: 'You are a technical writer creating user-friendly setup guides.' },
+      { role: 'system', content: 'You are a technical writer creating user-friendly documentation.' },
       { role: 'user', content: prompt },
-    ]);
+    ], { responseFormat: 'text' });
 
     return {
       id: 'getting-started',
@@ -541,7 +541,7 @@ Format as markdown with practical examples.`;
     const response = await this.aiProvider.sendMessage([
       { role: 'system', content: 'You are a user experience writer creating clear user guides.' },
       { role: 'user', content: prompt },
-    ]);
+    ], { responseFormat: 'text' });
 
     return {
       id: 'user-guide',
@@ -602,7 +602,7 @@ Format as markdown with clear guidelines.`;
     const response = await this.aiProvider.sendMessage([
       { role: 'system', content: 'You are a developer relations expert creating contributor guides.' },
       { role: 'user', content: prompt },
-    ]);
+    ], { responseFormat: 'text' });
 
     return {
       id: 'developer-guide',
