@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">47.16% </span>
+                <span class="strong">48.14% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>25/53</span>
+                <span class='fraction'>26/54</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">36.66% </span>
+                <span class="strong">38.88% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>11/30</span>
+                <span class='fraction'>14/36</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">47.16% </span>
+                <span class="strong">48.14% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>25/53</span>
+                <span class='fraction'>26/54</span>
             </div>
         
             
@@ -240,29 +240,36 @@
 <a name='L175'></a><a href='#L175'>175</a>
 <a name='L176'></a><a href='#L176'>176</a>
 <a name='L177'></a><a href='#L177'>177</a>
-<a name='L178'></a><a href='#L178'>178</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L178'></a><a href='#L178'>178</a>
+<a name='L179'></a><a href='#L179'>179</a>
+<a name='L180'></a><a href='#L180'>180</a>
+<a name='L181'></a><a href='#L181'>181</a>
+<a name='L182'></a><a href='#L182'>182</a>
+<a name='L183'></a><a href='#L183'>183</a>
+<a name='L184'></a><a href='#L184'>184</a>
+<a name='L185'></a><a href='#L185'>185</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -290,10 +297,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
@@ -466,11 +480,18 @@ export class OpenAIProvider extends BaseProvider {
         requestBody.response_format = { type: 'json_object' };
       }
 &nbsp;
-      // Use max_completion_tokens for newer models if enabled, otherwise max_tokens
-      <span class="missing-if-branch" title="if path not taken" >I</span>if (this.maxCompletionTokensMode) {
-<span class="cstat-no" title="statement not covered" >        requestBody.max_completion_tokens = this.maxTokens;</span>
-      } else {
-        requestBody.max_tokens = this.maxTokens;
+      // Automatically determine which token parameter to use based on model
+      // Models that require max_completion_tokens (newer models as of Nov 2024)
+      const requiresMaxCompletionTokens = this.model.startsWith('gpt-5') || 
+<span class="branch-1 cbranch-no" title="branch not covered" >                                          this.model.startsWith('gpt-4o-mini') </span>||
+<span class="branch-2 cbranch-no" title="branch not covered" >                                          this.model.startsWith('o1') </span>||
+<span class="branch-3 cbranch-no" title="branch not covered" >                                          this.model.startsWith('o3');</span>
+      
+      // Use max_completion_tokens for newer models or if explicitly enabled, otherwise max_tokens
+      if (this.maxCompletionTokensMode || requiresMaxCompletionTokens) {
+        requestBody.max_completion_tokens = this.maxTokens;
+      } else <span class="missing-if-branch" title="else path not taken" >E</span>{
+<span class="cstat-no" title="statement not covered" >        requestBody.max_tokens = this.maxTokens;</span>
       }
 &nbsp;
       const response = await axios.post(
@@ -482,7 +503,7 @@ export class OpenAIProvider extends BaseProvider {
             'Authorization': `Bearer ${this.apiKey}`,
             ...(this.organizationId &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >{ 'OpenAI-Organization': this.organizationId })</span>,
           },
-          timeout: 120000, // 2 minutes
+          timeout: this.timeout,
         }
       );
 &nbsp;
@@ -601,7 +622,7 @@ export class OpenAIProvider extends BaseProvider {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-19T18:56:17.883Z
+                at 2025-11-19T20:06:20.018Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

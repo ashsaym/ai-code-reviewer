@@ -1,4 +1,4 @@
-name: Code Analysis Pipeline
+name: Code Analysis Pipeline (Full Scan & Documentation)
 
 on:
   workflow_dispatch:
@@ -88,6 +88,7 @@ jobs:
           provider: 'openai'
           model: 'gpt-5-mini'
           max-tokens: '128000'
+          timeout: '600000'  # 10 minutes
           publish-outputs: check-run,artifact,issue
           issue-threshold: high
       
@@ -172,6 +173,7 @@ jobs:
           provider: 'openai'
           model: 'gpt-5-mini'
           max-tokens: '128000'
+          timeout: '600000'  # 10 minutes
       
       - name: Upload Documentation
         if: always()
