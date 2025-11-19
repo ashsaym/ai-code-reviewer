@@ -23,7 +23,7 @@ coverage:
 
 # Flags for different versions
 flags:
-  v2:
+  code-sentinel-ai:
     paths:
       - code-sentinel-ai/**
     carryforward: true

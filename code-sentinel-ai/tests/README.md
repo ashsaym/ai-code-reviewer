@@ -2,7 +2,7 @@
 
 ## 📋 Overview
 
-This directory contains comprehensive unit tests for Code Sentinel AI v2. The test suite covers all TypeScript modules in `v2/src` with extensive scenario coverage including happy paths, error handling, and edge cases.
+This directory contains comprehensive unit tests for Code Sentinel AI. The test suite covers all TypeScript modules in `code-sentinel-ai/src` with extensive scenario coverage including happy paths, error handling, and edge cases.
 
 ## 🎯 Coverage Goals
 

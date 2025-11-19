@@ -7,5 +7,5 @@
 /.github/workflows/ @ashsaym
 /.github/dependabot.yml @ashsaym
 
-# v2 action
-/v2/ @ashsaym
+# Specific ownership for code-sentinel-ai directory
+/code-sentinel-ai/ @ashsaym
