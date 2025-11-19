@@ -465,6 +465,19 @@ export class CommentService {
   }
 
   /**
+   * Dismiss a specific review by ID
+   */
+  async dismissReview(prNumber: number, reviewId: number, message: string): Promise<void> {
+    await this.octokit.pulls.dismissReview({
+      owner: this.owner,
+      repo: this.repo,
+      pull_number: prNumber,
+      review_id: reviewId,
+      message: message,
+    });
+  }
+
+  /**
    * Resolve all Code Sentinel AI review threads
    */
   async resolveAllOurThreads(prNumber: number): Promise<number> {
