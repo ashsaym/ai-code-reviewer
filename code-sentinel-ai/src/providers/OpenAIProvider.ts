@@ -1,7 +1,7 @@
 /**
  * OpenAI Provider
  * 
- * Default provider using OpenAI GPT models (gpt-5-mini, gpt-4o, gpt-4-turbo)
+ * Default provider using OpenAI GPT models (gpt-5-mini, gpt-5-mini, gpt-4-turbo)
  */
 
 import * as core from '@actions/core';
@@ -120,9 +120,10 @@ export class OpenAIProvider extends BaseProvider {
   static estimateCost(model: string, promptTokens: number, completionTokens: number): number {
     // Pricing as of 2025 (per 1M tokens)
     const pricing: Record<string, { prompt: number; completion: number }> = {
-      'gpt-5-mini': { prompt: 0.15, completion: 0.60 },
       'gpt-4o': { prompt: 2.50, completion: 10.00 },
-      'gpt-4o-2024-11-20': { prompt: 2.50, completion: 10.00 },
+      'gpt-4o-mini': { prompt: 0.15, completion: 0.60 },
+      'gpt-5-mini': { prompt: 0.15, completion: 0.60 },
+      'gpt-5-mini-2024-11-20': { prompt: 2.50, completion: 10.00 },
       'gpt-4-turbo': { prompt: 10.00, completion: 30.00 },
       'gpt-4': { prompt: 30.00, completion: 60.00 },
     };

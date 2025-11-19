@@ -17,7 +17,7 @@ describe('OpenAIProvider', () => {
 
     provider = new OpenAIProvider({
       apiKey: 'test-key',
-      model: 'gpt-4o-mini',
+      model: 'gpt-5-mini-mini',
       maxTokens: 16000,
       temperature: 0.3,
     });
@@ -43,7 +43,7 @@ describe('OpenAIProvider', () => {
             completion_tokens: 5,
             total_tokens: 15,
           },
-          model: 'gpt-4o-mini',
+          model: 'gpt-5-mini-mini',
         },
       });
 
@@ -68,7 +68,7 @@ describe('OpenAIProvider', () => {
             },
           ],
           usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
-          model: 'gpt-4o-mini',
+          model: 'gpt-5-mini-mini',
         },
       });
 
@@ -113,7 +113,7 @@ describe('OpenAIProvider', () => {
             },
           ],
           usage: { prompt_tokens: 10, completion_tokens: 16000, total_tokens: 16010 },
-          model: 'gpt-4o-mini',
+          model: 'gpt-5-mini-mini',
         },
       });
 
@@ -131,7 +131,7 @@ describe('OpenAIProvider', () => {
 
   describe('getModel', () => {
     it('should return model name', () => {
-      expect(provider.getModel()).toBe('gpt-4o-mini');
+      expect(provider.getModel()).toBe('gpt-5-mini-mini');
     });
   });
 });

@@ -1,0 +1,126 @@
+name: Full Codebase Scan
+
+on:
+  workflow_dispatch:
+    inputs:
+      scan_type:
+        description: 'Type of scan to perform'
+        type: choice
+        required: true
+        options:
+          - security
+          - quality
+          - documentation
+          - architecture
+          - all
+        default: security
+      
+      scan_scope:
+        description: 'Files to include in scan'
+        type: choice
+        required: false
+        options:
+          - full-codebase
+          - src-only
+          - tests-excluded
+        default: src-only
+      
+      create_issue:
+        description: 'Create GitHub issue for critical/high findings'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  issues: write
+  checks: write
+
+jobs:
+  full-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180  # 3 hours for comprehensive scan
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # Full history for better analysis
+      
+      - name: Run Full Codebase Scan
+        id: scan
+        uses: ./code-sentinel-ai  # Use local action
+        with:
+          mode: scan
+          scan-type: ${{ inputs.scan_type }}
+          scan-scope: ${{ inputs.scan_scope }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          api-key: ${{ secrets.OPENAI_API_KEY }}
+          provider: 'openai'
+          model: 'gpt-5-mini'
+          max-scan-tokens: 120000
+          publish-outputs: check-run,artifact,issue
+          issue-threshold: high
+      
+      - name: Upload HTML Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-report-html-${{ inputs.scan_type }}
+          path: ${{ steps.scan.outputs.html-report-path }}
+          retention-days: 90
+      
+      - name: Upload JSON Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-report-json-${{ inputs.scan_type }}
+          path: ${{ steps.scan.outputs.json-report-path }}
+          retention-days: 90
+      
+      - name: Upload Markdown Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-report-md-${{ inputs.scan_type }}
+          path: ${{ steps.scan.outputs.md-report-path }}
+          retention-days: 90
+      
+      - name: Create Issue for Critical Findings
+        if: inputs.create_issue && steps.scan.outputs.create-issue == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `${{ steps.scan.outputs.issue-title }}`,
+              body: `${{ steps.scan.outputs.issue-body }}`,
+              labels: ['security', 'automated-scan', '${{ inputs.scan_type }}']
+            });
+      
+      - name: Comment on Report Location
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const scanType = '${{ inputs.scan_type }}';
+            const findingsCount = '${{ steps.scan.outputs.findings-count }}';
+            const criticalCount = '${{ steps.scan.outputs.critical-count }}';
+            const highCount = '${{ steps.scan.outputs.high-count }}';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            
+            console.log(`
+            ## 🔍 ${scanType.toUpperCase()} Scan Complete
+            
+            **Summary:**
+            - Total Findings: ${findingsCount}
+            - Critical: ${criticalCount}
+            - High: ${highCount}
+            
+            **Reports:** Download from [workflow artifacts](${runUrl})
+            - 📄 HTML Report (interactive, with file links)
+            - 📊 JSON Report (machine-readable data)
+            - 📝 Markdown Report (summary)
+            
+            **Scan ID:** ${{ steps.scan.outputs.scan-id }}
+            `);

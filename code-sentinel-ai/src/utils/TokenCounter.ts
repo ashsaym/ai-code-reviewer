@@ -48,9 +48,10 @@ export class TokenCounter {
   ): number {
     // Pricing per 1M tokens (as of 2025)
     const pricing: Record<string, { prompt: number; completion: number }> = {
-      'gpt-5-mini': { prompt: 0.15, completion: 0.60 },
       'gpt-4o': { prompt: 2.50, completion: 10.00 },
-      'gpt-4o-2024-11-20': { prompt: 2.50, completion: 10.00 },
+      'gpt-4o-mini': { prompt: 0.15, completion: 0.60 },
+      'gpt-5-mini': { prompt: 0.15, completion: 0.60 },
+      'gpt-5-mini-2024-11-20': { prompt: 2.50, completion: 10.00 },
       'gpt-4-turbo': { prompt: 10.00, completion: 30.00 },
       'gpt-4': { prompt: 30.00, completion: 60.00 },
     };

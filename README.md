@@ -151,7 +151,7 @@ Open a PR and watch Code Sentinel review your code automatically.
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     api-key: ${{ secrets.OPENAI_API_KEY }}
-    model: 'gpt-4o'  # More powerful model
+    model: 'gpt-5-mini'  # More powerful model
     max-files-per-batch: 20
     max-lines-per-file: 1000
     incremental-mode: true

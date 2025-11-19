@@ -9,7 +9,8 @@ export default {
     file: 'dist/index.js',
     format: 'cjs',
     sourcemap: true,
-    banner: '#!/usr/bin/env node'
+    banner: '#!/usr/bin/env node',
+    inlineDynamicImports: true
   },
   plugins: [
     json(),

@@ -41,6 +41,15 @@ export interface ActionConfig {
   cacheEnabled: boolean;
   cacheTtlDays: number;
   debugMode: boolean;
+  
+  // Scan settings
+  scanType?: 'security' | 'quality' | 'documentation' | 'architecture' | 'all';
+  scanScope?: 'full-codebase' | 'src-only' | 'tests-excluded';
+  maxScanTokens?: number;
+  publishOutputs?: string[];
+  issueThreshold?: 'critical' | 'high' | 'medium' | 'low';
+  scanIncludePatterns?: string[];
+  scanExcludePatterns?: string[];
 }
 
 export class ConfigLoader {
@@ -100,6 +109,26 @@ export class ConfigLoader {
     const cacheEnabled = this.getBooleanInput('cache-enabled', true);
     const cacheTtlDays = this.getNumberInput('cache-ttl-days', 7);
     const debugMode = this.getBooleanInput('debug-mode', false);
+    
+    // Scan settings
+    const scanType = this.getInput('scan-type') as 'security' | 'quality' | 'documentation' | 'architecture' | 'all' | undefined;
+    const scanScope = this.getInput('scan-scope', 'src-only') as 'full-codebase' | 'src-only' | 'tests-excluded';
+    const maxScanTokens = this.getNumberInput('max-scan-tokens', 120000);
+    const publishOutputs = this.getArrayInput('publish-outputs', ['check-run', 'artifact']);
+    const issueThreshold = this.getInput('issue-threshold', 'high') as 'critical' | 'high' | 'medium' | 'low';
+    const scanIncludePatterns = this.getArrayInput('scan-include-patterns', []);
+    const scanExcludePatterns = this.getArrayInput('scan-exclude-patterns', [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/build/**',
+      '**/coverage/**',
+      '**/.git/**',
+      '**/*.min.js',
+      '**/*.map',
+      '**/package-lock.json',
+      '**/yarn.lock',
+      '**/pnpm-lock.yaml',
+    ]);
 
     return {
       token,
@@ -124,6 +153,13 @@ export class ConfigLoader {
       cacheEnabled,
       cacheTtlDays,
       debugMode,
+      scanType,
+      scanScope,
+      maxScanTokens,
+      publishOutputs,
+      issueThreshold,
+      scanIncludePatterns,
+      scanExcludePatterns,
     };
   }
 
