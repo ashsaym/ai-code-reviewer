@@ -28,6 +28,7 @@ export interface ReviewEngineOptions {
   maxLinesPerFile?: number;
   autoCleanOutdated?: boolean;
   incrementalMode?: boolean;
+  aiAgentName?: string;
 }
 
 export interface ReviewResult {
@@ -53,6 +54,7 @@ export class ReviewEngine {
   private autoCleanOutdated: boolean;
   private incrementalMode: boolean;
   private incrementalProcessedThisRun: boolean = false;
+  private aiAgentName: string;
 
   constructor(options: ReviewEngineOptions) {
     this.storage = options.storage;
@@ -62,6 +64,7 @@ export class ReviewEngine {
     this.maxFilesPerBatch = options.maxFilesPerBatch || 10;
     this.autoCleanOutdated = options.autoCleanOutdated ?? true;
     this.incrementalMode = options.incrementalMode ?? true;
+    this.aiAgentName = options.aiAgentName || 'Code Sentinel AI';
   }
 
   /**
@@ -407,7 +410,8 @@ export class ReviewEngine {
           const summary = ResponseParser.createReviewSummary(
             validComments,
             parseResult.data!.summary,
-            this.aiProvider.getModel()
+            this.aiProvider.getModel(),
+            this.aiAgentName
           );
           
           await this.commentService.createReview(

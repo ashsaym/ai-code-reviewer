@@ -167,6 +167,7 @@ export class ActionOrchestrator {
         maxFilesPerBatch: config.maxFilesPerBatch,
         maxLinesPerFile: config.maxLinesPerFile,
         autoCleanOutdated: config.autoCleanOutdated,
+        aiAgentName: config.aiAgentName,
       });
 
       // 7. Execute review
@@ -286,6 +287,7 @@ export class ActionOrchestrator {
       const model = core.getInput('model', { required: false }) || 'gpt-5-mini';
       const apiEndpoint = core.getInput('api-endpoint', { required: false });
       const maxCompletionTokensMode = core.getBooleanInput('max-completion-tokens-mode', { required: false });
+      const aiAgentName = core.getInput('ai-agent-name', { required: false }) || 'Code Sentinel AI';
 
       const aiProvider = ProviderFactory.create({
         type: provider as 'openai' | 'openwebui',
@@ -304,6 +306,7 @@ export class ActionOrchestrator {
         commentService,
         aiProvider,
         prNumber,
+        aiAgentName,
       });
 
       await summaryService.generateSummary();
@@ -394,6 +397,7 @@ export class ActionOrchestrator {
       const model = core.getInput('model', { required: false }) || 'gpt-5-mini';
       const apiEndpoint = core.getInput('api-endpoint', { required: false });
       const maxCompletionTokensMode = core.getBooleanInput('max-completion-tokens-mode', { required: false });
+      const aiAgentName = core.getInput('ai-agent-name', { required: false }) || 'Code Sentinel AI';
 
       const aiProvider = ProviderFactory.create({
         type: provider as 'openai' | 'openwebui',
@@ -412,6 +416,7 @@ export class ActionOrchestrator {
         commentService,
         aiProvider,
         prNumber,
+        aiAgentName,
       });
 
       await suggestionService.generateSuggestions();
@@ -496,6 +501,7 @@ export class ActionOrchestrator {
       const model = core.getInput('model', { required: false }) || 'gpt-5-mini';
       const apiEndpoint = core.getInput('api-endpoint', { required: false });
       const maxCompletionTokensMode = core.getBooleanInput('max-completion-tokens-mode', { required: false });
+      const aiAgentName = core.getInput('ai-agent-name', { required: false }) || 'Code Sentinel AI';
 
       const aiProvider = ProviderFactory.create({
         type: provider as 'openai' | 'openwebui',
@@ -513,6 +519,7 @@ export class ActionOrchestrator {
         prService,
         aiProvider,
         prNumber,
+        aiAgentName,
       });
 
       await descriptionService.generateDescription();

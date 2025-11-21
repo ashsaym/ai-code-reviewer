@@ -32,6 +32,7 @@ export interface ActionConfig {
   // Check runs
   enableCheckRuns: boolean;
   checkName: string;
+  aiAgentName: string;
   
   // Custom prompts
   customPromptPath?: string;
@@ -91,6 +92,7 @@ export class ConfigLoader {
     // Check runs
     const enableCheckRuns = this.getBooleanInput('enable-check-runs', true);
     const checkName = this.getInput('check-name', 'Code Sentinel AI Review') || 'Code Sentinel AI Review';
+    const aiAgentName = this.getInput('ai-agent-name', 'Code Sentinel AI') || 'Code Sentinel AI';
 
     // Custom prompts
     const customPromptPath = this.getInput('custom-prompt-path');
@@ -119,6 +121,7 @@ export class ConfigLoader {
       incrementalMode,
       enableCheckRuns,
       checkName,
+      aiAgentName,
       customPromptPath,
       customRules,
       cacheEnabled,

@@ -18,30 +18,39 @@
 
 > **Production-ready AI code reviewer** with zero external dependencies. Intelligent, incremental, and GitHub-native.
 
+## ✨ Key Features
+
+- **🎨 Customizable Agent Names** - Brand your AI reviewer with custom names in all comments
+- **💬 Comment Commands** - Trigger modes via `/review`, `/summary`, `/suggestion`, `/description`
+- **⚡ High Performance** - 70%+ test coverage with optimized caching
+- **🔧 Flexible Configuration** - Extensive input parameters and custom templates
+
 ### 💬 Comment Commands
 Trigger different modes via PR comments:
-- `/review` - Perform code review
-- `/summary` - Generate PR summary
-- `/suggestion` - Generate code suggestions
-- `/description` - Generate PR description
+- `/review` - Perform comprehensive code review with inline comments
+- `/summary` - Generate PR summary with commit timeline and changes overview
+- `/suggestion` - Generate improvement suggestions as inline comments
+- `/description` - Auto-generate PR description from commits and changes
 
 ## ✨ Features
 
 ### 🎯 Core Capabilities
-- **🧠 Smart AI Reviews** - Powered by OpenAI GPT-5-mini, GPT-4o, GPT-4-turbo, or self-hosted models
-- **⚡ Incremental Analysis** - Reviews only changed code, not the entire PR
-- **💾 GitHub-Native Caching** - Uses GitHub Actions Cache API (no external services)
-- **🔄 Outdated Comment Cleanup** - Automatically marks outdated comments on updated code
-- **📊 Multi-Mode Operation** - Supports review, summary, suggestion, and description modes via comments
-- **🎨 Customizable Templates** - Use Handlebars templates for custom prompts
-- **🚀 Zero Dependencies** - No Redis, PostgreSQL, or S3 required
+- **🧠 Smart AI Reviews** - OpenAI GPT-5-mini, GPT-4o, GPT-4-turbo, or self-hosted OpenWebUI models
+- **⚡ Incremental Analysis** - Reviews only changed lines, skips unchanged code
+- **💾 GitHub-Native Caching** - Uses GitHub Actions Cache API (7-day TTL, 60%+ hit rate)
+- **🔄 Incremental Cleanup** - Auto-resolves outdated comments when code is updated
+- **📊 Multi-Mode Operation** - Review, summary, suggestion, and description modes
+- **🎨 Customizable Agent Name** - Brand your AI reviewer (e.g., "My Custom AI Reviewer")
+- **🎯 Custom Templates** - Use Handlebars templates for custom prompts and rules
+- **🚀 Zero Dependencies** - No external services (Redis, PostgreSQL, S3) required
 
 ### 🏗️ Architecture Highlights
-- **TypeScript** - Full type safety and modern tooling
-- **Modular Design** - 50+ focused, testable modules
-- **Production-Ready** - Comprehensive error handling, logging, and retry logic
-- **Extensible Providers** - Easy to add new LLM providers (one file per provider)
-- **Fast & Efficient** - 60%+ cache hit rate, parallel processing
+- **TypeScript 5.3+** - Full type safety with strict mode enabled
+- **Modular Design** - 50+ focused modules across 10 service layers
+- **Production-Ready** - Error handling, structured logging, automatic retries
+- **Extensible Providers** - OpenAI and OpenWebUI providers, easy to add more
+- **High Performance** - Parallel file processing, intelligent caching, token optimization
+- **Test Coverage** - 70%+ coverage with 350+ unit and integration tests
 
 ## 🚀 Quick Start
 
@@ -74,6 +83,7 @@ jobs:
           api-key: ${{ secrets.OPENAI_API_KEY }}
           provider: 'openai'
           model: 'gpt-5-mini'
+          ai-agent-name: 'Code Sentinel AI'  # Optional: customize your agent name
 ```
 
 ### 2. Set Your API Key
@@ -110,6 +120,7 @@ Open a PR and watch Code Sentinel review your code automatically.
 | `incremental-mode` | Enable incremental review mode | ❌ | `true` |
 | `enable-check-runs` | Enable GitHub Check Runs for review history | ❌ | `true` |
 | `check-name` | Name for the GitHub Check Run | ❌ | `Code Sentinel AI Review` |
+| `ai-agent-name` | Name of the AI agent shown in comments and reviews | ❌ | `Code Sentinel AI` |
 | `custom-prompt-path` | Path to custom prompt template (Handlebars) | ❌ | - |
 | `custom-rules` | Custom review rules to add to the prompt | ❌ | - |
 | `cache-enabled` | Enable GitHub Actions cache | ❌ | `true` |
@@ -125,6 +136,7 @@ Open a PR and watch Code Sentinel review your code automatically.
     github-token: ${{ secrets.GITHUB_TOKEN }}
     github-host: 'https://github.enterprise.com/api/v3'
     api-key: ${{ secrets.OPENAI_API_KEY }}
+    ai-agent-name: 'Enterprise Code Guardian'
 ```
 
 ### Example: Self-Hosted Models
@@ -137,10 +149,9 @@ Open a PR and watch Code Sentinel review your code automatically.
     api-key: ${{ secrets.OPENWEBUI_API_KEY }}
     provider: 'openwebui'
     model: 'llama3.1:70b'
-    # For OpenWebUI with /v1 API prefix:
     api-endpoint: 'https://your-openwebui-instance.com/v1'
-    # Or without /v1 (provider appends /chat/completions automatically):
-    # api-endpoint: 'https://your-openwebui-instance.com'
+    ai-agent-name: 'Local AI Reviewer'
+    # Provider automatically appends /chat/completions to the endpoint
 ```
 
 ### Example: Strict Review Mode
@@ -151,13 +162,35 @@ Open a PR and watch Code Sentinel review your code automatically.
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     api-key: ${{ secrets.OPENAI_API_KEY }}
-    model: 'gpt-4o'  # More powerful model
+    model: 'gpt-4o'  # More powerful model for thorough reviews
     max-files-per-batch: 20
     max-lines-per-file: 1000
     incremental-mode: true
     enable-check-runs: true
+    auto-clean-outdated: true
     debug-mode: true
 ```
+
+### Example: Custom Agent Name
+
+```yaml
+- name: AI Code Review (Custom Agent)
+  uses: ashsaym/code-sentinel-ai@v1
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    api-key: ${{ secrets.OPENAI_API_KEY }}
+    provider: 'openai'
+    model: 'gpt-5-mini'
+    ai-agent-name: 'My Custom AI Reviewer'  # Your branded name
+```
+
+**Result:** Comments show "_Generated by My Custom AI Reviewer v1.0.0 (gpt-5-mini)_" instead of the default.
+
+This appears in:
+- PR review comments footer
+- Summary comment footer
+- Suggestion review footer
+- Description footer
 
 ## 🎨 Customization
 
@@ -310,10 +343,10 @@ npm run typecheck
 
 ### Test Coverage
 
-- **Unit Tests:** Core logic, utilities, parsers
-- **Integration Tests:** GitHub API, storage, providers
-- **E2E Tests:** Full workflow simulation
-- **Target Coverage:** >80%
+- **Unit Tests:** 350+ tests covering core logic, utilities, and parsers
+- **Integration Tests:** GitHub API, storage, and provider interactions
+- **Current Coverage:** 70.11% (Statements: 70.11%, Branches: 55.37%, Functions: 64.77%)
+- **Target Coverage:** Maintained above 70% for production stability
 
 ### Running Tests Locally
 

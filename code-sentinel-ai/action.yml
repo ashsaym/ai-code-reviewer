@@ -93,6 +93,11 @@ inputs:
     required: false
     default: 'Code Sentinel AI Review'
   
+  ai-agent-name:
+    description: 'Name of the AI agent shown in comments and reviews'
+    required: false
+    default: 'Code Sentinel AI'
+  
   custom-prompt-path:
     description: 'Path to custom prompt template (Handlebars)'
     required: false

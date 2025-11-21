@@ -55,4 +55,5 @@ jobs:
           model: 'gpt-5-mini'
           max-completion-tokens-mode: 'true'
           debug-mode: 'true'
+          ai-agent-name: 'Code Sentinel AI'
           # Mode is auto-detected from the comment (/review, /summary, or /suggestion)
