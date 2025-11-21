@@ -31,7 +31,7 @@ export class OpenAIProvider extends BaseProvider {
       core.debug(`Sending ${messages.length} messages to OpenAI (${this.model})`);
 
       // Build request body with appropriate token parameter
-      const requestBody: any = {
+      const requestBody: Record<string, unknown> = {
         model: this.model,
         messages: messages.map(m => ({
           role: m.role,
@@ -166,7 +166,7 @@ export class OpenAIProvider extends BaseProvider {
       });
 
       return response.data.data
-        .map((m: any) => m.id)
+        .map((m: { id: string }) => m.id)
         .filter((id: string) => id.startsWith('gpt-'));
     } catch (error) {
       core.warning('Failed to list models');

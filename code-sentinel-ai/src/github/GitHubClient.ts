@@ -47,11 +47,11 @@ export class GitHubClient {
       auth: options.token,
       baseUrl: options.baseUrl || 'https://api.github.com',
       throttle: options.enableThrottling !== false ? {
-        onRateLimit: (retryAfter: number, _options: any, _octokit: Octokit) => {
+        onRateLimit: (retryAfter: number, _options: unknown, _octokit: Octokit) => {
           core.warning(`Rate limit hit, retrying after ${retryAfter} seconds`);
           return retryAfter <= 60; // Retry if wait is less than 60 seconds
         },
-        onSecondaryRateLimit: (retryAfter: number, _options: any, _octokit: Octokit) => {
+        onSecondaryRateLimit: (retryAfter: number, _options: unknown, _octokit: Octokit) => {
           core.warning(`Secondary rate limit hit, retrying after ${retryAfter} seconds`);
           return retryAfter <= 60;
         },

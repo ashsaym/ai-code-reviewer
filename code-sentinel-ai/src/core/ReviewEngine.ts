@@ -17,6 +17,7 @@ import { PromptBuilder } from '../prompts/PromptBuilder';
 import { ResponseParser } from '../parsers/ResponseParser';
 import { Logger } from '../utils/Logger';
 import { TokenCounter } from '../utils/TokenCounter';
+import { PRInfo } from '../github/PullRequestService';
 
 export interface ReviewEngineOptions {
   storage: StorageManager;
@@ -244,7 +245,7 @@ export class ReviewEngine {
     owner: string,
     repo: string,
     prNumber: number,
-    pr: any,
+    pr: PRInfo,
     batch: FileAnalysis[],
     allFiles: PRFile[],
     result: ReviewResult

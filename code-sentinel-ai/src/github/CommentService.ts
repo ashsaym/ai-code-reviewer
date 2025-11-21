@@ -223,7 +223,23 @@ export class CommentService {
       // We need to query the PR's review threads and find the one containing this comment
       const prNumber = parseInt(comment.data.pull_request_url.split('/').pop() || '0', 10);
       
-      const result: any = await this.octokit.graphql(`
+      interface GraphQLComment {
+        databaseId: number;
+      }
+      interface GraphQLThread {
+        id: string;
+        isResolved: boolean;
+        comments: { nodes: GraphQLComment[] };
+      }
+      interface GraphQLResult {
+        repository: {
+          pullRequest: {
+            reviewThreads: { nodes: GraphQLThread[] };
+          };
+        };
+      }
+
+      const result = await this.octokit.graphql<GraphQLResult>(`
         query($owner: String!, $repo: String!, $prNumber: Int!) {
           repository(owner: $owner, name: $repo) {
             pullRequest(number: $prNumber) {
@@ -249,8 +265,8 @@ export class CommentService {
 
       // Find the thread that contains this comment
       const threads = result.repository.pullRequest.reviewThreads.nodes;
-      const thread = threads.find((t: any) => 
-        t.comments.nodes.some((c: any) => c.databaseId === commentId)
+      const thread = threads.find(t => 
+        t.comments.nodes.some(c => c.databaseId === commentId)
       );
 
       if (!thread) {
@@ -513,7 +529,26 @@ export class CommentService {
     try {
       core.info('🔄 Resolving all Code Sentinel AI review threads...');
       
-      const result: any = await this.octokit.graphql(`
+      interface ResolveThreadResult {
+        repository: {
+          pullRequest: {
+            reviewThreads: {
+              nodes: Array<{
+                id: string;
+                isResolved: boolean;
+                comments: {
+                  nodes: Array<{
+                    body: string;
+                    author: { login: string };
+                  }>;
+                };
+              }>;
+            };
+          };
+        };
+      }
+
+      const result = await this.octokit.graphql<ResolveThreadResult>(`
         query($owner: String!, $repo: String!, $prNumber: Int!) {
           repository(owner: $owner, name: $repo) {
             pullRequest(number: $prNumber) {
@@ -587,7 +622,24 @@ export class CommentService {
    */
   async countResolvedThreads(prNumber: number): Promise<number> {
     try {
-      const result: any = await this.octokit.graphql(`
+      interface CountThreadsResult {
+        repository: {
+          pullRequest: {
+            reviewThreads: {
+              nodes: Array<{
+                isResolved: boolean;
+                comments: {
+                  nodes: Array<{
+                    author: { login: string };
+                  }>;
+                };
+              }>;
+            };
+          };
+        };
+      }
+
+      const result = await this.octokit.graphql<CountThreadsResult>(`
         query($owner: String!, $repo: String!, $prNumber: Int!) {
           repository(owner: $owner, name: $repo) {
             pullRequest(number: $prNumber) {
@@ -613,7 +665,7 @@ export class CommentService {
       });
 
       const threads = result.repository.pullRequest.reviewThreads.nodes;
-      return threads.filter((t: any) => 
+      return threads.filter(t => 
         t.isResolved && 
         t.comments.nodes[0]?.author.login === 'github-actions[bot]'
       ).length;

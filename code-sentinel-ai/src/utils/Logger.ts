@@ -89,7 +89,7 @@ export class Logger {
   /**
    * Log metrics
    */
-  static metrics(metrics: Record<string, any>): void {
+  static metrics(metrics: Record<string, number | string | boolean>): void {
     const formatted = Object.entries(metrics)
       .map(([key, value]) => `${key}: ${value}`)
       .join(', ');

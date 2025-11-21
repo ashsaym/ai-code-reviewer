@@ -73,12 +73,13 @@ export class TemplateLoader {
     });
     
     // Join array helper
-    this.registerHelper('join', (arr: any[], separator: string) => {
+    this.registerHelper('join', (arr: unknown[], separator: string) => {
+      if (!Array.isArray(arr)) return '';
       return arr.join(separator);
     });
     
     // Conditional equality
-    this.registerHelper('eq', (a: any, b: any) => a === b);
+    this.registerHelper('eq', (a: unknown, b: unknown) => a === b);
     
     // File extension
     this.registerHelper('ext', (filename: string) => {

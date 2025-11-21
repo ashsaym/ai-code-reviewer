@@ -73,7 +73,7 @@ export class ResponseParser {
   /**
    * Extract JSON from response text
    */
-  private static extractJSON(text: string): any {
+  private static extractJSON(text: string): unknown {
     try {
       // Try direct parse first
       return JSON.parse(text);

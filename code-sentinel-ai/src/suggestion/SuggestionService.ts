@@ -89,7 +89,7 @@ export class SuggestionService {
   /**
    * Build prompt for AI suggestion generation (requests JSON format)
    */
-  private buildSuggestionPrompt(prInfo: PRInfo, files: Array<any>): string {
+  private buildSuggestionPrompt(prInfo: PRInfo, files: Array<{ filename: string; status: string; additions: number; deletions: number; patch?: string }>): string {
     // Format files section
     const filesSection = this.formatFilesForPrompt(files);
 
@@ -141,7 +141,7 @@ Provide 5-10 specific inline suggestions. Be constructive and specific. Focus on
   /**
    * Format files for prompt
    */
-  private formatFilesForPrompt(files: Array<any>): string {
+  private formatFilesForPrompt(files: Array<{ filename: string; status: string; additions: number; deletions: number; patch?: string }>): string {
     if (files.length === 0) {
       return 'No files changed';
     }
@@ -170,7 +170,7 @@ Provide 5-10 specific inline suggestions. Be constructive and specific. Focus on
    */
   private parseSuggestions(
     jsonContent: string,
-    files: Array<any>
+    files: Array<{ filename: string; patch?: string }>
   ): Array<{ path: string; position: number; body: string }> {
     try {
       const parsed = JSON.parse(jsonContent);

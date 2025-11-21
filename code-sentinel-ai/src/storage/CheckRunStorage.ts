@@ -88,23 +88,20 @@ export class CheckRunStorage {
     output?: CheckRun['output']
   ): Promise<void> {
     try {
-      const updateData: any = {
+      const updateData = {
         owner: this.owner,
         repo: this.repo,
         check_run_id: checkRunId,
         status,
+        ...(status === 'completed' && {
+          completed_at: new Date().toISOString(),
+          conclusion: conclusion || 'success',
+        }),
+        ...(output && { output }),
       };
 
-      if (status === 'completed') {
-        updateData.completed_at = new Date().toISOString();
-        updateData.conclusion = conclusion || 'success';
-      }
-
-      if (output) {
-        updateData.output = output;
-      }
-
-      await this.octokit.checks.update(updateData);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await this.octokit.checks.update(updateData as any);
       core.info(`✅ Updated check run #${checkRunId} - status: ${status}`);
     } catch (error) {
       core.error(`Failed to update check run: ${error instanceof Error ? error.message : String(error)}`);

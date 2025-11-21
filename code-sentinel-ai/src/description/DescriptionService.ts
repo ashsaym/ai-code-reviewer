@@ -79,7 +79,7 @@ export class DescriptionService {
   private buildDescriptionPrompt(
     prInfo: PRInfo, 
     commits: Array<CommitInfo>,
-    files: Array<any>
+    files: Array<{ filename: string; status: string; additions: number; deletions: number }>
   ): string {
     // Format commits section - keep it concise
     const commitsSection = commits.slice(0, 10).map((c, idx) => 
