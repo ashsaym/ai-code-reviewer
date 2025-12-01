@@ -19,6 +19,7 @@ from llama_index.core.schema import Document, TextNode
 from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.vector_stores.milvus import MilvusVectorStore
+from llama_index.vector_stores.postgres import PGVectorStore
 from llama_index.storage.kvstore.redis import RedisKVStore
 from llama_index.storage.docstore.redis import RedisDocumentStore
 from llama_index.storage.index_store.redis import RedisIndexStore
@@ -33,7 +34,8 @@ class LlamaIndexService:
     LlamaIndex-based service for AI operations.
     
     Uses OpenAI-compatible APIs (like Open WebUI) for LLM and embeddings.
-    Uses Milvus for vector storage and Redis for document/index storage.
+    Uses PGVector (PostgreSQL, default) or Milvus for vector storage based on USE_MILVUS setting.
+    Uses Redis for document/index storage.
     
     Can be initialized with custom OpenWebUI config or use defaults from settings.
     """
@@ -116,6 +118,7 @@ class LlamaIndexService:
                 temperature=self._temperature,
                 max_tokens=self._max_tokens,
                 default_headers={"HTTP-Referer": "https://github.com/ashsaym/InfraMind-AI"},
+                timeout=480.0,  # 8 minutes timeout for LLM requests (4x increase)
             )
             
             # Initialize Embedding Model
@@ -127,6 +130,7 @@ class LlamaIndexService:
                 api_base=api_base,
                 api_key=api_key,
                 embed_batch_size=settings.DEFAULT_BATCH_SIZE,
+                timeout=240.0,  # 4 minutes timeout for embedding requests (4x increase)
             )
             
             # Set global defaults
@@ -160,12 +164,93 @@ class LlamaIndexService:
             raise RuntimeError("Embedding model not available - check OPENWEB_API_KEY")
         return self._embed_model
     
+    async def get_model_context_size(self) -> int:
+        """Get the actual context size from OpenWebUI API dynamically."""
+        try:
+            import httpx
+            
+            # Try to fetch model info from OpenWebUI API
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                # OpenWebUI models endpoint
+                models_url = self._api_url.replace('/api/v1', '/api/models')
+                
+                response = await client.get(
+                    models_url,
+                    headers={"Authorization": f"Bearer {self._api_key}"}
+                )
+                
+                if response.status_code == 200:
+                    models_data = response.json()
+                    
+                    # Look for the current model in the response
+                    if isinstance(models_data, dict) and 'data' in models_data:
+                        for model in models_data['data']:
+                            if model.get('id') == self._chat_model or model.get('model') == self._chat_model:
+                                # Try different possible fields for context size
+                                context_size = (
+                                    model.get('context_length') or
+                                    model.get('context_size') or
+                                    model.get('max_tokens') or
+                                    model.get('n_ctx')
+                                )
+                                if context_size:
+                                    logger.info(f"📊 Fetched dynamic context size for {self._chat_model}: {context_size}")
+                                    return int(context_size)
+                    
+                    # If model list format is different
+                    elif isinstance(models_data, list):
+                        for model in models_data:
+                            if model.get('id') == self._chat_model or model.get('model') == self._chat_model:
+                                context_size = (
+                                    model.get('context_length') or
+                                    model.get('context_size') or
+                                    model.get('max_tokens') or
+                                    model.get('n_ctx')
+                                )
+                                if context_size:
+                                    logger.info(f"📊 Fetched dynamic context size for {self._chat_model}: {context_size}")
+                                    return int(context_size)
+                
+                logger.warning(f"⚠️ Could not fetch context size from OpenWebUI API, using configured value: {self._chat_context_size}")
+                
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to fetch dynamic context size: {e}, using configured value: {self._chat_context_size}")
+        
+        # Fallback to configured value
+        return self._chat_context_size
+    
+    def get_vector_store(
+        self, 
+        collection_name: str,
+        dim: Optional[int] = None
+    ):
+        """Get vector store (PGVector or Milvus) based on USE_MILVUS setting."""
+        if settings.USE_MILVUS:
+            logger.info(f"Using Milvus vector store for collection '{collection_name}'")
+            return MilvusVectorStore(
+                uri=settings.milvus_uri,
+                collection_name=collection_name,
+                dim=dim or settings.EMBEDDING_DIMENSION,
+                overwrite=False,
+            )
+        else:
+            logger.info(f"Using PGVector (PostgreSQL) vector store for table '{collection_name}'")
+            return PGVectorStore.from_params(
+                database=settings.POSTGRES_DB,
+                host=settings.POSTGRES_HOST,
+                port=settings.POSTGRES_PORT,
+                user=settings.POSTGRES_USER,
+                password=settings.POSTGRES_PASSWORD,
+                table_name=collection_name,
+                embed_dim=dim or settings.EMBEDDING_DIMENSION,
+            )
+    
     def get_milvus_vector_store(
         self, 
         collection_name: str,
         dim: Optional[int] = None
     ) -> MilvusVectorStore:
-        """Get Milvus vector store for a collection."""
+        """Get Milvus vector store for a collection. (Deprecated: use get_vector_store)"""
         return MilvusVectorStore(
             uri=settings.milvus_uri,
             collection_name=collection_name,
@@ -338,7 +423,7 @@ class LlamaIndexService:
         if not self._initialized:
             self.initialize()
         
-        vector_store = self.get_milvus_vector_store(collection_name)
+        vector_store = self.get_vector_store(collection_name)
         
         if nodes:
             # Create new index with nodes
@@ -368,10 +453,30 @@ class LlamaIndexService:
             self.initialize()
         
         try:
+            import asyncio
+            
+            logger.info(f"🔍 Querying index '{collection_name}' with top_k={top_k}...")
+            start_time = asyncio.get_event_loop().time()
+            
             index = self.create_vector_index(collection_name)
             retriever = index.as_retriever(similarity_top_k=top_k)
             
-            nodes = await retriever.aretrieve(query)
+            # Add timeout for large retrievals (scale with top_k)
+            # Base timeout: 90s + 1.5s per result (3x increase)
+            timeout_seconds = min(90 + (top_k * 1.5), 480)  # Max 8 minutes (4x increase)
+            logger.info(f"⏱️ Using timeout of {timeout_seconds}s for retrieval")
+            
+            try:
+                nodes = await asyncio.wait_for(
+                    retriever.aretrieve(query),
+                    timeout=timeout_seconds
+                )
+            except asyncio.TimeoutError:
+                logger.error(f"⏱️ Retrieval timed out after {timeout_seconds}s with top_k={top_k}")
+                raise TimeoutError(f"Vector search timed out after {timeout_seconds}s. Try reducing top_k value.")
+            
+            elapsed = asyncio.get_event_loop().time() - start_time
+            logger.info(f"✅ Retrieved {len(nodes)} nodes in {elapsed:.2f}s")
             
             results = []
             for node in nodes:
@@ -385,7 +490,7 @@ class LlamaIndexService:
             return results
             
         except Exception as e:
-            logger.error(f"Index query failed: {e}")
+            logger.error(f"❌ Index query failed: {e}")
             raise
 
 

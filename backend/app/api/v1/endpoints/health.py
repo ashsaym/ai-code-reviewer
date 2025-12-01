@@ -44,6 +44,17 @@ async def check_redis() -> bool:
         return False
 
 
+async def check_pgvector(db: AsyncSession) -> bool:
+    """Check PGVector extension in PostgreSQL."""
+    try:
+        result = await db.execute(
+            text("SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'vector')")
+        )
+        return result.scalar()
+    except Exception:
+        return False
+
+
 async def check_milvus() -> bool:
     """Check Milvus connection."""
     try:
@@ -74,17 +85,28 @@ async def health_check(db: AsyncSession = Depends(get_db)):
     Checks:
     - PostgreSQL database
     - Redis cache
-    - Milvus vector database
+    - Vector database (PGVector or Milvus based on USE_MILVUS setting)
     
     Note: Does NOT check OpenWebUI or GitHub - those are configured after startup.
     """
     postgres_ok = await check_postgres(db)
     redis_ok = await check_redis()
-    milvus_ok = await check_milvus()
     
-    # Critical: postgres and milvus must be connected
+    # Check vector store based on USE_MILVUS setting
+    if settings.USE_MILVUS:
+        milvus_ok = await check_milvus()
+        pgvector_ok = False
+        vector_store_type = "milvus"
+    else:
+        pgvector_ok = await check_pgvector(db)
+        milvus_ok = False
+        vector_store_type = "pgvector"
+    
+    vector_store_ok = milvus_ok or pgvector_ok
+    
+    # Critical: postgres and vector store must be connected
     # Redis is optional (caching can be disabled)
-    all_critical_healthy = postgres_ok and milvus_ok
+    all_critical_healthy = postgres_ok and vector_store_ok
     
     if all_critical_healthy and redis_ok:
         status = "healthy"
@@ -98,7 +120,9 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         databases=DatabaseHealth(
             postgres=postgres_ok,
             redis=redis_ok,
-            milvus=milvus_ok
+            milvus=milvus_ok,
+            pgvector=pgvector_ok,
+            vector_store_type=vector_store_type
         ),
         uptime_seconds=time.time() - _startup_time,
         version=settings.APP_VERSION,
@@ -160,27 +184,53 @@ async def detailed_health(db: AsyncSession = Depends(get_db)):
         else:
             redis_info["status"] = "disabled_via_config"
     
-    # Check Milvus
-    milvus_ok = await check_milvus()
-    milvus_error = None
-    milvus_version = None
-    if milvus_ok:
-        try:
-            from pymilvus import connections, utility
-            connections.connect(
-                alias="health_detailed",
-                host=settings.MILVUS_HOST,
-                port=str(settings.MILVUS_PORT),
-                timeout=5
-            )
-            milvus_version = utility.get_server_version(using="health_detailed")
-            connections.disconnect("health_detailed")
-        except Exception:
-            pass
+    # Check vector store based on USE_MILVUS setting
+    vector_store_info = {}
+    if settings.USE_MILVUS:
+        milvus_ok = await check_milvus()
+        milvus_error = None
+        milvus_version = None
+        if milvus_ok:
+            try:
+                from pymilvus import connections, utility
+                connections.connect(
+                    alias="health_detailed",
+                    host=settings.MILVUS_HOST,
+                    port=str(settings.MILVUS_PORT),
+                    timeout=5
+                )
+                milvus_version = utility.get_server_version(using="health_detailed")
+                connections.disconnect("health_detailed")
+            except Exception:
+                pass
+        else:
+            milvus_error = "Connection failed"
+            issues.append("Milvus connection failed")
+            recommendations.append("Ensure Milvus vector database is running. Check MILVUS_HOST and MILVUS_PORT.")
+        
+        vector_store_info = {
+            "type": "milvus",
+            "status": "healthy" if milvus_ok else "unhealthy",
+            "host": settings.MILVUS_HOST,
+            "port": settings.MILVUS_PORT,
+            "version": milvus_version,
+            "error": milvus_error
+        }
+        vector_store_ok = milvus_ok
     else:
-        milvus_error = "Connection failed"
-        issues.append("Milvus connection failed")
-        recommendations.append("Ensure Milvus vector database is running. Check MILVUS_HOST and MILVUS_PORT.")
+        pgvector_ok = await check_pgvector(db)
+        if not pgvector_ok:
+            issues.append("PGVector extension not found in PostgreSQL")
+            recommendations.append("Install PGVector: run 'CREATE EXTENSION vector;' in PostgreSQL")
+        
+        vector_store_info = {
+            "type": "pgvector",
+            "status": "healthy" if pgvector_ok else "unhealthy",
+            "host": settings.POSTGRES_HOST,
+            "port": settings.POSTGRES_PORT,
+            "error": None if pgvector_ok else "PGVector extension not found"
+        }
+        vector_store_ok = pgvector_ok
     
     # Configuration checks
     config_status = {
@@ -199,7 +249,7 @@ async def detailed_health(db: AsyncSession = Depends(get_db)):
         recommendations.append("Set REPO_PAT_TOKEN for GitHub integration")
     
     # Determine overall status
-    critical_ok = postgres_ok and milvus_ok
+    critical_ok = postgres_ok and vector_store_ok
     if not critical_ok:
         status = "unhealthy"
     elif not redis_ok and settings.CACHE_ENABLED:
@@ -224,13 +274,7 @@ async def detailed_health(db: AsyncSession = Depends(get_db)):
                 "port": settings.REDIS_PORT,
                 "info": redis_info
             },
-            "milvus": {
-                "status": "healthy" if milvus_ok else "unhealthy",
-                "host": settings.MILVUS_HOST,
-                "port": settings.MILVUS_PORT,
-                "version": milvus_version,
-                "error": milvus_error
-            }
+            "vector_store": vector_store_info
         },
         "configuration": config_status,
         "issues": issues,

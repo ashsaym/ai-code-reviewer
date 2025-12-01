@@ -184,6 +184,56 @@ async def calculate_dynamic_top_k(
     return min(optimal, total_chunks), total_chunks
 
 
+def truncate_contexts_to_fit(
+    contexts: List[RetrievedContext],
+    max_context_tokens: int,
+    system_prompt_tokens: int,
+    history_tokens: int,
+    user_message_tokens: int,
+    buffer_tokens: int = 1000
+) -> List[RetrievedContext]:
+    """
+    Intelligently truncate contexts to fit within available token budget.
+    
+    Args:
+        contexts: Retrieved context chunks
+        max_context_tokens: Maximum context size of the model
+        system_prompt_tokens: Tokens used by system prompt template
+        history_tokens: Tokens used by chat history
+        user_message_tokens: Tokens from user's message
+        buffer_tokens: Safety buffer for response generation
+    
+    Returns:
+        Truncated list of contexts that fit within budget
+    """
+    # Calculate available tokens for actual context content
+    available_tokens = max_context_tokens - system_prompt_tokens - history_tokens - user_message_tokens - buffer_tokens
+    
+    if available_tokens <= 0:
+        logger.warning(f"⚠️ No tokens available for context! max={max_context_tokens}, used={system_prompt_tokens + history_tokens + user_message_tokens}")
+        return []
+    
+    # Sort by relevance (score) and take chunks that fit
+    sorted_contexts = sorted(contexts, key=lambda c: c.score, reverse=True)
+    
+    selected_contexts = []
+    total_tokens = 0
+    
+    for ctx in sorted_contexts:
+        ctx_tokens = ctx.token_count or len(ctx.text.split())
+        if total_tokens + ctx_tokens <= available_tokens:
+            selected_contexts.append(ctx)
+            total_tokens += ctx_tokens
+        else:
+            # Stop when we would exceed the budget
+            break
+    
+    if len(selected_contexts) < len(contexts):
+        logger.info(f"📉 Truncated contexts from {len(contexts)} to {len(selected_contexts)} chunks to fit token budget (used {total_tokens}/{available_tokens} tokens)")
+    
+    return selected_contexts
+
+
 def calculate_file_relevance(
     contexts: List[Dict[str, Any]],
     min_threshold: float = 0.1
@@ -479,11 +529,13 @@ async def project_chat(
     context_dicts = []
     
     try:
+        logger.info(f"🔍 Starting context retrieval with top_k={top_k} for query: {request.message[:100]}...")
         results = await project_service.query_index(
             collection_name=project.milvus_collection,
             query=request.message,
             top_k=top_k  # Use calculated top_k
         )
+        logger.info(f"✅ Context retrieval successful, got {len(results)} results")
         
         for r in results:
             score = r.get("score", 0)
@@ -513,8 +565,18 @@ async def project_chat(
                 "chunk_id": r.get("node_id")
             })
             
+    except TimeoutError as e:
+        logger.error(f"⏱️ Context retrieval timed out with top_k={top_k}: {e}")
+        raise HTTPException(
+            status_code=504,
+            detail=f"Context retrieval timed out. Try reducing the top_k value (current: {top_k}). Recommended: 25 or less."
+        )
     except Exception as e:
-        logger.warning(f"Context retrieval failed: {e}")
+        logger.error(f"❌ Context retrieval failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve context: {str(e)}"
+        )
     
     # Check if we have any relevant context
     if not contexts:
@@ -580,11 +642,41 @@ async def project_chat(
     file_info = "\n\n".join(file_info_parts) if file_info_parts else "No specific file information"
     file_list_str = ", ".join(file_list) if file_list else "No files"
     
+    # Estimate tokens for system prompt template (without context)
+    system_prompt_template_tokens = int(len(prompt_config.system_prompt.split()) * 1.3)
+    file_info_tokens = int(len(file_info.split()) * 1.3)
+    
+    # Estimate tokens for chat history
+    history_tokens = 0
+    if request.include_history and session.messages:
+        history = sorted(session.messages, key=lambda m: m.created_at)[-settings.CHAT_HISTORY_MAX_MESSAGES:]
+        history_tokens = int(sum(len(msg.content.split()) for msg in history) * 1.3)
+    
+    # Estimate tokens for user message
+    user_message_tokens = int(len(request.message.split()) * 1.3)
+    
+    # Get model's context size dynamically from OpenWebUI API
+    max_context_size = await project_service.get_model_context_size()
+    logger.info(f"📊 Using context size: {max_context_size} tokens")
+    
+    # Intelligently truncate contexts to fit within token budget
+    truncated_contexts = truncate_contexts_to_fit(
+        contexts=contexts,
+        max_context_tokens=max_context_size,
+        system_prompt_tokens=system_prompt_template_tokens + file_info_tokens,
+        history_tokens=history_tokens,
+        user_message_tokens=user_message_tokens,
+        buffer_tokens=request.max_tokens or 2048  # Reserve space for response
+    )
+    
+    if len(truncated_contexts) < len(contexts):
+        logger.warning(f"⚠️ Context truncated: {len(contexts)} → {len(truncated_contexts)} chunks to fit in context window")
+    
     # Build context string - optimize to avoid redundant tokens
     import hashlib
     seen_texts = set()
     unique_contexts = []
-    for c in contexts:
+    for c in truncated_contexts:  # Use truncated contexts
         # Use deterministic hash for deduplication
         text_hash = hashlib.md5(c.text[:100].encode()).hexdigest()
         if text_hash not in seen_texts:
@@ -592,6 +684,8 @@ async def project_chat(
             unique_contexts.append(c.text)
     
     context_text = "\n\n---\n\n".join(unique_contexts)
+    
+    logger.info(f"📊 Final context stats: {len(unique_contexts)} unique chunks, estimated {int(len(context_text.split()) * 1.3)} tokens")
     
     # Build system prompt
     system_prompt = prompt_config.system_prompt.format(
@@ -700,8 +794,26 @@ async def project_chat(
                 yield f"data: [DONE]\n\n"
                 
             except Exception as e:
-                logger.error(f"Streaming failed: {e}")
-                yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
+                error_str = str(e)
+                logger.error(f"❌ Streaming failed: {e}")
+                
+                # Check for context size exceeded error
+                if "exceed_context_size" in error_str or "exceeds the available context size" in error_str:
+                    import re
+                    match = re.search(r"n_prompt_tokens['\"]?\s*:\s*(\d+)", error_str)
+                    prompt_tokens = int(match.group(1)) if match else None
+                    
+                    match = re.search(r"n_ctx['\"]?\s*:\s*(\d+)", error_str)
+                    context_limit = int(match.group(1)) if match else None
+                    
+                    error_msg = "⚠️ Context size exceeded. "
+                    if prompt_tokens and context_limit:
+                        error_msg += f"Your query used {prompt_tokens:,} tokens but the model limit is {context_limit:,} tokens. "
+                    error_msg += f"Try reducing top_k (current: {top_k}) or use shorter chat history. Recommended top_k: {max(5, top_k // 4)}"
+                    
+                    yield f"data: {json.dumps({'type': 'error', 'content': error_msg})}\n\n"
+                else:
+                    yield f"data: {json.dumps({'type': 'error', 'content': error_str})}\n\n"
         
         return StreamingResponse(
             generate_stream(),
@@ -720,9 +832,37 @@ async def project_chat(
             temperature=request.temperature,
             max_tokens=request.max_tokens
         )
+        
+        # Check if response is None or empty
+        if response_content is None:
+            logger.error("❌ Chat completion returned None")
+            raise HTTPException(status_code=500, detail="Chat completion returned no response")
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
-        logger.error(f"Chat completion failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Chat completion failed: {str(e)}")
+        error_str = str(e)
+        logger.error(f"❌ Chat completion failed: {e}")
+        
+        # Check for context size exceeded error
+        if "exceed_context_size" in error_str or "exceeds the available context size" in error_str:
+            # Extract token counts if available
+            import re
+            match = re.search(r"n_prompt_tokens['\"]?\s*:\s*(\d+)", error_str)
+            prompt_tokens = int(match.group(1)) if match else None
+            
+            match = re.search(r"n_ctx['\"]?\s*:\s*(\d+)", error_str)
+            context_limit = int(match.group(1)) if match else None
+            
+            detail_msg = f"Context size exceeded. "
+            if prompt_tokens and context_limit:
+                detail_msg += f"Your query used {prompt_tokens:,} tokens but the model limit is {context_limit:,} tokens. "
+            detail_msg += f"Try reducing top_k (current: {top_k}) or use a shorter chat history. Recommended top_k: {max(5, top_k // 4)}"
+            
+            raise HTTPException(status_code=413, detail=detail_msg)
+        
+        raise HTTPException(status_code=500, detail=f"Chat completion failed: {error_str}")
     
     # Format code blocks in response for UI
     response_content = format_code_response(response_content)

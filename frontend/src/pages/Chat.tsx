@@ -567,7 +567,19 @@ const Chat: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        const errorMsg = errorData.detail || `HTTP error! status: ${response.status}`;
+        
+        // Special handling for timeout errors
+        if (response.status === 504 || errorMsg.includes('timed out')) {
+          throw new Error(`⏱️ Request timed out. ${errorMsg.includes('top_k') ? errorMsg : 'Try reducing the Top-K value or simplifying your query.'}`);
+        }
+        
+        // Special handling for context size errors
+        if (response.status === 413 || errorMsg.includes('Context size exceeded') || errorMsg.includes('exceeds the available context')) {
+          throw new Error(`⚠️ ${errorMsg}`);
+        }
+        
+        throw new Error(errorMsg);
       }
 
       const reader = response.body?.getReader();

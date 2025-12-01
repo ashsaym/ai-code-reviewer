@@ -388,13 +388,10 @@ class JobExecutor:
                 }
             )
             
-            # Use MilvusVectorStore to insert the node
-            from llama_index.vector_stores.milvus import MilvusVectorStore
-            vector_store = MilvusVectorStore(
-                uri=settings.milvus_uri,
+            # Use vector store (PGVector or Milvus based on settings)
+            vector_store = svc.get_vector_store(
                 collection_name=collection,
-                dim=dim,
-                overwrite=False
+                dim=dim
             )
             
             # Insert the node

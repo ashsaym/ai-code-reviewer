@@ -4,9 +4,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -62,7 +60,6 @@ yarn-error.log*
 .pnp.*
 
 # Next.js
-.next/
 out/
 .vercel
 *.tsbuildinfo

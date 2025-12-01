@@ -54,7 +54,10 @@ class Settings(BaseSettings):
     CACHE_TTL_SECONDS: int = 3600  # 1 hour default TTL
     CACHE_EMBEDDING_TTL_SECONDS: int = 86400  # 24 hours for embeddings
     
-    # Milvus Vector Database Configuration
+    # Vector Database Configuration
+    USE_MILVUS: bool = False  # Use Milvus (true) or PGVector/PostgreSQL (false, default)
+    
+    # Milvus Vector Database Configuration (only used if USE_MILVUS=true)
     MILVUS_HOST: str = "localhost"
     MILVUS_PORT: int = 19530
     
@@ -124,6 +127,16 @@ class Settings(BaseSettings):
     @classmethod
     def parse_cache_enabled(cls, v) -> bool:
         """Parse cache enabled from string or bool."""
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, str):
+            return v.lower() in ("true", "1", "yes", "on")
+        return False
+    
+    @field_validator("USE_MILVUS", mode="before")
+    @classmethod
+    def parse_use_milvus(cls, v) -> bool:
+        """Parse USE_MILVUS from string or bool."""
         if isinstance(v, bool):
             return v
         if isinstance(v, str):

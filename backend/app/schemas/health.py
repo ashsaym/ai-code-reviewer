@@ -11,6 +11,8 @@ class DatabaseHealth(BaseModel):
     postgres: bool = False
     redis: bool = False
     milvus: bool = False
+    pgvector: bool = False
+    vector_store_type: str = "unknown"
 
 
 class HealthResponse(BaseModel):

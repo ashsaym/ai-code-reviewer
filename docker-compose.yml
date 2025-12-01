@@ -1,0 +1,96 @@
+# InfraMind-AI Application Docker Compose
+# For backend and frontend services
+
+services:
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: inframind-backend:latest
+    container_name: inframind-backend
+    environment:
+      # Application
+      APP_NAME: InfraMind-AI
+      APP_VERSION: 4.0.0
+      DEBUG: "false"
+      LOG_LEVEL: INFO
+      SECRET_KEY: ${SECRET_KEY:-change-this-in-production}
+      
+      # PostgreSQL
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-inframind-ai}
+      POSTGRES_USER: ${POSTGRES_USER:-saym}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Saym7296}
+      
+      # Redis
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DB: ${REDIS_DB:-0}
+      
+      # Vector Database (PgVector by default)
+      USE_MILVUS: ${USE_MILVUS:-false}
+      
+      # OpenWebUI / LLM
+      OPENWEB_API_URL: ${OPENWEB_API_URL}
+      OPENWEB_API_KEY: ${OPENWEB_API_KEY}
+      OPENWEB_CHAT_MODEL: ${OPENWEB_CHAT_MODEL}
+      OPENWEB_EMBEDDER_MODEL: ${OPENWEB_EMBEDDER_MODEL}
+      OPENWEB_CHAT_CONTEXT_SIZE: ${OPENWEB_CHAT_CONTEXT_SIZE:-8192}
+      OPENWEB_EMBEDDING_CONTEXT_SIZE: ${OPENWEB_EMBEDDING_CONTEXT_SIZE:-8192}
+      EMBEDDING_DIMENSION: ${EMBEDDING_DIMENSION:-4096}
+      
+      # GitHub
+      REPO_PAT_TOKEN: ${REPO_PAT_TOKEN}
+      GITHUB_HOST: ${GITHUB_HOST:-github.com}
+      
+      # Caching
+      CACHE_ENABLED: ${CACHE_ENABLED:-false}
+      
+      # Processing
+      DEFAULT_BATCH_SIZE: ${DEFAULT_BATCH_SIZE:-4}
+      DEFAULT_MAX_CONCURRENT: ${DEFAULT_MAX_CONCURRENT:-5}
+      MAX_PARALLEL_FILES: ${MAX_PARALLEL_FILES:-5}
+      MAX_CHUNK_SIZE: ${MAX_CHUNK_SIZE:-2000}
+      CHUNK_OVERLAP: ${CHUNK_OVERLAP:-200}
+      PARALLEL_CHUNKS: ${PARALLEL_CHUNKS:-6}
+    ports:
+      - "8000:8000"
+    networks:
+      - inframind-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health/quick')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Web App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: inframind-frontend:latest
+    container_name: inframind-frontend
+    ports:
+      - "3000:80"
+    networks:
+      - inframind-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      - backend
+
+networks:
+  inframind-network:
+    name: inframind-network
+    driver: bridge
+    external: true

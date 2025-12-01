@@ -89,6 +89,29 @@ async def check_redis() -> bool:
         return False
 
 
+async def check_pgvector() -> bool:
+    """Check PGVector extension in PostgreSQL."""
+    try:
+        import asyncpg
+        conn = await asyncpg.connect(
+            host=settings.POSTGRES_HOST,
+            port=settings.POSTGRES_PORT,
+            user=settings.POSTGRES_USER,
+            password=settings.POSTGRES_PASSWORD,
+            database=settings.POSTGRES_DB,
+            timeout=5
+        )
+        # Check if pgvector extension exists
+        result = await conn.fetchval(
+            "SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'vector')"
+        )
+        await conn.close()
+        return result
+    except Exception as e:
+        logger.warning(f"PGVector check failed: {e}")
+        return False
+
+
 async def check_milvus() -> bool:
     """Check Milvus connection."""
     try:
@@ -131,7 +154,10 @@ async def lifespan(app: FastAPI):
     logger.info(f"🚀 Starting {settings.APP_NAME} v{settings.APP_VERSION}")
     logger.info(f"📊 Database: {settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}")
     logger.info(f"💾 Redis: {settings.REDIS_HOST}:{settings.REDIS_PORT}")
-    logger.info(f"🔢 Milvus: {settings.MILVUS_HOST}:{settings.MILVUS_PORT}")
+    vector_store_type = "Milvus" if settings.USE_MILVUS else "PGVector (PostgreSQL)"
+    logger.info(f"🔢 Vector Store: {vector_store_type}")
+    if settings.USE_MILVUS:
+        logger.info(f"   └─ Milvus: {settings.MILVUS_HOST}:{settings.MILVUS_PORT}")
     logger.info(f"💾 Caching: {'Enabled' if settings.CACHE_ENABLED else 'Disabled'}")
     logger.info(f"🔐 Environment: {'Development' if settings.DEBUG else 'Production'}")
     
@@ -145,7 +171,6 @@ async def lifespan(app: FastAPI):
     # Check database connections (health check only)
     postgres_ok = await check_postgres()
     redis_ok = await check_redis()
-    milvus_ok = await check_milvus()
     
     if postgres_ok:
         logger.info("✅ PostgreSQL connection successful")
@@ -157,12 +182,22 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning("⚠️ Redis connection failed - caching unavailable")
     
-    if milvus_ok:
-        logger.info("✅ Milvus connection successful")
+    # Check vector store based on USE_MILVUS setting
+    vector_store_ok = False
+    if settings.USE_MILVUS:
+        vector_store_ok = await check_milvus()
+        if vector_store_ok:
+            logger.info("✅ Milvus connection successful")
+        else:
+            logger.error("❌ Milvus connection failed")
     else:
-        logger.error("❌ Milvus connection failed")
+        vector_store_ok = await check_pgvector()
+        if vector_store_ok:
+            logger.info("✅ PGVector extension available")
+        else:
+            logger.error("❌ PGVector extension not found - run: CREATE EXTENSION vector;")
     
-    if not postgres_ok or not milvus_ok:
+    if not postgres_ok or not vector_store_ok:
         logger.error("🚨 Critical database connections failed!")
     
     logger.info("✅ Application startup complete")
