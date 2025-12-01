@@ -1,410 +1,488 @@
-# 🤖 Code Sentinel AI
+# 🚀 InfraMind-AI
 
-[![CI/CD](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/code-sentinel-ai-ci.yml/badge.svg)](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/code-sentinel-ai-ci.yml)
-[![codecov](https://codecov.io/gh/ashsaym/ai-code-reviewer/branch/main/graph/badge.svg?token=YOUR_CODECOV_TOKEN)](https://codecov.io/gh/ashsaym/ai-code-reviewer)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub release](https://img.shields.io/github/v/release/ashsaym/ai-code-reviewer)](https://github.com/ashsaym/ai-code-reviewer/releases)
-[![GitHub issues](https://img.shields.io/github/issues/ashsaym/ai-code-reviewer)](https://github.com/ashsaym/ai-code-reviewer/issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/ashsaym/ai-code-reviewer)](https://github.com/ashsaym/ai-code-reviewer/pulls)
-[![GitHub stars](https://img.shields.io/github/stars/ashsaym/ai-code-reviewer?style=social)](https://github.com/ashsaym/ai-code-reviewer/stargazers)
+A self-hosted AI engineering assistant with GitHub, Confluence, documentation, and Kubernetes integration.
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-20%2B-green.svg)](https://nodejs.org/)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/ashsaym/ai-code-reviewer/pulls)
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/ashsaym/ai-code-reviewer/graphs/commit-activity)
-[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
-[![Security Scan](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/security-scan.yml/badge.svg?branch=main)](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/security-scan.yml)
-[![CodeQL](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/ashsaym/ai-code-reviewer/actions/workflows/codeql.yml)
+## 📋 Features
 
-> **Production-ready AI code reviewer** with zero external dependencies. Intelligent, incremental, and GitHub-native.
-
-## ✨ Key Features
-
-- **🎨 Customizable Agent Names** - Brand your AI reviewer with custom names in all comments
-- **💬 Comment Commands** - Trigger modes via `/review`, `/summary`, `/suggestion`, `/description`
-- **⚡ High Performance** - 70%+ test coverage with optimized caching
-- **🔧 Flexible Configuration** - Extensive input parameters and custom templates
-
-### 💬 Comment Commands
-Trigger different modes via PR comments:
-- `/review` - Perform comprehensive code review with inline comments
-- `/summary` - Generate PR summary with commit timeline and changes overview
-- `/suggestion` - Generate improvement suggestions as inline comments
-- `/description` - Auto-generate PR description from commits and changes
-
-## ✨ Features
-
-### 🎯 Core Capabilities
-- **🧠 Smart AI Reviews** - OpenAI GPT-5-mini, GPT-4o, GPT-4-turbo, or self-hosted OpenWebUI models
-- **⚡ Incremental Analysis** - Reviews only changed lines, skips unchanged code
-- **💾 GitHub-Native Caching** - Uses GitHub Actions Cache API (7-day TTL, 60%+ hit rate)
-- **🔄 Incremental Cleanup** - Auto-resolves outdated comments when code is updated
-- **📊 Multi-Mode Operation** - Review, summary, suggestion, and description modes
-- **🎨 Customizable Agent Name** - Brand your AI reviewer (e.g., "My Custom AI Reviewer")
-- **🎯 Custom Templates** - Use Handlebars templates for custom prompts and rules
-- **🚀 Zero Dependencies** - No external services (Redis, PostgreSQL, S3) required
-
-### 🏗️ Architecture Highlights
-- **TypeScript 5.3+** - Full type safety with strict mode enabled
-- **Modular Design** - 50+ focused modules across 10 service layers
-- **Production-Ready** - Error handling, structured logging, automatic retries
-- **Extensible Providers** - OpenAI and OpenWebUI providers, easy to add more
-- **High Performance** - Parallel file processing, intelligent caching, token optimization
-- **Test Coverage** - 70%+ coverage with 350+ unit and integration tests
-
-## 🚀 Quick Start
-
-### 1. Add to Your Workflow
-
-Create `.github/workflows/code-review.yml`:
-
-```yaml
-name: AI Code Review
-
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-
-permissions:
-  contents: read
-  pull-requests: write
-  checks: write
-
-jobs:
-  review:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: AI Code Review
-        uses: ashsaym/code-sentinel-ai@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          api-key: ${{ secrets.OPENAI_API_KEY }}
-          provider: 'openai'
-          model: 'gpt-5-mini'
-          ai-agent-name: 'Code Sentinel AI'  # Optional: customize your agent name
-```
-
-### 2. Set Your API Key
-
-Add your OpenAI API key to GitHub Secrets:
-1. Go to **Settings → Secrets and variables → Actions**
-2. Click **New repository secret**
-3. Name: `OPENAI_API_KEY`
-4. Value: Your OpenAI API key
-
-### 3. Done! 🎉
-
-Open a PR and watch Code Sentinel review your code automatically.
-
-## 📖 Configuration
-
-### Input Parameters
-
-| Parameter | Description | Required | Default |
-|-----------|-------------|----------|---------|
-| `github-token` | GitHub token for API access | ✅ | `${{ github.token }}` |
-| `github-host` | GitHub API host (for GitHub Enterprise) | ❌ | `https://api.github.com` |
-| `api-key` | API key for AI provider | ✅ | - |
-| `mode` | Operation mode: `review`, `summary`, `suggestion`, or `description` (auto-detected from comments) | ❌ | `review` |
-| `provider` | AI provider (`openai` or `openwebui`) | ❌ | `openai` |
-| `model` | AI model to use | ❌ | `gpt-5-mini` |
-| `max-completion-tokens-mode` | Enable max_completion_tokens for newer models | ❌ | `false` |
-| `api-endpoint` | Custom API endpoint (required for `openwebui` provider). Should include the full host URL with any versioning (e.g., `https://openwebui.example.com/v1` or `https://openwebui.example.com`). The provider will append `/chat/completions` automatically. | ❌ | - |
-| `include-patterns` | File patterns to include (comma or newline separated) | ❌ | `**/*.{js,ts,jsx,tsx,py,java,go,rb,php,cs,cpp,c,rs,swift,kt}` |
-| `exclude-patterns` | File patterns to exclude (comma or newline separated) | ❌ | `**/node_modules/**, **/dist/**, **/build/**, **/*.min.js, **/*.lock` |
-| `max-files-per-batch` | Maximum files to review in one AI call | ❌ | `10` |
-| `max-lines-per-file` | Maximum lines to review per file | ❌ | `500` |
-| `auto-clean-outdated` | Automatically mark outdated comments | ❌ | `true` |
-| `incremental-mode` | Enable incremental review mode | ❌ | `true` |
-| `enable-check-runs` | Enable GitHub Check Runs for review history | ❌ | `true` |
-| `check-name` | Name for the GitHub Check Run | ❌ | `Code Sentinel AI Review` |
-| `ai-agent-name` | Name of the AI agent shown in comments and reviews | ❌ | `Code Sentinel AI` |
-| `custom-prompt-path` | Path to custom prompt template (Handlebars) | ❌ | - |
-| `custom-rules` | Custom review rules to add to the prompt | ❌ | - |
-| `cache-enabled` | Enable GitHub Actions cache | ❌ | `true` |
-| `cache-ttl-days` | Cache TTL in days (1-7) | ❌ | `7` |
-| `debug-mode` | Enable debug logging | ❌ | `false` |
-
-### Example: GitHub Enterprise
-
-```yaml
-- name: AI Code Review (GitHub Enterprise)
-  uses: ashsaym/code-sentinel-ai@v1
-  with:
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-    github-host: 'https://github.enterprise.com/api/v3'
-    api-key: ${{ secrets.OPENAI_API_KEY }}
-    ai-agent-name: 'Enterprise Code Guardian'
-```
-
-### Example: Self-Hosted Models
-
-```yaml
-- name: AI Code Review (Self-Hosted)
-  uses: ashsaym/code-sentinel-ai@v1
-  with:
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-    api-key: ${{ secrets.OPENWEBUI_API_KEY }}
-    provider: 'openwebui'
-    model: 'llama3.1:70b'
-    api-endpoint: 'https://your-openwebui-instance.com/v1'
-    ai-agent-name: 'Local AI Reviewer'
-    # Provider automatically appends /chat/completions to the endpoint
-```
-
-### Example: Strict Review Mode
-
-```yaml
-- name: AI Code Review (Strict)
-  uses: ashsaym/code-sentinel-ai@v1
-  with:
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-    api-key: ${{ secrets.OPENAI_API_KEY }}
-    model: 'gpt-4o'  # More powerful model for thorough reviews
-    max-files-per-batch: 20
-    max-lines-per-file: 1000
-    incremental-mode: true
-    enable-check-runs: true
-    auto-clean-outdated: true
-    debug-mode: true
-```
-
-### Example: Custom Agent Name
-
-```yaml
-- name: AI Code Review (Custom Agent)
-  uses: ashsaym/code-sentinel-ai@v1
-  with:
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-    api-key: ${{ secrets.OPENAI_API_KEY }}
-    provider: 'openai'
-    model: 'gpt-5-mini'
-    ai-agent-name: 'My Custom AI Reviewer'  # Your branded name
-```
-
-**Result:** Comments show "_Generated by My Custom AI Reviewer v1.0.0 (gpt-5-mini)_" instead of the default.
-
-This appears in:
-- PR review comments footer
-- Summary comment footer
-- Suggestion review footer
-- Description footer
-
-## 🎨 Customization
-
-### Custom Prompt Templates
-
-Create custom templates in your repository:
-
-```
-.github/
-└── code-sentinel-ai/
-    └── templates/
-        └── review.hbs       # Custom review prompt
-```
-
-**Example: `.github/code-sentinel-ai/templates/review.hbs`**
-
-```handlebars
-You are a senior {{language}} developer reviewing a pull request.
-
-**PR Title:** {{prTitle}}
-**Files Changed:** {{filesCount}}
-
-{{#each files}}
-### File: {{this.path}}
-```{{this.language}}
-{{this.diff}}
-```
-{{/each}}
-
-**Instructions:**
-- Focus on security vulnerabilities
-- Check for performance issues
-- Verify error handling
-- Suggest improvements
-
-**Format:** Provide line-by-line comments with severity (🔴 Critical, 🟡 Warning, 🟢 Info)
-```
-
-## 📊 Performance & Caching
-
-Code Sentinel uses **GitHub Actions Cache API** for intelligent caching:
-
-- **File Content Hashing** - Detects actual code changes (not just commits)
-- **60%+ Cache Hit Rate** - Avoids re-reviewing unchanged code
-- **7-Day Cache TTL** - Automatic cleanup
-- **Parallel Processing** - Reviews multiple files simultaneously
-
-### Cache Strategy
-
-```typescript
-// Cached items:
-✅ File hashes (SHA-256)
-✅ Previous review comments
-✅ LLM responses (by hash)
-✅ PR metadata
-
-// Not cached:
-❌ API tokens
-❌ Temporary state
-```
+- **Multi-Source Ingestion**: Connect GitHub repositories, Confluence spaces, and upload documents (PDF, Markdown, TXT, YAML, JSON, logs)
+- **RAG-Powered Chat**: Ask questions about your codebase and infrastructure with grounded, accurate answers
+- **Kubernetes Integration**: Real-time cluster monitoring, diagnostics, and troubleshooting
+- **Vector Search**: Powered by Milvus for fast semantic search across all your documentation
+- **Self-Hosted**: Complete control over your data with no external API calls (except configurable LLM)
 
 ## 🏗️ Architecture
 
-```
-code-sentinel-ai/
-├── src/
-│   ├── core/           # Orchestration & workflow
-│   ├── storage/        # GitHub-native caching
-│   ├── github/         # GitHub API integration
-│   ├── providers/      # LLM providers (OpenAI, OpenWebUI)
-│   ├── prompts/        # Template management
-│   ├── analysis/       # Incremental analysis
-│   ├── description/    # PR description generation
-│   ├── suggestion/     # Code suggestions
-│   ├── summary/        # PR summary generation
-│   ├── parsers/        # Response parsing
-│   └── utils/          # Logging, retry, token counting
-├── tests/
-│   ├── unit/          # Unit tests (>80% coverage)
-│   ├── integration/   # Integration tests
-│   └── e2e/           # End-to-end tests
-└── dist/              # Built action (auto-generated)
-```
+### Backend
+- **FastAPI 0.121.3**: High-performance Python web framework
+- **PostgreSQL 15+**: Metadata storage
+- **Milvus 2.6+**: Vector database for embeddings
+- **Redis 7.1+**: Caching and task queue
+- **Celery**: Background job processing
+- **SQLAlchemy 2.0.44**: ORM with async support
+- **Alembic 1.17.2**: Database migrations
+- **Pydantic 2.12.4**: Data validation
+- **Uvicorn 0.38.0**: ASGI server
 
-### Key Components
+### Frontend
+- **Next.js 15**: React framework with App Router (latest)
+- **TypeScript 5+**: Type-safe development
+- **TailwindCSS 4+**: Utility-first styling
+- **React Query**: Data fetching and caching
+- **HTTPX 0.28.1**: Modern HTTP client for Python backend
 
-| Module | Responsibility |
-|--------|---------------|
-| `ActionOrchestrator` | Main workflow coordinator & mode routing |
-| `ReviewEngine` | Review processing logic |
-| `SummaryService` | PR summary generation |
-| `SuggestionService` | Code suggestion generation |
-| `DescriptionService` | PR description generation |
-| `StorageManager` | Unified caching interface |
-| `GitHubClient` | GitHub API wrapper with retry/throttling |
-| `ProviderFactory` | LLM provider registry |
-| `IncrementalAnalyzer` | Delta detection |
-| `OutdatedCommentCleaner` | Comment lifecycle management |
-
-## 🧪 Development
+## 🚀 Quick Start
 
 ### Prerequisites
-
+- Docker & Docker Compose
+- Python 3.13+ (Python 3.14 has compatibility issues with some packages)
 - Node.js 20+
-- npm 9+
-- TypeScript 5.3+
+- PostgreSQL 15+ (or use Docker services)
+- Redis 7.1+ (or use Docker services)
+- (Optional) Kubernetes cluster for K8s integration
 
-### Setup
+### 1. Clone the Repository
+```bash
+git clone <repository-url>
+cd InfraMind-AI
+```
+
+### 2. Configure Environment Variables
+
+**Backend (`backend/.env`):**
+```bash
+cd backend
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+Create `backend/.env` with the following variables:
+
+```env
+# PostgreSQL Database Configuration
+POSTGRES_DB=inframind-ai
+POSTGRES_USER=your_username
+POSTGRES_PASSWORD=your_secure_password
+POSTGRES_HOST=localhost  # Use 192.168.x.x for remote DB or localhost for local
+POSTGRES_PORT=5432
+
+# Redis Configuration
+REDIS_HOST=localhost  # Use 192.168.x.x for remote Redis
+REDIS_PORT=6379
+
+# Milvus Vector Database Configuration
+MILVUS_HOST=localhost  # Use 192.168.x.x for remote Milvus
+MILVUS_PORT=19530
+
+# OpenWebUI / LLM Configuration
+OPENWEB_API_URL=https://your-openwebui-instance.com/
+OPENWEB_API_KEY=your_openwebui_api_key_here
+OPENWEB_EMBEDDER_MODEL=text-embedding-qwen3-embedding-8b
+OPENWEB_CHAT_MODEL=qwen/qwen3-8b
+
+# Application Configuration
+# SECRET_KEY=your-secret-key-for-jwt
+# DEBUG=True
+# LOG_LEVEL=INFO
+```
+
+**Frontend (`frontend/.env.local`)** (when frontend is created):
+```bash
+cd frontend
+cp .env.local.example .env.local
+# Edit .env.local with your configuration
+```
+
+```env
+# API Configuration
+NEXT_PUBLIC_API_URL=http://localhost:8000
+
+# Optional: Analytics
+# NEXT_PUBLIC_ANALYTICS_ID=your-analytics-id
+```
+
+### 3. Start Database Services (Optional - if not using external services)
 
 ```bash
-# Clone the repository
-git clone https://github.com/ashsaym/ai-code-reviewer.git
-cd ai-code-reviewer/code-sentinel-ai
+cd db-services
+docker-compose up -d
+```
+
+This will start:
+- Milvus (port 19530) - Vector database
+- MinIO (port 9000) - Object storage
+- etcd (port 2379) - Distributed configuration
+
+### 4. Start Application Services
+
+**Start Everything (Recommended):**
+```bash
+./start.sh                    # Full startup with all checks
+./start.sh --quick            # Quick restart (skip checks)
+./start.sh --backend-only     # Backend only
+./start.sh --frontend-only    # Frontend only
+```
+
+**Start Backend Only:**
+```bash
+cd backend
+./start.sh                    # Full startup
+./start.sh --quick            # Quick restart
+```
+
+**Start Frontend Only:**
+```bash
+cd frontend
+./start.sh                    # Full startup
+./start.sh --quick            # Quick restart
+```
+
+### 5. Access the Application
+
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+- **API Health**: http://localhost:8000/api/v1/health
+
+### 6. Stop Services
+
+```bash
+# Stop all services
+pkill -f 'uvicorn app.main:app'
+pkill -f 'react-scripts start'
+
+# Stop database services
+cd db-services
+docker-compose down
+```
+
+## 📚 Documentation
+
+For detailed documentation, please refer to:
+
+- **[Technical Specifications](docs/TECH_SPECS.md)**: API endpoints, database schemas, data models
+- **[Implementation Plan](docs/IMPLEMENTATION_PLAN.md)**: Development roadmap and phases
+- **[Project Structure](docs/PROJECT_STRUCTURE.md)**: Complete folder and file structure
+- **[Progress Tracker](docs/PROGRESS_TRACKER.md)**: Current implementation status
+
+## 🛠️ Development Setup
+
+### Backend Development
+
+```bash
+cd backend
+
+# Create virtual environment (Python 3.14+)
+python3.14 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Copy environment file
+cp .env.example .env
+
+# Run migrations
+alembic upgrade head
+
+# Start development server
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### Frontend Development
+
+```bash
+cd frontend
 
 # Install dependencies
 npm install
 
-# Run tests
-npm test
+# Copy environment file
+cp .env.local.example .env.local
 
-# Run tests with coverage
-npm run test:coverage
-
-# Build the action
-npm run build
-
-# Lint & typecheck
-npm run lint
-npm run typecheck
+# Start development server
+npm run dev
 ```
 
-### Project Scripts
-
-```json
-{
-  "build": "Build production bundle + copy templates",
-  "test": "Run all tests",
-  "test:coverage": "Run tests with coverage report",
-  "test:unit": "Run unit tests only",
-  "test:integration": "Run integration tests only",
-  "lint": "Run ESLint",
-  "typecheck": "Run TypeScript type checking",
-  "validate": "Lint + typecheck + test + build (pre-push)"
-}
-```
-
-## 🧪 Testing
-
-[![Coverage](https://codecov.io/gh/ashsaym/ai-code-reviewer/branch/main/graphs/sunburst.svg)](https://codecov.io/gh/ashsaym/ai-code-reviewer)
-
-### Test Coverage
-
-- **Unit Tests:** 350+ tests covering core logic, utilities, and parsers
-- **Integration Tests:** GitHub API, storage, and provider interactions
-- **Current Coverage:** 70.11% (Statements: 70.11%, Branches: 55.37%, Functions: 64.77%)
-- **Target Coverage:** Maintained above 70% for production stability
-
-### Running Tests Locally
+### Database Migrations
 
 ```bash
-# Run all tests
+# Create a new migration
+alembic revision --autogenerate -m "Description of changes"
+
+# Apply migrations
+alembic upgrade head
+
+# Rollback migration
+alembic downgrade -1
+```
+
+### Running Tests
+
+```bash
+# Backend tests
+cd backend
+pytest tests/ -v
+pytest tests/ --cov=app  # With coverage
+
+# Frontend tests (when available)
+cd frontend
 npm test
+npm run test:e2e
+```
 
-# Watch mode
-npm run test:watch
+### Code Quality
 
-# Coverage report
-npm run test:coverage
+```bash
+# Backend linting and formatting
+cd backend
+ruff check app/
+black app/
+mypy app/
 
-# Open coverage HTML
-open coverage/lcov-report/index.html
+# Frontend linting and formatting
+cd frontend
+npm run lint
+npm run format
+```
+
+## 🚢 Deployment
+
+### Docker Production Deployment
+
+```bash
+# Build production images
+docker-compose -f docker/docker-compose.prod.yml build
+
+# Start production services
+docker-compose -f docker/docker-compose.prod.yml up -d
+
+# Check health
+curl http://localhost:8000/health
+```
+
+### Kubernetes Deployment
+
+```bash
+# Apply Kubernetes manifests
+kubectl apply -f kubernetes/namespace.yaml
+kubectl apply -f kubernetes/backend/
+kubectl apply -f kubernetes/frontend/
+kubectl apply -f kubernetes/milvus/
+
+# Check deployment status
+kubectl get pods -n inframind
 ```
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please see:
-
-- [Architecture Documentation](./docs/ARCHITECTURE.md)
-- [Implementation Plan](./docs/IMPLEMENTATION_PLAN.md)
-- [Migration Guide](./docs/MIGRATION_PLAN.md)
-
-### Development Workflow
+We welcome contributions! Please see our contribution guidelines:
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes in `code-sentinel-ai/src/`
-4. Add tests in `code-sentinel-ai/tests/`
-5. Run `npm run validate` (lint + typecheck + test + build)
-6. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-7. Push to the branch (`git push origin feature/amazing-feature`)
-8. Open a Pull Request
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## 📝 License
+### Development Guidelines
 
-MIT License - see [LICENSE](./LICENSE) for details.
+- Follow the coding standards in [.github/copilot-instructions.md](.github/copilot-instructions.md)
+- Write tests for new features
+- Update documentation as needed
+- Ensure all tests pass before submitting PR
+- Follow semantic versioning for releases
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- OpenAI for GPT models
-- GitHub Actions team for excellent platform
-- Open source community for inspiration and feedback
+- Built with [FastAPI](https://fastapi.tiangolo.com/) and [Next.js](https://nextjs.org/)
+- Vector search powered by [Milvus](https://milvus.io/)
+- LLM integration via [OpenWebUI](https://docs.openwebui.com/)
 
-## 📧 Support
+## 📞 Support
 
-- **Issues:** [GitHub Issues](https://github.com/ashsaym/ai-code-reviewer/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/ashsaym/ai-code-reviewer/discussions)
-- **Email:** [ashsaym@users.noreply.github.com](mailto:ashsaym@users.noreply.github.com)
+For issues and questions:
+- Open an issue on GitHub
+- Check existing documentation in the `docs/` folder
+- Review the [TECH_SPECS.md](docs/TECH_SPECS.md) for API details
+
+## 🗺️ Roadmap
+
+See [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the complete development roadmap.
+
+**Current Status**: Phase 1 - Foundation & Infrastructure Setup
 
 ---
 
-<div align="center">
+**Maintained By**: InfraMind-AI Development Team  
+**Last Updated**: November 2025
 
-**[⭐ Star this project](https://github.com/ashsaym/ai-code-reviewer)** if you find it useful!
+## 📦 Project Structure
 
-Made with ❤️ by [ashsaym](https://github.com/ashsaym)
+```
+InfraMind-AI/
+├── .github/              # GitHub workflows & Copilot config
+├── .vscode/              # VS Code workspace settings
+├── backend/              # FastAPI backend application
+│   ├── .venv/            # Python virtual environment
+│   ├── app/
+│   │   ├── api/          # API route handlers
+│   │   ├── core/         # Business logic
+│   │   ├── services/     # External integrations
+│   │   ├── models/       # Pydantic models
+│   │   ├── db/           # Database layer
+│   │   ├── workers/      # Celery background tasks
+│   │   ├── utils/        # Utility functions
+│   │   └── schemas/      # API schemas
+│   ├── tests/            # Backend tests
+│   ├── alembic/          # Database migrations
+│   ├── requirements.txt  # Python dependencies
+│   ├── .env              # Environment variables (gitignored)
+│   └── Dockerfile        # Backend container
+├── frontend/             # Next.js frontend (when created)
+│   ├── src/
+│   │   ├── app/          # Next.js App Router pages
+│   │   ├── components/   # React components
+│   │   ├── lib/          # Utilities & API client
+│   │   ├── hooks/        # Custom React hooks
+│   │   ├── types/        # TypeScript definitions
+│   │   └── styles/       # CSS & themes
+│   ├── public/           # Static assets
+│   ├── tests/            # Frontend tests
+│   └── package.json      # Node.js dependencies
+├── db-services/          # Vector DB & storage services
+│   ├── docker-compose.yml
+│   └── volumes/          # Persistent data (gitignored)
+├── docs/                 # Project documentation
+│   ├── Idea.md
+│   ├── PROJECT_STRUCTURE.md
+│   ├── TECH_SPECS.md
+│   ├── IMPLEMENTATION_PLAN.md
+│   └── PROGRESS_TRACKER.md
+├── scripts/              # Utility scripts
+└── config/               # Configuration files
+│   │   ├── models/       # SQLAlchemy models
+│   │   ├── services/     # Business logic
+│   │   └── main.py       # FastAPI app
+│   ├── alembic/          # Database migrations
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   └── .env.example
+├── frontend/
+│   ├── src/
+│   │   ├── app/          # Next.js app directory
+│   │   ├── components/   # React components
+│   │   └── lib/          # Utilities, API client
+│   ├── package.json
+│   ├── Dockerfile
+│   └── .env.local.example
+├── docker/
+│   └── milvus-standalone-docker-compose.yml
+├── docs/
+│   ├── IMPLEMENTATION_PLAN.md
+│   ├── TECH_SPECS.md
+│   └── PROJECT_STRUCTURE.md
+└── docker-compose.yml
+```
 
-</div>
+## 🔧 Configuration
+
+### Environment Variables Reference
+
+**Backend (`backend/.env`):**
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `POSTGRES_DB` | PostgreSQL database name | `inframind-ai` | ✅ Yes |
+| `POSTGRES_USER` | PostgreSQL username | - | ✅ Yes |
+| `POSTGRES_PASSWORD` | PostgreSQL password | - | ✅ Yes |
+| `POSTGRES_HOST` | PostgreSQL host address | `localhost` | ✅ Yes |
+| `POSTGRES_PORT` | PostgreSQL port | `5432` | ✅ Yes |
+| `REDIS_HOST` | Redis host address | `localhost` | ✅ Yes |
+| `REDIS_PORT` | Redis port | `6379` | ✅ Yes |
+| `MILVUS_HOST` | Milvus vector DB host | `localhost` | ✅ Yes |
+| `MILVUS_PORT` | Milvus port | `19530` | ✅ Yes |
+| `OPENWEB_API_URL` | OpenWebUI API endpoint | - | ✅ Yes |
+| `OPENWEB_API_KEY` | OpenWebUI API key | - | ✅ Yes |
+| `OPENWEB_EMBEDDER_MODEL` | Embedding model name | `text-embedding-qwen3-embedding-8b` | ✅ Yes |
+| `OPENWEB_CHAT_MODEL` | Chat model name | `qwen/qwen3-8b` | ✅ Yes |
+| `SECRET_KEY` | JWT secret key | Auto-generated | ❌ No |
+| `DEBUG` | Enable debug mode | `False` | ❌ No |
+| `LOG_LEVEL` | Logging level | `INFO` | ❌ No |
+
+**Frontend (`frontend/.env.local`):**
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `NEXT_PUBLIC_API_URL` | Backend API URL | `http://localhost:8000` | ✅ Yes |
+| `NEXT_PUBLIC_ANALYTICS_ID` | Analytics tracking ID | - | ❌ No |
+
+### LLM Configuration
+
+InfraMind-AI uses **OpenWebUI** exclusively for all LLM operations:
+
+- **Chat Model**: Configured via `OPENWEB_CHAT_MODEL` environment variable
+- **Embedding Model**: Configured via `OPENWEB_EMBEDDER_MODEL` environment variable
+- **API Endpoint**: Set via `OPENWEB_API_URL`
+- **Authentication**: Use `OPENWEB_API_KEY` for API access
+
+## 🧪 Testing
+
+```bash
+# Backend tests
+cd backend
+pytest
+
+# Frontend tests
+cd frontend
+npm test
+```
+
+## 📝 API Documentation
+
+Once the backend is running, visit:
+- Swagger UI: http://localhost:8000/api/docs
+- ReDoc: http://localhost:8000/api/redoc
+
+## 🐳 Docker Production Deployment
+
+```bash
+# Build production images
+docker-compose -f docker-compose.prod.yml build
+
+# Start production services
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+## ☸️ Kubernetes Deployment
+
+See `docs/DEPLOYMENT.md` for Kubernetes manifests and deployment instructions.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🙏 Acknowledgments
+
+- FastAPI for the excellent web framework
+- Milvus for vector database capabilities
+- Next.js for the frontend framework
+- All open-source contributors
+
+## 📞 Support
+
+For issues and questions, please open a GitHub issue.
+
+---
+
+**Built with ❤️ for infrastructure engineers and DevOps teams**

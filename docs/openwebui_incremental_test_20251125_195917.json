@@ -1,0 +1,470 @@
+{
+  "test_date": "20251125_195917",
+  "api_type": "Open WebUI",
+  "server": "192.168.50.15",
+  "token_sizes": [
+    128,
+    512,
+    1024,
+    2048,
+    4096,
+    8192
+  ],
+  "individual_results": {
+    "Qwen3_Chat": [
+      {
+        "model": "Qwen3_Chat",
+        "type": "chat",
+        "duration": 1.1821231842041016,
+        "input_tokens": 103,
+        "output_tokens": 32,
+        "tokens_per_second": 35.768297440219435,
+        "error": null
+      },
+      {
+        "model": "Qwen3_Chat",
+        "type": "chat",
+        "duration": 3.6531572341918945,
+        "input_tokens": 451,
+        "output_tokens": 128,
+        "tokens_per_second": 35.61771836791823,
+        "error": null
+      },
+      {
+        "model": "Qwen3_Chat",
+        "type": "chat",
+        "duration": 7.267583847045898,
+        "input_tokens": 901,
+        "output_tokens": 200,
+        "tokens_per_second": 35.21499369915725,
+        "error": null
+      },
+      {
+        "model": "Qwen3_Chat",
+        "type": "chat",
+        "duration": 8.567191123962402,
+        "input_tokens": 1821,
+        "output_tokens": 200,
+        "tokens_per_second": 34.31780241147766,
+        "error": null
+      },
+      {
+        "model": "Qwen3_Chat",
+        "type": "chat",
+        "duration": 12.317566871643066,
+        "input_tokens": 3645,
+        "output_tokens": 200,
+        "tokens_per_second": 32.858182114502874,
+        "error": null
+      },
+      {
+        "model": "Qwen3_Chat",
+        "type": "chat",
+        "duration": 22.167332887649536,
+        "input_tokens": 7291,
+        "output_tokens": 200,
+        "tokens_per_second": 30.249452106798717,
+        "error": null
+      }
+    ],
+    "Qwen3_Embedding": [
+      {
+        "model": "Qwen3_Embedding",
+        "type": "embedding",
+        "duration": 1.0652461051940918,
+        "input_tokens": 127.68,
+        "embedding_dim": 4096,
+        "error": null
+      },
+      {
+        "model": "Qwen3_Embedding",
+        "type": "embedding",
+        "duration": 6.770087003707886,
+        "input_tokens": 510.72,
+        "embedding_dim": 4096,
+        "error": null
+      },
+      {
+        "model": "Qwen3_Embedding",
+        "type": "embedding",
+        "duration": 7.388432264328003,
+        "input_tokens": 1021.44,
+        "embedding_dim": 4096,
+        "error": null
+      },
+      {
+        "model": "Qwen3_Embedding",
+        "type": "embedding",
+        "duration": 14.46483826637268,
+        "input_tokens": 2042.88,
+        "embedding_dim": 4096,
+        "error": null
+      },
+      {
+        "model": "Qwen3_Embedding",
+        "type": "embedding",
+        "duration": 29.086071968078613,
+        "input_tokens": 4085.76,
+        "embedding_dim": 4096,
+        "error": null
+      },
+      {
+        "model": "Qwen3_Embedding",
+        "type": "embedding",
+        "duration": 59.02123212814331,
+        "input_tokens": 8171.52,
+        "embedding_dim": 4096,
+        "error": null
+      }
+    ],
+    "Qwen3_Reranker": [
+      {
+        "model": "Qwen3_Reranker",
+        "type": "reranker",
+        "duration": 3.4221670627593994,
+        "num_docs": 2,
+        "avg_per_doc": 1.7110835313796997,
+        "successful": 2.0,
+        "error": null
+      },
+      {
+        "model": "Qwen3_Reranker",
+        "type": "reranker",
+        "duration": 3.40278697013855,
+        "num_docs": 2,
+        "avg_per_doc": 1.701393485069275,
+        "successful": 2.0,
+        "error": null
+      },
+      {
+        "model": "Qwen3_Reranker",
+        "type": "reranker",
+        "duration": 3.47628116607666,
+        "num_docs": 2,
+        "avg_per_doc": 1.73814058303833,
+        "successful": 2.0,
+        "error": null
+      },
+      {
+        "model": "Qwen3_Reranker",
+        "type": "reranker",
+        "duration": 7.3653528690338135,
+        "num_docs": 4,
+        "avg_per_doc": 1.8413382172584534,
+        "successful": 4.0,
+        "error": null
+      },
+      {
+        "model": "Qwen3_Reranker",
+        "type": "reranker",
+        "duration": 8.613852977752686,
+        "num_docs": 5,
+        "avg_per_doc": 1.722770595550537,
+        "successful": 5.0,
+        "error": null
+      },
+      {
+        "model": "Qwen3_Reranker",
+        "type": "reranker",
+        "duration": 9.459159135818481,
+        "num_docs": 5,
+        "avg_per_doc": 1.8918318271636962,
+        "successful": 5.0,
+        "error": null
+      }
+    ]
+  },
+  "concurrent_results": [
+    {
+      "model": "Qwen3_Chat",
+      "type": "chat",
+      "duration": 1.7376079559326172,
+      "input_tokens": 103,
+      "output_tokens": 32,
+      "tokens_per_second": 27.460339118025395,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Embedding",
+      "type": "embedding",
+      "duration": 0.4073631763458252,
+      "input_tokens": 127.68,
+      "embedding_dim": 4096,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Reranker",
+      "type": "reranker",
+      "duration": 4.478683948516846,
+      "num_docs": 2,
+      "avg_per_doc": 2.239341974258423,
+      "successful": 2.0,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Chat",
+      "type": "chat",
+      "duration": 3.1835930347442627,
+      "input_tokens": 103,
+      "output_tokens": 32,
+      "tokens_per_second": 10.190774482937618,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Embedding",
+      "type": "embedding",
+      "duration": 1.0858738422393799,
+      "input_tokens": 127.68,
+      "embedding_dim": 4096,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Reranker",
+      "type": "reranker",
+      "duration": 4.915621757507324,
+      "num_docs": 2,
+      "avg_per_doc": 2.457810878753662,
+      "successful": 2.0,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Chat",
+      "type": "chat",
+      "duration": 3.2155959606170654,
+      "input_tokens": 103,
+      "output_tokens": 32,
+      "tokens_per_second": 10.300126369675398,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Embedding",
+      "type": "embedding",
+      "duration": 1.5096158981323242,
+      "input_tokens": 127.68,
+      "embedding_dim": 4096,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Chat",
+      "type": "chat",
+      "duration": 4.906787157058716,
+      "input_tokens": 451,
+      "output_tokens": 128,
+      "tokens_per_second": 32.54781222760278,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Embedding",
+      "type": "embedding",
+      "duration": 0.4070589542388916,
+      "input_tokens": 510.72,
+      "embedding_dim": 4096,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Reranker",
+      "type": "reranker",
+      "duration": 5.228794097900391,
+      "num_docs": 2,
+      "avg_per_doc": 2.6143970489501953,
+      "successful": 2.0,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Chat",
+      "type": "chat",
+      "duration": 11.293439865112305,
+      "input_tokens": 451,
+      "output_tokens": 128,
+      "tokens_per_second": 11.482655762449689,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Embedding",
+      "type": "embedding",
+      "duration": 1.2813780307769775,
+      "input_tokens": 510.72,
+      "embedding_dim": 4096,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Reranker",
+      "type": "reranker",
+      "duration": 6.994374990463257,
+      "num_docs": 2,
+      "avg_per_doc": 3.4971874952316284,
+      "successful": 2.0,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Chat",
+      "type": "chat",
+      "duration": 11.295373678207397,
+      "input_tokens": 451,
+      "output_tokens": 128,
+      "tokens_per_second": 14.564706439238774,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Embedding",
+      "type": "embedding",
+      "duration": 3.262157917022705,
+      "input_tokens": 510.72,
+      "embedding_dim": 4096,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Chat",
+      "type": "chat",
+      "duration": 6.885427236557007,
+      "input_tokens": 901,
+      "output_tokens": 200,
+      "tokens_per_second": 31.557622720099822,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Embedding",
+      "type": "embedding",
+      "duration": 0.0055806636810302734,
+      "error": "Server disconnected"
+    },
+    {
+      "model": "Qwen3_Reranker",
+      "type": "reranker",
+      "duration": 5.447417974472046,
+      "num_docs": 2,
+      "avg_per_doc": 2.723708987236023,
+      "successful": 2.0,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Chat",
+      "type": "chat",
+      "duration": 21.55075192451477,
+      "input_tokens": 901,
+      "output_tokens": 200,
+      "tokens_per_second": 9.323207397778607,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Embedding",
+      "type": "embedding",
+      "duration": 24.342764854431152,
+      "input_tokens": 1021.44,
+      "embedding_dim": 4096,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Reranker",
+      "type": "reranker",
+      "duration": 9.091990947723389,
+      "num_docs": 2,
+      "avg_per_doc": 4.545995473861694,
+      "successful": 2.0,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Chat",
+      "type": "chat",
+      "duration": 21.55415105819702,
+      "input_tokens": 901,
+      "output_tokens": 200,
+      "tokens_per_second": 11.009675302655975,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Embedding",
+      "type": "embedding",
+      "duration": 24.33795404434204,
+      "input_tokens": 1021.44,
+      "embedding_dim": 4096,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Chat",
+      "type": "chat",
+      "duration": 8.212725162506104,
+      "input_tokens": 1821,
+      "output_tokens": 200,
+      "tokens_per_second": 27.71580600543313,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Embedding",
+      "type": "embedding",
+      "duration": 1.2942440509796143,
+      "input_tokens": 2042.88,
+      "embedding_dim": 4096,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Reranker",
+      "type": "reranker",
+      "duration": 10.054172039031982,
+      "num_docs": 4,
+      "avg_per_doc": 2.5135430097579956,
+      "successful": 4.0,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Chat",
+      "type": "chat",
+      "duration": 17.72236204147339,
+      "input_tokens": 1821,
+      "output_tokens": 200,
+      "tokens_per_second": 11.331396608796279,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Embedding",
+      "type": "embedding",
+      "duration": 1.042564868927002,
+      "input_tokens": 2042.88,
+      "embedding_dim": 4096,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Reranker",
+      "type": "reranker",
+      "duration": 12.548944234848022,
+      "num_docs": 4,
+      "avg_per_doc": 3.1372360587120056,
+      "successful": 4.0,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Chat",
+      "type": "chat",
+      "duration": 17.75005602836609,
+      "input_tokens": 1821,
+      "output_tokens": 200,
+      "tokens_per_second": 15.37208949661249,
+      "error": null
+    },
+    {
+      "model": "Qwen3_Embedding",
+      "type": "embedding",
+      "duration": 3.33762788772583,
+      "input_tokens": 2042.88,
+      "embedding_dim": 4096,
+      "error": null
+    }
+  ],
+  "summary": {
+    "Qwen3_Chat": {
+      "total_tests": 6,
+      "successful": 6,
+      "avg_duration": 9.192492524782816
+    },
+    "Qwen3_Embedding": {
+      "total_tests": 6,
+      "successful": 6,
+      "avg_duration": 19.632651289304096
+    },
+    "Qwen3_Reranker": {
+      "total_tests": 6,
+      "successful": 6,
+      "avg_duration": 5.956600030263265
+    }
+  }
+}

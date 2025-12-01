@@ -1,65 +1,165 @@
-/PR_Reviwer_Example
-/next-gen-ai-reviewer/node_modules
-/next-gen-ai-reviewer/coverage
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+backend/lib/
+backend/lib64/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+.pytype/
+cython_debug/
 
-# Dependencies
+# Virtual Environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# Node.js / Frontend
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.pnpm-debug.log*
+.npm
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
 
-# Testing
-coverage/
-!code-sentinel-ai/coverage/
-.nyc_output/
-*.lcov
+# Next.js
+.next/
+out/
+.vercel
+*.tsbuildinfo
 
-# Environment variables - SECURITY CRITICAL
+# Environment Variables
 .env
 .env.local
-.env.*.local
+.env.development
+.env.development.local
 .env.test
+.env.test.local
 .env.production
-*.env
+.env.production.local
+.env.*.local
 
-# IDE
+# IDEs and Editors
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 .DS_Store
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.code-workspace
 
-# Build outputs
-dist/
-!code-sentinel-ai/dist/
-build/
-*.tgz
+# Database
+*.db
+*.sqlite
+*.sqlite3
+db.sqlite3
+
+# Docker
+docker-compose.override.yml
 
 # Logs
 logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+backend/backend.log
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
 # Temporary files
+*.tmp
+*.temp
+*.bak
 tmp/
 temp/
-*.tmp
 
-# Secrets and keys - SECURITY CRITICAL
+# Alembic
+alembic/versions/__pycache__/
+
+# Milvus / Vector DB
+volumes/
+milvus_data/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Certificates and Keys
 *.pem
 *.key
-*.cert
-secrets.json
-credentials.json
-.secrets/
-*-key.json
-*-keys.json
-.api-keys
-.credentials
+*.crt
+*.cer
+*.p12
+*.pfx
 
-# OS files
-Thumbs.db
-desktop.ini
-
-# Lock files backups
-package-lock.json.bak
+# Secrets
+secrets/
+*.secret
+*.pid
+*.pid
+backend/backend.pid
+backend/.env copy
+backend/.requirements_hash

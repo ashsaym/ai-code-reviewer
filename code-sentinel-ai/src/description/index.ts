@@ -1,1 +1,0 @@
-export { DescriptionService } from './DescriptionService';
