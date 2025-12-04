@@ -342,7 +342,7 @@ async def test_openwebui_config(
 async def get_available_models(db: AsyncSession = Depends(get_db)):
     """
     Get list of available models from OpenWebUI API.
-    Falls back to configured models if API is unavailable.
+    Returns error message if no models found or API unavailable.
     """
     # Get default config
     result = await db.execute(
@@ -351,7 +351,10 @@ async def get_available_models(db: AsyncSession = Depends(get_db)):
     config = result.scalar_one_or_none()
     
     if not config:
-        return AvailableModels(models=[], chat_models=[], embedding_models=[])
+        raise HTTPException(
+            status_code=404,
+            detail="No default OpenWebUI configuration found. Please configure OpenWebUI settings first."
+        )
     
     # Try to fetch models from OpenWebUI API
     try:
@@ -370,23 +373,41 @@ async def get_available_models(db: AsyncSession = Depends(get_db)):
                 elif isinstance(data, list):
                     models = [m.get("id", m.get("name", "")) for m in data]
                 
+                if not models:
+                    raise HTTPException(
+                        status_code=404,
+                        detail="No models found from OpenWebUI API. Please add models manually."
+                    )
+                
                 return AvailableModels(
                     models=models,
                     chat_models=models,  # Assume all can be used for chat
                     embedding_models=[m for m in models if "embed" in m.lower()]
                 )
-    except Exception:
-        pass
-    
-    # Fall back to configured models
-    configured = []
-    if config.default_chat_model:
-        configured.append(config.default_chat_model)
-    if config.default_embedding_model:
-        configured.append(config.default_embedding_model)
-    
-    return AvailableModels(
-        models=configured,
-        chat_models=[config.default_chat_model] if config.default_chat_model else [],
-        embedding_models=[config.default_embedding_model] if config.default_embedding_model else []
-    )
+            else:
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"Failed to fetch models from OpenWebUI API (status: {response.status_code}). Please add models manually."
+                )
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Fall back to configured models if they exist
+        configured = []
+        if config.default_chat_model:
+            configured.append(config.default_chat_model)
+        if config.default_embedding_model:
+            configured.append(config.default_embedding_model)
+        
+        if not configured:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Cannot connect to OpenWebUI API: {str(e)}. Please add models manually."
+            )
+        
+        # Return configured models as fallback
+        return AvailableModels(
+            models=configured,
+            chat_models=[config.default_chat_model] if config.default_chat_model else [],
+            embedding_models=[config.default_embedding_model] if config.default_embedding_model else []
+        )

@@ -49,6 +49,9 @@ const OpenWebUISettings: React.FC = () => {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState<OpenWebUIConfig | null>(null);
   const [formData, setFormData] = useState({ name: '', api_url: '', api_key: '', default_chat_model: '', default_embedding_model: '' });
+  const [manualChatModel, setManualChatModel] = useState('');
+  const [manualEmbeddingModel, setManualEmbeddingModel] = useState('');
+  const [showManualInput, setShowManualInput] = useState(false);
 
   const loadConfigs = useCallback(async () => {
     try {
@@ -118,6 +121,7 @@ const OpenWebUISettings: React.FC = () => {
       setFetchingModels(true);
       setError(null);
       setModelsSuccess(null);
+      setShowManualInput(false);
       
       // Create a temporary config to test
       let configId = selectedConfig?.id;
@@ -136,29 +140,67 @@ const OpenWebUISettings: React.FC = () => {
       const response = await testOpenWebUIConfig(configId);
       
       if (response.data.success && response.data.models) {
-        setModels({
-          chat: response.data.models.chat_models || [],
-          embedding: response.data.models.embedding_models || [],
-        });
-        setModelsSuccess(`Successfully fetched ${response.data.models.chat_models?.length || 0} chat models and ${response.data.models.embedding_models?.length || 0} embedding models`);
+        const chatModels = response.data.models.chat_models || [];
+        const embeddingModels = response.data.models.embedding_models || [];
+        
+        if (chatModels.length === 0 && embeddingModels.length === 0) {
+          setError('No models found. Please add models manually below.');
+          setShowManualInput(true);
+        } else {
+          setModels({
+            chat: chatModels,
+            embedding: embeddingModels,
+          });
+          setModelsSuccess(`Successfully fetched ${chatModels.length} chat models and ${embeddingModels.length} embedding models`);
+        }
         
         // If it was a temp config and we're not editing, delete it
         if (!selectedConfig) {
           await deleteOpenWebUIConfig(configId);
         }
       } else {
-        setError(response.data.message || 'Failed to fetch models');
+        setError(response.data.message || 'Failed to fetch models. Please add models manually below.');
+        setShowManualInput(true);
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to fetch models from OpenWebUI');
+      const errorMsg = err.response?.data?.detail || 'Failed to fetch models from OpenWebUI';
+      setError(`${errorMsg}. Please add models manually below.`);
+      setShowManualInput(true);
     } finally {
       setFetchingModels(false);
+    }
+  };
+
+  const handleAddManualChatModel = () => {
+    if (manualChatModel.trim()) {
+      setModels(prev => ({
+        ...prev,
+        chat: [...prev.chat, manualChatModel.trim()]
+      }));
+      setManualChatModel('');
+      setModelsSuccess(`Added chat model: ${manualChatModel.trim()}`);
+    }
+  };
+
+  const handleAddManualEmbeddingModel = () => {
+    if (manualEmbeddingModel.trim()) {
+      setModels(prev => ({
+        ...prev,
+        embedding: [...prev.embedding, manualEmbeddingModel.trim()]
+      }));
+      setManualEmbeddingModel('');
+      setModelsSuccess(`Added embedding model: ${manualEmbeddingModel.trim()}`);
     }
   };
 
   const openEditDialog = (config: OpenWebUIConfig) => {
     setSelectedConfig(config);
     setFormData({ name: config.name, api_url: config.api_url, api_key: '', default_chat_model: config.default_chat_model || '', default_embedding_model: config.default_embedding_model || '' });
+    setModels({ chat: [], embedding: [] });
+    setManualChatModel('');
+    setManualEmbeddingModel('');
+    setShowManualInput(false);
+    setModelsSuccess(null);
     setFormOpen(true);
   };
 
@@ -171,7 +213,16 @@ const OpenWebUISettings: React.FC = () => {
         subtitle="Manage OpenWebUI API configurations for AI models"
         onRefresh={loadConfigs}
         actions={
-          <Button startIcon={<AddIcon />} variant="contained" onClick={() => { setSelectedConfig(null); setFormData({ name: '', api_url: '', api_key: '', default_chat_model: '', default_embedding_model: '' }); setFormOpen(true); }}>
+          <Button startIcon={<AddIcon />} variant="contained" onClick={() => { 
+            setSelectedConfig(null); 
+            setFormData({ name: '', api_url: '', api_key: '', default_chat_model: '', default_embedding_model: '' }); 
+            setModels({ chat: [], embedding: [] });
+            setManualChatModel('');
+            setManualEmbeddingModel('');
+            setShowManualInput(false);
+            setModelsSuccess(null);
+            setFormOpen(true); 
+          }}>
             Add Configuration
           </Button>
         }
@@ -236,6 +287,50 @@ const OpenWebUISettings: React.FC = () => {
             </Button>
             {modelsSuccess && <Alert severity="success" sx={{ mt: 1 }}>{modelsSuccess}</Alert>}
           </Box>
+          
+          {showManualInput && (
+            <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                Add Models Manually
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                <TextField 
+                  size="small"
+                  fullWidth
+                  label="Chat Model Name"
+                  value={manualChatModel}
+                  onChange={(e) => setManualChatModel(e.target.value)}
+                  placeholder="e.g., gpt-4, llama3:8b"
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddManualChatModel()}
+                />
+                <Button 
+                  variant="contained" 
+                  onClick={handleAddManualChatModel}
+                  disabled={!manualChatModel.trim()}
+                >
+                  Add
+                </Button>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <TextField 
+                  size="small"
+                  fullWidth
+                  label="Embedding Model Name"
+                  value={manualEmbeddingModel}
+                  onChange={(e) => setManualEmbeddingModel(e.target.value)}
+                  placeholder="e.g., text-embedding-ada-002"
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddManualEmbeddingModel()}
+                />
+                <Button 
+                  variant="contained" 
+                  onClick={handleAddManualEmbeddingModel}
+                  disabled={!manualEmbeddingModel.trim()}
+                >
+                  Add
+                </Button>
+              </Box>
+            </Box>
+          )}
           
           <FormControl fullWidth sx={{ mb: 2 }}>
             <InputLabel>Default Chat Model</InputLabel>
