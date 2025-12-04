@@ -11,7 +11,7 @@ pydantic-settings==2.7.1
 # ==================== Database ====================
 sqlalchemy[asyncio]==2.0.44
 asyncpg==0.30.0
-psycopg2-binary
+psycopg2-binary==2.9.10
 alembic==1.14.0
 
 # ==================== Redis ====================
@@ -25,6 +25,7 @@ llama-index-core==0.14.8
 
 # ==================== LlamaIndex Readers ====================
 llama-index-readers-github==0.9.0
+llama-index-readers-file==0.5.5
 
 # ==================== LlamaIndex LLMs ====================
 llama-index-llms-openai==0.6.10

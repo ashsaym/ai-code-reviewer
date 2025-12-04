@@ -418,7 +418,8 @@ async def get_source_branches(
             # GitHub Enterprise or custom host
             api_base = f"https://{github_host}/api/v3"
         
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        from app.utils.ssl_config import get_ssl_context
+        async with httpx.AsyncClient(timeout=10.0, verify=get_ssl_context()) as client:
             response = await client.get(
                 f"{api_base}/repos/{owner}/{repo}/branches",
                 headers={

@@ -290,9 +290,10 @@ async def test_openwebui_config(
     
     try:
         import httpx
+        from app.utils.ssl_config import get_ssl_context
         
         # Test connection and fetch models
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=10.0, verify=get_ssl_context()) as client:
             response = await client.get(
                 f"{config.api_url}/models",
                 headers={"Authorization": f"Bearer {config.api_key}"}
@@ -355,7 +356,8 @@ async def get_available_models(db: AsyncSession = Depends(get_db)):
     # Try to fetch models from OpenWebUI API
     try:
         import httpx
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        from app.utils.ssl_config import get_ssl_context
+        async with httpx.AsyncClient(timeout=10.0, verify=get_ssl_context()) as client:
             response = await client.get(
                 f"{config.api_url}/models",
                 headers={"Authorization": f"Bearer {config.api_key}"}

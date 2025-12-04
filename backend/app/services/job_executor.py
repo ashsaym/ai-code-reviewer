@@ -204,6 +204,7 @@ class JobExecutor:
         if not token: raise ValueError("No GitHub token")
         
         import httpx
+        from app.utils.ssl_config import get_ssl_context
         branch = source.branch or "main"
         
         # Use custom or default text extensions
@@ -220,7 +221,7 @@ class JobExecutor:
         
         logger.info(f"Using GitHub API: {api_base} for source {source.id}")
         
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=60.0, verify=get_ssl_context()) as client:
             branch_resp = await client.get(
                 f"{api_base}/repos/{owner}/{repo_name}/branches/{branch}",
                 headers={"Authorization": f"token {token}", "Accept": "application/vnd.github+json"}

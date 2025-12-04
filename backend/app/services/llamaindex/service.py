@@ -103,6 +103,13 @@ class LlamaIndexService:
             return
         
         try:
+            import httpx
+            from app.utils.ssl_config import get_ssl_context
+            
+            # Create httpx client with SSL configuration
+            ssl_verify = get_ssl_context()
+            http_client = httpx.Client(verify=ssl_verify, timeout=480.0)
+            
             # Register custom model with LlamaIndex to bypass validation
             from llama_index.llms.openai.utils import ALL_AVAILABLE_MODELS, CHAT_MODELS
             ALL_AVAILABLE_MODELS[self._chat_model] = self._chat_context_size
@@ -111,6 +118,7 @@ class LlamaIndexService:
             
             # Initialize LLM for OpenAI-compatible API (OpenWebUI)
             # Use default_model_name to avoid tokenizer lookup for custom models
+            # Pass custom httpx client for SSL support
             self._llm = OpenAI(
                 model=self._chat_model,
                 api_base=api_base,
@@ -119,18 +127,21 @@ class LlamaIndexService:
                 max_tokens=self._max_tokens,
                 default_headers={"HTTP-Referer": "https://github.com/ashsaym/InfraMind-AI"},
                 timeout=480.0,  # 8 minutes timeout for LLM requests (4x increase)
+                http_client=http_client,  # Use custom httpx client with SSL config
             )
             
             # Initialize Embedding Model
             # Use model_name parameter instead of model to bypass the built-in 
             # OpenAI model validation. This allows using custom models from
             # OpenAI-compatible APIs like Open WebUI (e.g., models/Qwen3-Embedding.gguf)
+            # Pass custom httpx client for SSL support
             self._embed_model = OpenAIEmbedding(
                 model_name=self._embedding_model,
                 api_base=api_base,
                 api_key=api_key,
                 embed_batch_size=settings.DEFAULT_BATCH_SIZE,
                 timeout=240.0,  # 4 minutes timeout for embedding requests (4x increase)
+                http_client=http_client,  # Use custom httpx client with SSL config
             )
             
             # Set global defaults
@@ -168,9 +179,10 @@ class LlamaIndexService:
         """Get the actual context size from OpenWebUI API dynamically."""
         try:
             import httpx
+            from app.utils.ssl_config import get_ssl_context
             
             # Try to fetch model info from OpenWebUI API
-            async with httpx.AsyncClient(timeout=10.0) as client:
+            async with httpx.AsyncClient(timeout=10.0, verify=get_ssl_context()) as client:
                 # OpenWebUI models endpoint
                 models_url = self._api_url.replace('/api/v1', '/api/models')
                 

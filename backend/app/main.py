@@ -161,6 +161,10 @@ async def lifespan(app: FastAPI):
     logger.info(f"💾 Caching: {'Enabled' if settings.CACHE_ENABLED else 'Disabled'}")
     logger.info(f"🔐 Environment: {'Development' if settings.DEBUG else 'Production'}")
     
+    # Log SSL configuration
+    from app.utils.ssl_config import log_ssl_config
+    log_ssl_config()
+    
     # Register signal handlers
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)

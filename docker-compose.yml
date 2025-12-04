@@ -6,7 +6,7 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.sles
     image: inframind-backend:latest
     container_name: inframind-backend
     environment:
@@ -21,8 +21,8 @@ services:
       POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
       POSTGRES_DB: ${POSTGRES_DB:-inframind-ai}
-      POSTGRES_USER: ${POSTGRES_USER:-saym}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Saym7296}
+      POSTGRES_USER: ${POSTGRES_USER:-inframind}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-this-secure-password}
       
       # Redis
       REDIS_HOST: ${REDIS_HOST:-redis}
@@ -72,7 +72,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.sles
     image: inframind-frontend:latest
     container_name: inframind-frontend
     ports:
@@ -91,6 +91,4 @@ services:
 
 networks:
   inframind-network:
-    name: inframind-network
     driver: bridge
-    external: true

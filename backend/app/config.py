@@ -77,6 +77,12 @@ class Settings(BaseSettings):
     GITHUB_HOST: str = "github.com"  # Can be changed for GitHub Enterprise
     GITHUB_API_VERSION: str = "2022-11-28"
     
+    # SSL/TLS Configuration
+    SSL_VERIFY: bool = True  # Set to False to disable SSL verification (not recommended for production)
+    SSL_CA_CERT_PATH: Optional[str] = None  # Path to custom CA certificate file (PEM format)
+    SSL_CLIENT_CERT_PATH: Optional[str] = None  # Path to client certificate file (optional)
+    SSL_CLIENT_KEY_PATH: Optional[str] = None  # Path to client key file (optional)
+    
     # Processing Configuration (defaults)
     DEFAULT_BATCH_SIZE: int = 4
     DEFAULT_MAX_CONCURRENT: int = 5
@@ -142,6 +148,28 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return v.lower() in ("true", "1", "yes", "on")
         return False
+    
+    @field_validator("SSL_VERIFY", mode="before")
+    @classmethod
+    def parse_ssl_verify(cls, v) -> bool:
+        """Parse SSL_VERIFY from string or bool."""
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, str):
+            return v.lower() in ("true", "1", "yes", "on")
+        return True  # Default to True for security
+    
+    @field_validator("SSL_CA_CERT_PATH")
+    @classmethod
+    def validate_ca_cert_path(cls, v: Optional[str]) -> Optional[str]:
+        """Validate CA certificate file exists if path is provided."""
+        if v:
+            import os
+            if not os.path.isfile(v):
+                logger.warning(f"⚠️ SSL_CA_CERT_PATH specified but file not found: {v}")
+            else:
+                logger.info(f"✅ Using custom CA certificate: {v}")
+        return v
     
     @property
     def database_url(self) -> str:

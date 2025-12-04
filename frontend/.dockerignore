@@ -16,11 +16,6 @@ yarn-error.log*
 *~
 .DS_Store
 README.md
-src/
-public/
-package.json
-package-lock.json
-tsconfig.json
 .package.hash
 .package_hash
 .frontend.pid

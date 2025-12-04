@@ -268,6 +268,7 @@ async def test_github_config(
     # Test the connection
     try:
         import httpx
+        from app.utils.ssl_config import get_ssl_context
         
         # Determine API URL based on host (configurable per config)
         if config.host == "github.com":
@@ -277,7 +278,7 @@ async def test_github_config(
             api_base = f"https://{config.host}/api/v3"
         api_url = f"{api_base}/user"
         
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=10.0, verify=get_ssl_context()) as client:
             response = await client.get(
                 api_url,
                 headers={
